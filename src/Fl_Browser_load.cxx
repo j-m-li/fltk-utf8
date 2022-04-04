@@ -26,6 +26,7 @@
 #include <FL/Fl.H>
 #include <FL/Fl_Browser.H>
 #include <stdio.h>
+#include <FL/fl_utf8.H>
 
 int Fl_Browser::load(const char *filename) {
 #define MAXFL_BLINE 1024
@@ -34,7 +35,7 @@ int Fl_Browser::load(const char *filename) {
     int i;
     clear();
     if (!filename || !(filename[0])) return 1;
-    FILE *fl = fopen(filename,"r");
+    FILE *fl = fl_fopen(filename,"r");
     if (!fl) return 0;
     i = 0;
     do {

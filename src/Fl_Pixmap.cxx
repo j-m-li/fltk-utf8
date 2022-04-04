@@ -1,5 +1,5 @@
 //
-// "$Id: Fl_Pixmap.cxx,v 1.9.2.4.2.22 2002/10/11 13:54:10 easysw Exp $"
+// "$Id: Fl_Pixmap.cxx,v 1.9.2.4.2.21 2002/08/09 01:09:49 easysw Exp $"
 //
 // Pixmap drawing code for the Fast Light Tool Kit (FLTK).
 //
@@ -36,8 +36,10 @@
 #include <FL/Fl_Widget.H>
 #include <FL/Fl_Menu_Item.H>
 #include <FL/Fl_Pixmap.H>
+#include <FL/Fl_Fltk.H>
 
 #include <stdio.h>
+#include <stdlib.h>
 #include "flstring.h"
 #include <ctype.h>
 
@@ -69,6 +71,12 @@ void Fl_Pixmap::draw(int XP, int YP, int WP, int HP, int cx, int cy) {
     draw_empty(XP, YP);
     return;
   }
+  if (fl->type == FL_PS_DEVICE) {
+	fl_draw_pixmap(data(), XP, YP, FL_WHITE);
+	return;
+  }
+
+
   // account for current clip region (faster on Irix):
   int X,Y,W,H; fl_clip_box(XP,YP,WP,HP,X,Y,W,H);
   cx += X-XP; cy += Y-YP;
@@ -79,6 +87,7 @@ void Fl_Pixmap::draw(int XP, int YP, int WP, int HP, int cx, int cy) {
   if (cy < 0) {H += cy; Y -= cy; cy = 0;}
   if (cy+H > h()) H = h()-cy;
   if (H <= 0) return;
+
   if (!id) {
     id = fl_create_offscreen(w(), h());
     fl_begin_offscreen(id);
@@ -93,8 +102,25 @@ void Fl_Pixmap::draw(int XP, int YP, int WP, int HP, int cx, int cy) {
 
     fl_end_offscreen();
   }
+
 #ifdef WIN32
-  if (mask) {
+  if (fl->type == FL_GDI_DEVICE) {
+		if (mask) {
+		    HDC new_gc = CreateCompatibleDC(fl_gc);
+			SelectObject(new_gc, (void*)mask);
+			StretchBlt(fl->gc, (int)(XP*fl->s+fl->L), (int)(YP*fl->s+fl->T), (int)(w()*fl->s), (int)(h()*fl->s), new_gc, 0, 0, WP, HP, SRCAND);
+			SelectObject(new_gc, (void*)id);
+			StretchBlt(fl->gc, (int)(XP*fl->s+fl->L), (int)(YP*fl->s+fl->T), (int)(w()*fl->s), (int)(h()*fl->s), new_gc, 0, 0, WP, HP, SRCPAINT);
+			DeleteDC(new_gc);
+		} else {
+			HDC new_gc = CreateCompatibleDC(fl_gc);
+			SelectObject(new_gc, id);	
+			StretchBlt(fl->gc, XP*fl->s+fl->L, YP*fl->s+fl->T, WP*fl->s, HP*fl->s, new_gc, 0, 0, WP, HP, SRCCOPY);
+			DeleteDC(new_gc);
+		}
+		return;
+  } 
+  if (mask) {   
     HDC new_gc = CreateCompatibleDC(fl_gc);
     SelectObject(new_gc, (void*)mask);
     BitBlt(fl_gc, X, Y, W, H, new_gc, cx, cy, SRCAND);
@@ -461,5 +487,5 @@ void Fl_Pixmap::desaturate() {
 }
 
 //
-// End of "$Id: Fl_Pixmap.cxx,v 1.9.2.4.2.22 2002/10/11 13:54:10 easysw Exp $".
+// End of "$Id: Fl_Pixmap.cxx,v 1.9.2.4.2.21 2002/08/09 01:09:49 easysw Exp $".
 //

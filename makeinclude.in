@@ -21,7 +21,7 @@
 # Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307
 # USA.
 #
-# Please report all bugs and problems to "fltk-bugs@fltk.org".
+# Please report all bugs and problems to "fltk-utf8-bugs@fltk-utf8.org".
 #
 
 prefix		= @prefix@
@@ -70,12 +70,12 @@ IMGDSONAME	= @IMGDSONAME@
 DSOCOMMAND	= @DSOCOMMAND@
 
 # libraries to link with:
-LDLIBS		= @LDFLAGS@ @LIBS@
-GLDLIBS		= @LDFLAGS@ @GLLIB@ @LIBS@
+LDLIBS		= @LDFLAGS@ @XUTFLIB@ @LIBS@
+GLDLIBS		= @LDFLAGS@ @XUTFLIB@ @GLLIB@ @LIBS@
 LINKFLTK	= -L../lib @LINKFLTK@
 LINKFLTKGL	= -L../lib @LINKFLTKGL@
-LINKFLTKFORMS	= -L../lib -lfltk_forms @LINKFLTK@
-LINKFLTKIMG	= -L../lib -lfltk_images @LINKFLTK@ $(IMAGELIBS)
+LINKFLTKFORMS	= -L../lib -lfltk-utf8_forms @LINKFLTK@
+LINKFLTKIMG	= -L../lib -lfltk-utf8_images @LINKFLTK@ $(IMAGELIBS)
 LINKSHARED	= @LINKSHARED@ $(IMAGELIBS)
 IMAGELIBS	= @IMAGELIBS@
 

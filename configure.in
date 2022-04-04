@@ -1,7 +1,7 @@
 dnl -*- sh -*-
 dnl the "configure" script is made from this by running GNU "autoconf"
 dnl
-dnl "$Id: configure.in,v 1.33.2.31.2.90 2002/10/23 15:18:57 easysw Exp $"
+dnl "$Id: configure.in,v 1.33.2.31.2.87 2002/09/26 20:27:16 easysw Exp $"
 dnl
 dnl Configuration script for the Fast Light Tool Kit (FLTK).
 dnl
@@ -22,7 +22,7 @@ dnl License along with this library; if not, write to the Free Software
 dnl Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307
 dnl USA.
 dnl
-dnl Please report all bugs and problems to "fltk-bugs@fltk.org".
+dnl Please report all bugs and problems to "fltk-utf8-bugs@fltk-utf8.org".
 dnl
 
 dnl We need at least autoconf 2.13...
@@ -77,15 +77,15 @@ case $uname in
 esac
 
 dnl Define the libraries and link options we'll need.
-LINKFLTK="-lfltk"
-LINKFLTKGL="-lfltk_gl"
-LINKFLTKIMG="-lfltk_images"
+LINKFLTK="-lfltk-utf8"
+LINKFLTKGL="-lfltk-utf8_gl"
+LINKFLTKIMG="-lfltk-utf8_images"
 GLDEMOS="gldemos"
 
-LIBNAME="../lib/libfltk.a"
-FLLIBNAME="../lib/libfltk_forms.a"
-GLLIBNAME="../lib/libfltk_gl.a"
-IMGLIBNAME="../lib/libfltk_images.a"
+LIBNAME="../lib/libfltk-utf8.a"
+FLLIBNAME="../lib/libfltk-utf8_forms.a"
+GLLIBNAME="../lib/libfltk-utf8_gl.a"
+IMGLIBNAME="../lib/libfltk-utf8_images.a"
 
 AC_SUBST(FLLIBNAME)
 AC_SUBST(GLDEMOS)
@@ -114,10 +114,10 @@ if test x$enable_shared = xyes; then
 
     case $uname in
 	Darwin*)
-            DSONAME="libfltk.$FL_API_VERSION.dylib"
-            FLDSONAME="libfltk_forms.$FL_API_VERSION.dylib"
-            GLDSONAME="libfltk_gl.$FL_API_VERSION.dylib"
-            IMGDSONAME="libfltk_images.$FL_API_VERSION.dylib"
+            DSONAME="libfltk-utf8.$FL_API_VERSION.dylib"
+            FLDSONAME="libfltk-utf8_forms.$FL_API_VERSION.dylib"
+            GLDSONAME="libfltk-utf8_gl.$FL_API_VERSION.dylib"
+            IMGDSONAME="libfltk-utf8_images.$FL_API_VERSION.dylib"
 	    DSOCOMMAND="ld $DSOFLAGS -dylib /usr/lib/dylib1.o -lc"
 	    if test "$libdir" != "/usr/lib"; then
 		    DSOLINK="-Wl,-rpath,$libdir"
@@ -125,60 +125,60 @@ if test x$enable_shared = xyes; then
 	    ;;
 
 	SunOS* | UNIX_S*)
-            DSONAME="libfltk.so.$FL_API_VERSION"
-            FLDSONAME="libfltk_forms.so.$FL_API_VERSION"
-            GLDSONAME="libfltk_gl.so.$FL_API_VERSION"
-            IMGDSONAME="libfltk_images.so.$FL_API_VERSION"
+            DSONAME="libfltk-utf8.so.$FL_API_VERSION"
+            FLDSONAME="libfltk-utf8_forms.so.$FL_API_VERSION"
+            GLDSONAME="libfltk-utf8_gl.so.$FL_API_VERSION"
+            IMGDSONAME="libfltk-utf8_images.so.$FL_API_VERSION"
 	    DSOCOMMAND="\$(CXX) -h \$@ \$(LDLIBS) -G $DEBUGFLAG -o"
 	    if test "$libdir" != "/usr/lib"; then
 		    DSOLINK="-R$libdir"
             fi
 	    ;;
 	HP-UX*)
-            DSONAME="libfltk.sl.$FL_API_VERSION"
-            FLDSONAME="libfltk_forms.sl.$FL_API_VERSION"
-            GLDSONAME="libfltk_gl.sl.$FL_API_VERSION"
-            IMGDSONAME="libfltk_images.sl.$FL_API_VERSION"
+            DSONAME="libfltk-utf8.sl.$FL_API_VERSION"
+            FLDSONAME="libfltk-utf8_forms.sl.$FL_API_VERSION"
+            GLDSONAME="libfltk-utf8_gl.sl.$FL_API_VERSION"
+            IMGDSONAME="libfltk-utf8_images.sl.$FL_API_VERSION"
 	    DSOCOMMAND="ld -b -z +h \$@ $DEBUGFLAG -o"
 	    if test "$libdir" != "/usr/lib"; then
 		    DSOLINK="-Wl,-rpath,$libdir"
             fi
 	    ;;
 	IRIX*)
-            DSONAME="libfltk.so.$FL_API_VERSION"
-            FLDSONAME="libfltk_forms.so.$FL_API_VERSION"
-            GLDSONAME="libfltk_gl.so.$FL_API_VERSION"
-            IMGDSONAME="libfltk_images.so.$FL_API_VERSION"
+            DSONAME="libfltk-utf8.so.$FL_API_VERSION"
+            FLDSONAME="libfltk-utf8_forms.so.$FL_API_VERSION"
+            GLDSONAME="libfltk-utf8_gl.so.$FL_API_VERSION"
+            IMGDSONAME="libfltk-utf8_images.so.$FL_API_VERSION"
             DSOCOMMAND="\$(CXX) -Wl,-soname,\$@,-set_version,sgi1.1 \$(LDLIBS) -shared $DEBUGFLAG -o"
 	    if test "$libdir" != "/usr/lib" - a "$libdir" != "/usr/lib32"; then
 		    DSOLINK="-Wl,-rpath,$libdir"
             fi
 	    ;;
 	OSF1*)
-            DSONAME="libfltk.so.$FL_API_VERSION"
-            FLDSONAME="libfltk_forms.so.$FL_API_VERSION"
-            GLDSONAME="libfltk_gl.so.$FL_API_VERSION"
-            IMGDSONAME="libfltk_images.so.$FL_API_VERSION"
+            DSONAME="libfltk-utf8.so.$FL_API_VERSION"
+            FLDSONAME="libfltk-utf8_forms.so.$FL_API_VERSION"
+            GLDSONAME="libfltk-utf8_gl.so.$FL_API_VERSION"
+            IMGDSONAME="libfltk-utf8_images.so.$FL_API_VERSION"
             DSOCOMMAND="\$(CXX) -Wl,-soname,\$@ \$(LDLIBS) -shared $DEBUGFLAG -o"
 	    if test "$libdir" != "/usr/lib" - a "$libdir" != "/usr/lib32"; then
 		    DSOLINK="-Wl,-rpath,$libdir"
             fi
 	    ;;
 	Linux* | *BSD*)
-            DSONAME="libfltk.so.$FL_API_VERSION"
-            FLDSONAME="libfltk_forms.so.$FL_API_VERSION"
-            GLDSONAME="libfltk_gl.so.$FL_API_VERSION"
-            IMGDSONAME="libfltk_images.so.$FL_API_VERSION"
+            DSONAME="libfltk-utf8.so.$FL_API_VERSION"
+            FLDSONAME="libfltk-utf8_forms.so.$FL_API_VERSION"
+            GLDSONAME="libfltk-utf8_gl.so.$FL_API_VERSION"
+            IMGDSONAME="libfltk-utf8_images.so.$FL_API_VERSION"
             DSOCOMMAND="\$(CXX) -Wl,-soname,\$@ \$(LDLIBS) -shared -fPIC $DEBUGFLAG -o"
 	    if test "$libdir" != "/usr/lib"; then
 		    DSOLINK="-Wl,-rpath,$libdir"
             fi
 	    ;;
 	AIX*)
-            DSONAME="libfltk_s.a"
-            FLDSONAME="libfltk_forms_s.a"
-            GLDSONAME="libfltk_gl_s.a"
-            IMGDSONAME="libfltk_images_s.a"
+            DSONAME="libfltk-utf8_s.a"
+            FLDSONAME="libfltk-utf8_forms_s.a"
+            GLDSONAME="libfltk-utf8_gl_s.a"
+            IMGDSONAME="libfltk-utf8_images_s.a"
             DSOCOMMAND="\$(CXX) -Wl,-bexpall,-bM:SRE,-bnoentry -o"
             SHAREDSUFFIX="_s"
             ;;
@@ -187,15 +187,15 @@ if test x$enable_shared = xyes; then
 	    ;;
 	*)
             AC_MSG_WARN(Shared libraries may not be supported.  Trying -shared option with compiler.)
-            DSONAME="libfltk.so.$FL_API_VERSION"
-            FLDSONAME="libfltk_forms.so.$FL_API_VERSION"
-            GLDSONAME="libfltk_gl.so.$FL_API_VERSION"
-            IMGDSONAME="libfltk_images.so.$FL_API_VERSION"
+            DSONAME="libfltk-utf8.so.$FL_API_VERSION"
+            FLDSONAME="libfltk-utf8_forms.so.$FL_API_VERSION"
+            GLDSONAME="libfltk-utf8_gl.so.$FL_API_VERSION"
+            IMGDSONAME="libfltk-utf8_images.so.$FL_API_VERSION"
             DSOCOMMAND="\$(CXX) -Wl,-soname,\$@ \$(LDLIBS) -shared $DEBUGFLAG -o"
 	    ;;
     esac
 
-    LINKSHARED="-L../src -lfltk_images$SHAREDSUFFIX -lfltk_forms$SHAREDSUFFIX -lfltk$SHAREDSUFFIX"
+    LINKSHARED="-L../src -lfltk-utf8_images$SHAREDSUFFIX -lfltk-utf8_forms$SHAREDSUFFIX -lfltk-utf8$SHAREDSUFFIX"
 else
     DSOCOMMAND="echo"
     DSOLINK=""
@@ -206,7 +206,7 @@ else
     PICFLAG=0
     SHAREDSUFFIX=""
     FLUID="fluid"
-    LINKSHARED="-L../lib -lfltk_images -lfltk_forms -lfltk"
+    LINKSHARED="-L../lib -lfltk-utf8_images -lfltk-utf8_forms -lfltk-utf8"
 fi
 
 AC_SUBST(DSOCOMMAND)
@@ -281,22 +281,23 @@ fi
 dnl Does the C++ compiler support the bool type?
 AC_CACHE_CHECK(whether the compiler recognizes bool as a built-in type,
     ac_cv_cxx_bool,[
-	AC_LANG_SAVE
-	AC_LANG_CPLUSPLUS
-	AC_TRY_COMPILE([
-	    int f(int  x){return 1;}
-	    int f(char x){return 1;}
-	    int f(bool x){return 1;}
-	],[
-	    bool b = true;
-	    return f(b);
-	], ac_cv_cxx_bool=yes, ac_cv_cxx_bool=no)
-	AC_LANG_RESTORE
+       AC_LANG_SAVE
+       AC_LANG_CPLUSPLUS
+       AC_TRY_COMPILE([
+           int f(int  x){return 1;}
+           int f(char x){return 1;}
+           int f(bool x){return 1;}
+       ],[
+           bool b = true;
+           return f(b);
+       ], ac_cv_cxx_bool=yes, ac_cv_cxx_bool=no)
+       AC_LANG_RESTORE
     ])
 
 if test "$ac_cv_cxx_bool" != yes; then
     CXXFLAGS="-Dbool=char -Dfalse=0 -Dtrue=1 $CXXFLAGS"
 fi
+
 
 dnl Standard headers and functions...
 AC_HEADER_DIRENT
@@ -540,6 +541,12 @@ case $uname in
 	;;
 esac
 
+XUTFLIB=
+AC_CHECK_LIB(Xutf8, XUtf8IsNonSpacing, \
+        AC_DEFINE(HAVE_XUTF8) XUTFLIB=" -lXutf8", ,\
+        -lX11 $X_EXTRA_LIBS)
+AC_SUBST(XUTFLIB)
+
 AC_SUBST(GLDEMOS)
 AC_SUBST(GLLIB)
 AC_SUBST(HLINKS)
@@ -683,7 +690,7 @@ if test -n "$GCC"; then
     # bugs in the X headers up through Solaris 7.
     #
     # Unlike the other compiler/optimization settings, this one is placed
-    # in CFLAGS and CXXFLAGS so that fltk-config will provide the option
+    # in CFLAGS and CXXFLAGS so that fltk-utf8-config will provide the option
     # to clients - otherwise client apps will not compile properly...
     if test "$uname" = SunOS; then
 	AC_MSG_CHECKING(if GCC supports -fpermissive)
@@ -774,9 +781,9 @@ else
 	    ;;
 	*)
 	    # Running some other operating system; inform the user they
-	    # should contribute the necessary options to fltk-bugs@fltk.org...
+	    # should contribute the necessary options to fltk-utf8-bugs@fltk-utf8.org...
 	    AC_MSG_WARN(Building FLTK with default compiler optimizations)
-	    AC_MSG_WARN(Contact fltk-bugs@fltk.org with uname and compiler options.)
+	    AC_MSG_WARN(Contact fltk-utf8-bugs@fltk-utf8.org with uname and compiler options.)
 	    ;;
     esac
 fi
@@ -785,25 +792,25 @@ OPTIM="$DEBUGFLAG $OPTIM"
 
 dnl Define the FLTK documentation directory...
 if test x$prefix = xNONE; then
-    AC_DEFINE_UNQUOTED(FLTK_DOCDIR, "/usr/local/share/doc/fltk")
+    AC_DEFINE_UNQUOTED(FLTK_DOCDIR, "/usr/local/share/doc/fltk-utf8")
 else
-    AC_DEFINE_UNQUOTED(FLTK_DOCDIR, "$prefix/share/doc/fltk")
+    AC_DEFINE_UNQUOTED(FLTK_DOCDIR, "$prefix/share/doc/fltk-utf8")
 fi
 
 dnl Define the FLTK data directory...
 if test x$prefix = xNONE; then
-    AC_DEFINE_UNQUOTED(FLTK_DATADIR, "/usr/local/share/fltk")
+    AC_DEFINE_UNQUOTED(FLTK_DATADIR, "/usr/local/share/fltk-utf8")
 else
-    AC_DEFINE_UNQUOTED(FLTK_DATADIR, "$prefix/share/fltk")
+    AC_DEFINE_UNQUOTED(FLTK_DATADIR, "$prefix/share/fltk-utf8")
 fi
 
 dnl Write all of the files...
 AC_CONFIG_HEADER(config.h:configh.in)
-AC_OUTPUT(makeinclude fltk.list fltk-config FL/Makefile)
+AC_OUTPUT(makeinclude fltk-utf8.list fltk-utf8-config FL/Makefile)
 
-dnl Make sure the fltk-config script is executable...
-chmod +x fltk-config
+dnl Make sure the fltk-utf8-config script is executable...
+chmod +x fltk-utf8-config
 
 dnl
-dnl End of "$Id: configure.in,v 1.33.2.31.2.90 2002/10/23 15:18:57 easysw Exp $".
+dnl End of "$Id: configure.in,v 1.33.2.31.2.87 2002/09/26 20:27:16 easysw Exp $".
 dnl

@@ -45,7 +45,7 @@
 #include <FL/Fl_PNM_Image.H>
 #include <FL/Fl_Light_Button.H>
 #include "../src/flstring.h"
-
+#include <FL/fl_utf8.H>
 
 //
 // Globals...
@@ -219,7 +219,7 @@ pdf_check(const char *name,	// I - Name of file
   if (memcmp(header, "%PDF", 4) != 0)
     return 0;
 
-  home = getenv("HOME");
+  home = fl_getenv("HOME");
   snprintf(preview, sizeof(preview), "%s/.preview.ppm", home ? home : "");
 
   snprintf(command, sizeof(command),
@@ -255,7 +255,7 @@ ps_check(const char *name,	// I - Name of file
   if (memcmp(header, "%!", 2) != 0)
     return 0;
 
-  home = getenv("HOME");
+  home = fl_getenv("HOME");
   snprintf(preview, sizeof(preview), "%s/.preview.ppm", home ? home : "");
 
   if (memcmp(header, "%!PS", 4) == 0) {
@@ -263,8 +263,8 @@ ps_check(const char *name,	// I - Name of file
     snprintf(outname, sizeof(outname), "%s/.preview.ps", home ? home : "");
 
     if (strcmp(name, outname) != 0) {
-      in   = fopen(name, "rb");
-      out  = fopen(outname, "wb");
+      in   = fl_fopen(name, "rb");
+      out  = fl_fopen(outname, "wb");
       page = 0;
 
       while (fgets(line, sizeof(line), in) != NULL) {

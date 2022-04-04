@@ -44,6 +44,7 @@
 #include <FL/fl_draw.H>
 #include <stdio.h>
 #include <stdlib.h>
+#include <FL/fl_utf8.H>
 
 void readtheimage(const char *name); // below
 int width;
@@ -136,7 +137,7 @@ extern "C" {
 void readtheimage(const char *name) {
   struct jpeg_decompress_struct cinfo;
   struct jpeg_error_mgr jerr;
-  FILE * infile = fopen(name, "rb");
+  FILE * infile = fl_fopen(name, "rb");
   if (!infile) {
     fprintf(stderr, "can't open %s\n", name);
     exit(1);

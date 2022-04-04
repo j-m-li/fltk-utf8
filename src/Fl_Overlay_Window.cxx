@@ -32,6 +32,7 @@
 #include <FL/Fl_Overlay_Window.H>
 #include <FL/fl_draw.H>
 #include <FL/x.H>
+#include <FL/Fl_Fltk.H>
 
 void Fl_Overlay_Window::show() {
   Fl_Double_Window::show();
@@ -113,6 +114,7 @@ void _Fl_Overlay::show() {
 
 void _Fl_Overlay::flush() {
   fl_window = fl_xid(this);
+  if (fl->type == FL_GDI_DEVICE) return;
   if (!gc) gc = XCreateGC(fl_display, fl_xid(this), 0, 0);
   fl_gc = gc;
   fl_overlay = 1;

@@ -1294,7 +1294,7 @@ static pascal OSErr dndReceiveHandler( WindowPtr w, void *userData, DragReferenc
   for ( i = 1; i <= nItem; i++ )
   {
     GetDragItemReferenceNumber( dragRef, i, &itemRef );
-    ret = GetFlavorFlags( dragRef, itemRef, 'TEXT', &flags );
+/*    ret = GetFlavorFlags( dragRef, itemRef, 'TEXT', &flags );
     if ( ret == noErr )
     {
       GetFlavorDataSize( dragRef, itemRef, 'TEXT', &itemSize );
@@ -1302,6 +1302,7 @@ static pascal OSErr dndReceiveHandler( WindowPtr w, void *userData, DragReferenc
       dst += itemSize;
       *dst++ = '\n'; // add our element seperator
     }
+*/
     ret = GetFlavorFlags( dragRef, itemRef, 'hfs ', &flags );
     if ( ret == noErr )
     {
@@ -1318,7 +1319,7 @@ static pascal OSErr dndReceiveHandler( WindowPtr w, void *userData, DragReferenc
   dst[-1] = 0;
 //  if ( Fl::e_text[Fl::e_length-1]==0 ) Fl::e_length--; // modify, if trailing 0 is part of string
   Fl::e_length = dst - Fl::e_text - 1;
-  target->handle(FL_PASTE);
+  target->handle(FL_DROP);
   free( Fl::e_text );
   
   fl_dnd_target_window = 0L;

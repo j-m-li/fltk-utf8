@@ -32,6 +32,7 @@
 #include <errno.h>
 #include <stdlib.h>
 #include <FL/filename.H>
+#include <FL/fl_utf8.H>
 
 extern void goto_source_dir(); // in fluid.C
 extern void leave_source_dir(); // in fluid.C
@@ -146,7 +147,7 @@ Fluid_Image* Fluid_Image::find(const char *iname) {
   // no, so now see if the file exists:
 
   goto_source_dir();
-  FILE *f = fopen(iname,"rb");
+  FILE *f = fl_fopen(iname,"rb");
   if (!f) {
     read_error("%s : %s",iname,strerror(errno));
     leave_source_dir();

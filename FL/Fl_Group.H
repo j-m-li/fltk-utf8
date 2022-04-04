@@ -90,7 +90,7 @@ public:
 // subclasses of Fl_Group:
 class FL_EXPORT Fl_End {
 public:
-  Fl_End() {Fl_Group::current()->end();}
+	Fl_End() {Fl_Group::current()->end();} 
 };
 
 #endif

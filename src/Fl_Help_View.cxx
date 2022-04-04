@@ -1,5 +1,5 @@
 //
-// "$Id: Fl_Help_View.cxx,v 1.1.2.43 2002/10/11 20:48:14 easysw Exp $"
+// "$Id: Fl_Help_View.cxx,v 1.1.2.42 2002/08/18 15:19:24 easysw Exp $"
 //
 // Fl_Help_View widget routines.
 //
@@ -56,6 +56,7 @@
 #include <FL/Fl_Pixmap.H>
 #include <stdio.h>
 #include <stdlib.h>
+#include <FL/fl_utf8.H>
 #include "flstring.h"
 #include <ctype.h>
 #include <errno.h>
@@ -723,7 +724,10 @@ Fl_Help_View::draw()
 	  if (qch < 0)
 	    *s++ = '&';
 	  else {
-	    *s++ = qch;
+            int l;
+            l = fl_ucs2utf((unsigned int) qch, s);
+            if (l < 1) l = 1;
+            s += l;
 	    ptr = strchr(ptr, ';') + 1;
 	  }
 
@@ -806,6 +810,7 @@ Fl_Help_View::format()
 				// Column widths
   Fl_Color	tc, rc;		// Table/row background color
 
+  table_offset = 0;
 
   // Reset document width...
   hsize_ = w() - 24;
@@ -1421,7 +1426,10 @@ Fl_Help_View::format()
 	if (qch < 0)
 	  *s++ = '&';
 	else {
-	  *s++ = qch;
+          int l;
+          l = fl_ucs2utf((unsigned int) qch, s);
+          if (l < 1) l = 1;
+          s += l;
 	  ptr = strchr(ptr, ';') + 1;
 	}
 
@@ -1837,7 +1845,10 @@ Fl_Help_View::format_table(int        *table_width,	// O - Total table width
       if (qch < 0)
 	*s++ = '&';
       else {
-	*s++ = qch;
+        int l;
+        l = fl_ucs2utf((unsigned int) qch, s);
+        if (l < 1) l = 1;
+        s += l;
 	ptr = strchr(ptr, ';') + 1;
       }
     }
@@ -2140,7 +2151,7 @@ Fl_Help_View::get_image(const char *name, int W, int H) {
   } else if (name[0] != '/' && strchr(name, ':') == NULL) {
     if (directory_[0]) snprintf(temp, sizeof(temp), "%s/%s", directory_, name);
     else {
-      getcwd(dir, sizeof(dir));
+      fl_getcwd(dir, sizeof(dir));
       snprintf(temp, sizeof(temp), "file:%s/%s", dir, name);
     }
 
@@ -2264,7 +2275,7 @@ Fl_Help_View::handle(int event)	// I - Event to handle
 	  snprintf(temp, sizeof(temp), "%s/%s", directory_, linkp->filename);
 	else
 	{
-	  getcwd(dir, sizeof(dir));
+	  fl_getcwd(dir, sizeof(dir));
 	  snprintf(temp, sizeof(temp), "file:%s/%s", dir, linkp->filename);
 	}
       }
@@ -2433,7 +2444,7 @@ Fl_Help_View::load(const char *f)// I - Filename to load (may also have target)
     if (strncmp(localname, "file:", 5) == 0)
       localname += 5;	// Adjust for local filename...
 
-    if ((fp = fopen(localname, "rb")) != NULL)
+    if ((fp = fl_fopen(localname, "rb")) != NULL)
     {
       fseek(fp, 0, SEEK_END);
       len = ftell(fp);
@@ -2730,5 +2741,5 @@ hscrollbar_callback(Fl_Widget *s, void *)
 
 
 //
-// End of "$Id: Fl_Help_View.cxx,v 1.1.2.43 2002/10/11 20:48:14 easysw Exp $".
+// End of "$Id: Fl_Help_View.cxx,v 1.1.2.42 2002/08/18 15:19:24 easysw Exp $".
 //

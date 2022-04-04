@@ -31,7 +31,9 @@
 #include <FL/filename.H>
 #include <stdlib.h>
 #include "flstring.h"
+#include <FL/fl_utf8.H>
 #if defined(WIN32) && !defined(__CYGWIN__)
+#include <windows.h>
 #else
 # include <unistd.h>
 # include <pwd.h>
@@ -58,8 +60,13 @@ int fl_filename_expand(char *to,int tolen, const char *from) {
     switch (*a) {
     case '~':	// a home directory name
       if (e <= a+1) {	// current user's directory
-	value = getenv("HOME");
-#ifndef WIN32
+#ifdef WIN32
+		unsigned short *e = _wgetenv(L"HOME");
+		value = (char*) malloc(wcslen(e) * 5);
+		int l = fl_unicode2utf(e, l, (char*)value);
+		((char*)value)[l] = 0;
+#else
+		value = fl_getenv("HOME");
       } else {	// another user's directory
 	struct passwd *pwd;
 	char t = *e; *(char *)e = 0; 
@@ -70,7 +77,21 @@ int fl_filename_expand(char *to,int tolen, const char *from) {
       }
       break;
     case '$':		/* an environment variable */
-      {char t = *e; *(char *)e = 0; value = getenv(a+1); *(char *)e = t;}
+      {char t = *e; *(char *)e = 0; 
+#ifdef WIN32
+		int len    = strlen(a+1);
+		unsigned short* wbuf = (unsigned short*)malloc((len+6) * sizeof(short));
+		len = fl_utf2unicode((unsigned char*)a+1, len, wbuf);
+		wbuf[len] = 0;
+		unsigned short *e = _wgetenv(wbuf);
+		free(wbuf);
+		value = (char*) malloc(wcslen(e) * 5);
+		len = fl_unicode2utf(e, wcslen(e), (char*)value);
+		((char*)value)[len] = 0;
+#else
+	  value = fl_getenv(a+1);
+#endif
+	  *(char *)e = t;}
       break;
     }
     if (value) {
@@ -87,7 +108,10 @@ int fl_filename_expand(char *to,int tolen, const char *from) {
       *end = '\0';
       memcpy(a, value, t);
       ret++;
-    } else {
+#ifdef WIN32
+	  free((char*)value);
+#endif
+	} else {
       a = e+1;
 #if defined(WIN32) || defined(__EMX__) && !defined(__CYGWIN__)
       if (*e == '\\') {*e = '/'; ret++;} // ha ha!
@@ -99,6 +123,7 @@ int fl_filename_expand(char *to,int tolen, const char *from) {
 
   delete[] temp;
 
+  
   return ret;
 }
 

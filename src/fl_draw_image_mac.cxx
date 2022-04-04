@@ -31,6 +31,8 @@
 #include <FL/x.H>
 
 #define MAXBUFFER 0x40000 // 256k
+#define fl_draw_image_cxx
+#include "fltk_defines.H"
 
 /**
  * draw an image based on the input parameters

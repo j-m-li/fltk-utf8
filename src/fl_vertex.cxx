@@ -30,6 +30,7 @@
 #include <FL/x.H>
 #include <FL/math.h>
 #include <stdlib.h>
+#include <stdio.h>
 
 struct matrix {double a, b, c, d, x, y;};
 
@@ -57,7 +58,7 @@ void fl_scale(double x,double y) {fl_mult_matrix(x,0,0,y,0,0);}
 
 void fl_scale(double x) {fl_mult_matrix(x,0,0,x,0,0);}
 
-void fl_translate(double x,double y) {fl_mult_matrix(1,0,0,1,x,y);}
+void Fl_Fltk::translate(double x,double y) {fl_mult_matrix(1,0,0,1,x,y);}
 
 void fl_rotate(double d) {
   if (d) {
@@ -84,23 +85,35 @@ static int n;
 static int what;
 enum {LINE, LOOP, POLYGON, POINT_};
 
-void fl_begin_points() {n = 0; what = POINT_;}
+void Fl_Fltk::begin_points() {n = 0; what = POINT_;}
 
-void fl_begin_line() {n = 0; what = LINE;}
+void Fl_Fltk::begin_line() {n = 0; what = LINE;}
 
-void fl_begin_loop() {n = 0; what = LOOP;}
+void Fl_Fltk::begin_loop() {n = 0; what = LOOP;}
 
-void fl_begin_polygon() {n = 0; what = POLYGON;}
+void Fl_Fltk::begin_polygon() {n = 0; what = POLYGON;}
 
-double fl_transform_x(double x, double y) {return x*m.a + y*m.c + m.x;}
+double fl_transform_x(double x, double y) {
+  return x*m.a + y*m.c + m.x;
+}
 
-double fl_transform_y(double x, double y) {return x*m.b + y*m.d + m.y;}
+double fl_transform_y(double x, double y) {
+  return x*m.b + y*m.d + m.y;
+}
 
-double fl_transform_dx(double x, double y) {return x*m.a + y*m.c;}
+double fl_transform_dx(double x, double y) {
+  return x*m.a + y*m.c;
+}
 
-double fl_transform_dy(double x, double y) {return x*m.b + y*m.d;}
+double fl_transform_dy(double x, double y) {
+  return x*m.b + y*m.d;
+}
 
-static void fl_transformed_vertex(COORD_T x, COORD_T y) {
+static void fl_trans_vertex(COORD_T x, COORD_T y) {
+  if (fl->type == FL_GDI_DEVICE) {
+    x = (COORD_T)(x * fl->s + fl->L);
+	y = (COORD_T)(y * fl->s + fl->T);
+  }
   if (!n || x != p[n-1].x || y != p[n-1].y) {
     if (n >= p_size) {
       p_size = p ? 2*p_size : 16;
@@ -112,15 +125,15 @@ static void fl_transformed_vertex(COORD_T x, COORD_T y) {
   }
 }
 
-void fl_transformed_vertex(double xf, double yf) {
-  fl_transformed_vertex(COORD_T(rint(xf)), COORD_T(rint(yf)));
+void Fl_Fltk::transformed_vertex(double xf, double yf) {
+	fl_trans_vertex(COORD_T(rint(xf)), COORD_T(rint(yf)));
 }
 
-void fl_vertex(double x,double y) {
-  fl_transformed_vertex(x*m.a + y*m.c + m.x, x*m.b + y*m.d + m.y);
+void Fl_Fltk::vertex(double x,double y) {
+  Fl_Fltk::transformed_vertex(x*m.a + y*m.c + m.x, x*m.b + y*m.d + m.y);
 }
 
-void fl_end_points() {
+void Fl_Fltk::end_points() {
 #ifdef WIN32
   for (int i=0; i<n; i++) SetPixel(fl_gc, p[i].x, p[i].y, fl_RGB());
 #elif defined(__APPLE__)
@@ -130,9 +143,11 @@ void fl_end_points() {
 #endif
 }
 
-void fl_end_line() {
+void Fl_Fltk::end_line() {
 #ifdef WIN32
-  if (n>1) Polyline(fl_gc, p, n);
+  if (n>1) {
+    Polyline(fl_gc, p, n);
+  }
 #elif defined(__APPLE__)
   if (n<=1) return;
   MoveTo(p[0].x, p[0].y);
@@ -146,13 +161,13 @@ static void fixloop() {  // remove equal points from closed path
   while (n>2 && p[n-1].x == p[0].x && p[n-1].y == p[0].y) n--;
 }
 
-void fl_end_loop() {
+void Fl_Fltk::end_loop() {
   fixloop();
-  if (n>2) fl_transformed_vertex((COORD_T)p[0].x, (COORD_T)p[0].y);
-  fl_end_line();
+  if (n>2) fl_trans_vertex((COORD_T)p[0].x, (COORD_T)p[0].y);
+  Fl_Fltk::end_line();
 }
 
-void fl_end_polygon() {
+void Fl_Fltk::end_polygon() {
   fixloop();
 #ifdef WIN32
   if (n>2) {
@@ -172,35 +187,35 @@ void fl_end_polygon() {
 #endif
 }
 
-static int gap;
+static int garp;
 #ifdef WIN32
 static int counts[20];
 static int numcount;
 #endif
 
-void fl_begin_complex_polygon() {
-  fl_begin_polygon();
-  gap = 0;
+void Fl_Fltk::begin_complex_polygon() {
+  Fl_Fltk::begin_polygon();
+  garp = 0;
 #ifdef WIN32
   numcount = 0;
 #endif
 }
 
-void fl_gap() {
-  while (n>gap+2 && p[n-1].x == p[gap].x && p[n-1].y == p[gap].y) n--;
-  if (n > gap+2) {
-    fl_transformed_vertex((COORD_T)p[gap].x, (COORD_T)p[gap].y);
+void Fl_Fltk::gap() {
+  while (n>garp+2 && p[n-1].x == p[garp].x && p[n-1].y == p[garp].y) n--;
+  if (n > garp+2) {
+    fl_trans_vertex((COORD_T)p[garp].x, (COORD_T)p[garp].y);
 #ifdef WIN32
-    counts[numcount++] = n-gap;
+    counts[numcount++] = n-garp;
 #endif
-    gap = n;
+    garp = n;
   } else {
-    n = gap;
+    n = garp;
   }
 }
 
-void fl_end_complex_polygon() {
-  fl_gap();
+void Fl_Fltk::end_complex_polygon() {
+  Fl_Fltk::gap();
 #ifdef WIN32
   if (n>2) {
     SelectObject(fl_gc, fl_brush());
@@ -223,11 +238,17 @@ void fl_end_complex_polygon() {
 // warning: these do not draw rotated ellipses correctly!
 // See fl_arc.c for portable version.
 
-void fl_circle(double x, double y,double r) {
+void Fl_Fltk::circle(double x, double y,double r) {
   double xt = fl_transform_x(x,y);
   double yt = fl_transform_y(x,y);
   double rx = r * (m.c ? sqrt(m.a*m.a+m.c*m.c) : fabs(m.a));
   double ry = r * (m.b ? sqrt(m.b*m.b+m.d*m.d) : fabs(m.d));
+  if (fl->type == FL_GDI_DEVICE) {
+    xt = xt*fl->s+fl->L;
+	yt = yt*fl->s+fl->T;
+	rx = rx*fl->s;
+	ry = ry*fl->s;
+  }
   int llx = (int)rint(xt-rx);
   int w = (int)rint(xt+rx)-llx;
   int lly = (int)rint(yt-ry);

@@ -54,7 +54,7 @@ all:	$(FLUID) fluid$(EXEEXT)
 fluid$(EXEEXT):		$(OBJECTS) ../lib/$(LIBNAME) ../lib/$(FLLIBNAME) \
 			../lib/$(IMGLIBNAME)
 	echo Linking $@...
-	$(CXX) $(CXXFLAGS) -o $@ $(OBJECTS) $(LINKFLTKFORMS) -lfltk_images $(IMAGELIBS) $(LDLIBS)
+	$(CXX) $(CXXFLAGS) -o $@ $(OBJECTS) $(LINKFLTKFORMS) -lfltk-utf8_images $(IMAGELIBS) $(LDLIBS)
 	$(POSTBUILD) $@ ../FL/mac.r
 
 fluid-shared$(EXEEXT):	$(OBJECTS) ../src/$(DSONAME) ../src/$(FLDSONAME) \
@@ -77,7 +77,7 @@ install: all
 	-$(MKDIR) $(bindir)
 	$(CP) $(FLUID) $(bindir)/fluid$(EXEEXT)
 	$(STRIP) $(bindir)/fluid$(EXEEXT)
-	$(bindir)/fltk-config --post $(bindir)/fluid$(EXEEXT)
+	$(bindir)/fltk-utf8-config --post $(bindir)/fluid$(EXEEXT)
 	$(CHMOD) 755 $(bindir)/fluid$(EXEEXT)
 
 uninstall:

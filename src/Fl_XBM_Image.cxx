@@ -36,7 +36,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include "flstring.h"
-
+#include <FL/fl_utf8.H>
 //
 // 'Fl_XBM_Image::Fl_XBM_Image()' - Load an XBM file.
 //
@@ -45,7 +45,7 @@ Fl_XBM_Image::Fl_XBM_Image(const char *name) : Fl_Bitmap((const char *)0,0,0) {
   FILE	*f;
   uchar	*ptr;
 
-  if ((f = fopen(name, "rb")) == NULL) return;
+  if ((f = fl_fopen(name, "rb")) == NULL) return;
 
   char buffer[1024];
   char junk[1024];

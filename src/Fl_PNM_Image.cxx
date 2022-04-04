@@ -1,5 +1,5 @@
 //
-// "$Id: Fl_PNM_Image.cxx,v 1.1.2.10 2002/10/11 02:30:20 easysw Exp $"
+// "$Id: Fl_PNM_Image.cxx,v 1.1.2.9 2002/09/17 20:27:18 easysw Exp $"
 //
 // Fl_PNM_Image routines.
 //
@@ -36,7 +36,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include "flstring.h"
-
+#include <FL/fl_utf8.H>
 
 //
 // 'Fl_PNM_Image::Fl_PNM_Image()' - Load a PNM image...
@@ -56,7 +56,7 @@ Fl_PNM_Image::Fl_PNM_Image(const char *name)	// I - File to read
 		maxval;		// Maximum pixel value
 
 
-  if ((fp = fopen(name, "rb")) == NULL) return;
+  if ((fp = fl_fopen(name, "rb")) == NULL) return;
 
   //
   // Read the file header in the format:
@@ -176,5 +176,5 @@ Fl_PNM_Image::Fl_PNM_Image(const char *name)	// I - File to read
 
 
 //
-// End of "$Id: Fl_PNM_Image.cxx,v 1.1.2.10 2002/10/11 02:30:20 easysw Exp $".
+// End of "$Id: Fl_PNM_Image.cxx,v 1.1.2.9 2002/09/17 20:27:18 easysw Exp $".
 //

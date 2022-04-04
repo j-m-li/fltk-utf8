@@ -1,5 +1,5 @@
 //
-// "$Id: gl_draw.cxx,v 1.7.2.5.2.9 2002/08/09 22:57:00 easysw Exp $"
+// "$Id: gl_draw.cxx,v 1.7.2.5 2001/03/14 17:20:02 spitzak Exp $"
 //
 // OpenGL drawing support routines for the Fast Light Tool Kit (FLTK).
 //
@@ -24,7 +24,7 @@
 //
 
 // Functions from <FL/gl.h>
-// See also Fl_Gl_Window and gl_start.cxx
+// See also Fl_Gl_Window and gl_start.C
 
 #include "flstring.h"
 #if HAVE_GL
@@ -35,6 +35,8 @@
 #include <FL/fl_draw.H>
 #include "Fl_Gl_Choice.H"
 #include "Fl_Font.H"
+#include <stdlib.h>
+#include <FL/fl_utf8.H>
 
 int   gl_height() {return fl_height();}
 int   gl_descent() {return fl_descent();}
@@ -57,18 +59,37 @@ void  gl_font(int fontid, int size) {
     fl_fontsize->listbase = glGenLists(256);
     aglUseFont(aglGetCurrentContext(), fl_fontsize->font, fl_fontsize->face,
                fl_fontsize->size, 0, 256, fl_fontsize->listbase);
+
+#else
+#if HAVE_XUTF8
+    Fl::warning("gl_font and gl_draw are not UTF-8 comptible");
+    if (fl_xfont->nb_font > 0 && fl_xfont->fonts[0]) {
+	XFontStruct *font = fl_xfont->fonts[0];
+	int base = font->min_char_or_byte2;
+	int count = font->max_char_or_byte2-base+1;
+	fl_fontsize->listbase = glGenLists(256);
+	glXUseXFont(font->fid, base, count, fl_fontsize->listbase+base);
+    }
 #else
     int base = fl_xfont->min_char_or_byte2;
     int count = fl_xfont->max_char_or_byte2-base+1;
     fl_fontsize->listbase = glGenLists(256);
     glXUseXFont(fl_xfont->fid, base, count, fl_fontsize->listbase+base);
 #endif
+#endif
   }
   glListBase(fl_fontsize->listbase);
 }
 
 void gl_draw(const char* str, int n) {
-  glCallLists(n, GL_UNSIGNED_BYTE, str);
+  static char *buf = NULL;
+  static int l = 0;
+  if (n > l) {
+    buf = (char*) realloc(buf, n + 20);
+    l = n + 20;
+  }
+  n = fl_utf2latin1((const unsigned char*)str, n, buf);
+  glCallLists(n, GL_UNSIGNED_BYTE, buf);
 }
 
 void gl_draw(const char* str, int n, int x, int y) {
@@ -159,5 +180,5 @@ void gl_draw_image(const uchar* b, int x, int y, int w, int h, int d, int ld) {
 #endif
 
 //
-// End of "$Id: gl_draw.cxx,v 1.7.2.5.2.9 2002/08/09 22:57:00 easysw Exp $".
+// End of "$Id: gl_draw.cxx,v 1.7.2.5 2001/03/14 17:20:02 spitzak Exp $".
 //

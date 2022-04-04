@@ -1,5 +1,5 @@
 //
-// "$Id: Fl_Gl_Window.cxx,v 1.12.2.22.2.13 2002/10/15 20:45:58 easysw Exp $"
+// "$Id: Fl_Gl_Window.cxx,v 1.12.2.22.2.12 2002/08/09 03:17:30 easysw Exp $"
 //
 // OpenGL window code for the Fast Light Tool Kit (FLTK).
 //
@@ -31,6 +31,7 @@
 #include "Fl_Gl_Choice.H"
 #include <FL/Fl_Gl_Window.H>
 #include <stdlib.h>
+#include <FL/fl_utf8.H>
 
 ////////////////////////////////////////////////////////////////
 
@@ -68,13 +69,14 @@ void Fl_Gl_Window::show() {
 
       if (!g && (mode_ & FL_DOUBLE) == FL_SINGLE) {
         g = Fl_Gl_Choice::find(mode_ | FL_DOUBLE,alist);
-	if (g) mode_ |= FL_FAKE_SINGLE;
+       if (g) mode_ |= FL_FAKE_SINGLE;
       }
 
       if (!g) {
         Fl::error("Insufficient GL support");
-	return;
+       return;
       }
+
     }
 #if !defined(WIN32) && !defined(__APPLE__)
     Fl_X::make_xid(this, g->vis, g->colormap);
@@ -243,7 +245,7 @@ void Fl_Gl_Window::flush() {
 #else
       SWAP_TYPE = UNDEFINED;
 #endif
-      const char* c = getenv("GL_SWAP_TYPE");
+      const char* c = fl_getenv("GL_SWAP_TYPE");
       if (c) {
 	if (!strcmp(c,"COPY")) SWAP_TYPE = COPY;
 	else if (!strcmp(c, "NODAMAGE")) SWAP_TYPE = NODAMAGE;
@@ -380,5 +382,5 @@ void Fl_Gl_Window::draw_overlay() {}
 #endif
 
 //
-// End of "$Id: Fl_Gl_Window.cxx,v 1.12.2.22.2.13 2002/10/15 20:45:58 easysw Exp $".
+// End of "$Id: Fl_Gl_Window.cxx,v 1.12.2.22.2.12 2002/08/09 03:17:30 easysw Exp $".
 //

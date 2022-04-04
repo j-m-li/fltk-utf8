@@ -1,5 +1,5 @@
 //
-// "$Id: Fl_Text_Editor.cxx,v 1.9.2.8 2002/10/23 12:23:40 easysw Exp $"
+// "$Id: Fl_Text_Editor.cxx,v 1.9.2.7 2002/08/09 03:17:30 easysw Exp $"
 //
 // Copyright 2001-2002 by Bill Spitzak and others.
 // Original code Copyright Mark Edel.  Permission to distribute under
@@ -102,6 +102,27 @@ static struct {
   { 0,            0,                        0                             }
 };
 
+static int utf_len(char c)
+{
+  if (!(c & 0x80)) return 1;
+  if (c & 0x40) {
+    if (c & 0x20) {
+      if (c & 0x10) {
+        if (c & 0x08) {
+          if (c & 0x04) {
+            return 6;
+          }
+          return 5;
+        }
+        return 4;
+      }
+      return 3;
+    }
+    return 2;
+  }
+  return 0;
+}
+
 void Fl_Text_Editor::add_default_key_bindings(Key_Binding** list) {
   for (int i = 0; default_key_bindings[i].key; i++) {
     add_key_binding(default_key_bindings[i].key,
@@ -181,8 +202,14 @@ int Fl_Text_Editor::kf_ignore(int, Fl_Text_Editor*) {
 }
 
 int Fl_Text_Editor::kf_backspace(int, Fl_Text_Editor* e) {
-  if (!e->buffer()->selected() && e->move_left())
-    e->buffer()->select(e->insert_position(), e->insert_position()+1);
+  if (!e->buffer()->selected() && e->move_left()) {
+    int l = 1;
+    char c = e->buffer()->character(e->insert_position());
+    if (c & 0x80 && c & 0x40) {
+      l = utf_len(c);
+    } 
+    e->buffer()->select(e->insert_position(), e->insert_position()+l);
+  }
   kill_selection(e);
   e->show_insert_position();
   return 1;
@@ -334,8 +361,14 @@ int Fl_Text_Editor::kf_insert(int, Fl_Text_Editor* e) {
 }
 
 int Fl_Text_Editor::kf_delete(int, Fl_Text_Editor* e) {
-  if (!e->buffer()->selected())
-    e->buffer()->select(e->insert_position(), e->insert_position()+1);
+  if (!e->buffer()->selected()) {
+    int l = 1;
+    char c = e->buffer()->character(e->insert_position());
+    if (c & 0x80 && c & 0x40) {
+      l = utf_len(c);
+    } 
+    e->buffer()->select(e->insert_position(), e->insert_position()+l);
+  }
   kill_selection(e);
   e->show_insert_position();
   return 1;
@@ -374,7 +407,7 @@ int Fl_Text_Editor::handle_key() {
   // This uses the right-hand ctrl key as a "compose prefix" and returns
   // the changes that should be made to the text, as a number of
   // bytes to delete and a string to insert:
-  int del;
+  int del = 0;
   if (Fl::compose(del)) {
     if (del) buffer()->select(insert_position()-del, insert_position());
     kill_selection(this);
@@ -439,5 +472,5 @@ int Fl_Text_Editor::handle(int event) {
 }
 
 //
-// End of "$Id: Fl_Text_Editor.cxx,v 1.9.2.8 2002/10/23 12:23:40 easysw Exp $".
+// End of "$Id: Fl_Text_Editor.cxx,v 1.9.2.7 2002/08/09 03:17:30 easysw Exp $".
 //

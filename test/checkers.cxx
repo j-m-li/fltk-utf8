@@ -1343,7 +1343,7 @@ int main(int argc, char **argv) {
     fprintf(stderr," -t : use VT100 display\n", Fl::help);
     exit(1);
   }
-  if (!getenv("DISPLAY")) terminal = 1;
+  if (!fl_getenv("DISPLAY")) terminal = 1;
   if (!terminal)
 #endif
 #ifdef FLTK

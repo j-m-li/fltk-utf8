@@ -1,5 +1,5 @@
 //
-// "$Id: Fl_Image.cxx,v 1.5.2.3.2.24 2002/10/11 13:54:10 easysw Exp $"
+// "$Id: Fl_Image.cxx,v 1.5.2.3.2.23 2002/08/09 01:09:49 easysw Exp $"
 //
 // Image drawing code for the Fast Light Tool Kit (FLTK).
 //
@@ -29,6 +29,7 @@
 #include <FL/Fl_Widget.H>
 #include <FL/Fl_Menu_Item.H>
 #include <FL/Fl_Image.H>
+#include <FL/Fl_Fltk.H>
 #include "flstring.h"
 
 
@@ -308,6 +309,10 @@ void Fl_RGB_Image::draw(int XP, int YP, int WP, int HP, int cx, int cy) {
   if (cy < 0) {H += cy; Y -= cy; cy = 0;}
   if (cy+H > h()) H = h()-cy;
   if (H <= 0) return;
+  if (fl->type == FL_GDI_DEVICE) {
+	fl_draw_image(array, XP, YP, w(), h(), d(), ld());
+	return;
+  }
   if (!id) {
     id = fl_create_offscreen(w(), h());
     fl_begin_offscreen(id);
@@ -392,5 +397,5 @@ void Fl_RGB_Image::label(Fl_Menu_Item* m) {
 
 
 //
-// End of "$Id: Fl_Image.cxx,v 1.5.2.3.2.24 2002/10/11 13:54:10 easysw Exp $".
+// End of "$Id: Fl_Image.cxx,v 1.5.2.3.2.23 2002/08/09 01:09:49 easysw Exp $".
 //

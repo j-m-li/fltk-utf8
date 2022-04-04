@@ -456,6 +456,21 @@ Package=<4>
 
 ###############################################################################
 
+Project: "dnd"=".\dnd.dsp" - Package Owner=<4>
+
+Package=<5>
+{{{
+}}}
+
+Package=<4>
+{{{
+    Begin Project Dependency
+    Project_Dep_Name fltk
+    End Project Dependency
+}}}
+
+###############################################################################
+
 Project: "doublebuffer"=".\doublebuffer.dsp" - Package Owner=<4>
 
 Package=<5>
@@ -500,6 +515,9 @@ Package=<4>
     Begin Project Dependency
     Project_Dep_Name fltk
     End Project Dependency
+    Begin Project Dependency
+    Project_Dep_Name fltkimages
+    End Project Dependency
 }}}
 
 ###############################################################################
@@ -514,9 +532,6 @@ Package=<4>
 {{{
     Begin Project Dependency
     Project_Dep_Name fltk
-    End Project Dependency
-    Begin Project Dependency
-    Project_Dep_Name fltkimages
     End Project Dependency
 }}}
 
@@ -598,6 +613,21 @@ Package=<4>
     End Project Dependency
     Begin Project Dependency
     Project_Dep_Name fltkimages
+    End Project Dependency
+}}}
+
+###############################################################################
+
+Project: "flv_table"=".\flv_table.dsp" - Package Owner=<4>
+
+Package=<5>
+{{{
+}}}
+
+Package=<4>
+{{{
+    Begin Project Dependency
+    Project_Dep_Name fltk
     End Project Dependency
 }}}
 
@@ -1213,6 +1243,21 @@ Package=<4>
 ###############################################################################
 
 Project: "tiled_image"=".\tiled_image.dsp" - Package Owner=<4>
+
+Package=<5>
+{{{
+}}}
+
+Package=<4>
+{{{
+    Begin Project Dependency
+    Project_Dep_Name fltk
+    End Project Dependency
+}}}
+
+###############################################################################
+
+Project: "utf8"=".\utf8.dsp" - Package Owner=<4>
 
 Package=<5>
 {{{

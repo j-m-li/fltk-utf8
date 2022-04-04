@@ -30,6 +30,7 @@
 #include <FL/x.H>
 #include <stdlib.h>
 #include "Fl_Gl_Choice.H"
+#include <FL/fl_utf8.H>
 
 #ifdef __APPLE__
 #  include <FL/Fl_Window.H>
@@ -207,7 +208,7 @@ Fl_Gl_Choice *Fl_Gl_Choice::find(int m, const int *alistp) {
 
   if (/*MaxCmapsOfScreen(ScreenOfDisplay(fl_display,fl_screen))==1 && */
       visp->visualid == fl_visual->visualid &&
-      !getenv("MESA_PRIVATE_CMAP"))
+      !fl_getenv("MESA_PRIVATE_CMAP"))
     g->colormap = fl_colormap;
   else
     g->colormap = XCreateColormap(fl_display, RootWindow(fl_display,fl_screen),

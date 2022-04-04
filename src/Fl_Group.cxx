@@ -107,11 +107,13 @@ static int navkey() {
   case FL_Down:
     return FL_Down;
   default:
-    switch (Fl::event_text()[0]) {
-    case ctrl('N') : return FL_Down;
-    case ctrl('P') : return FL_Up;
-    case ctrl('F') : return FL_Right;
-    case ctrl('B') : return FL_Left;
+    if (Fl::event_text()) {
+      switch (Fl::event_text()[0]) {
+      case ctrl('N') : return FL_Down;
+      case ctrl('P') : return FL_Up;
+      case ctrl('F') : return FL_Right;
+      case ctrl('B') : return FL_Left;
+      }
     }
   }
   return 0;

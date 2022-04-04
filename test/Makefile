@@ -44,10 +44,12 @@ CPPFILES =\
 	cursor.cxx \
 	curve.cxx \
 	demo.cxx \
+	dnd.cxx \
 	doublebuffer.cxx \
 	editor.cxx \
 	fast_slow.cxx \
 	file_chooser.cxx \
+	flv_testedit.cxx \
 	fonts.cxx \
 	forms.cxx \
 	fractals.cxx \
@@ -87,6 +89,7 @@ CPPFILES =\
 	threads.cxx \
 	tile.cxx \
 	tiled_image.cxx \
+	utf8.cxx \
 	valuators.cxx
 
 ALL =	\
@@ -105,6 +108,7 @@ ALL =	\
 	cursor$(EXEEXT) \
 	curve$(EXEEXT) \
 	demo$(EXEEXT) \
+	dnd$(EXEEXT) \
 	doublebuffer$(EXEEXT) \
 	editor$(EXEEXT) \
 	fast_slow$(EXEEXT) \
@@ -142,6 +146,7 @@ ALL =	\
 	$(THREADS) \
 	tile$(EXEEXT) \
 	tiled_image$(EXEEXT) \
+	utf8$(EXEEXT) \
 	valuators$(EXEEXT)
 
 GLALL = \
@@ -316,6 +321,8 @@ resize.cxx:	resize.fl
 resizebox$(EXEEXT): resizebox.o
 
 scroll$(EXEEXT): scroll.o
+	$(CXX) $(CXXFLAGS) -o $@ scroll.o \
+		$(LINKFLTKGL) $(LINKFLTK) $(GLDLIBS) -lstdc++
 
 subwindow$(EXEEXT): subwindow.o
 

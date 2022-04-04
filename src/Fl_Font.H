@@ -36,6 +36,10 @@
 #ifndef FL_FONT_
 #define FL_FONT_
 
+#if HAVE_XUTF8
+#include <libXutf8/Xutf8.h>
+#endif
+
 #  if USE_XFT
 typedef struct _XftFont XftFont;
 #  endif // USE_XFT
@@ -45,7 +49,7 @@ public:
   Fl_FontSize *next;	// linked list for this Fl_Fontdesc
 #  ifdef WIN32
   HFONT fid;
-  int width[256];
+  int *width[64];
   TEXTMETRIC metr;
   FL_EXPORT Fl_FontSize(const char* fontname, int size);
 #  elif defined(__APPLE__)
@@ -59,8 +63,13 @@ public:
   const char* encoding;
   int size;
   FL_EXPORT Fl_FontSize(const char* xfontname);
+
 #  else
+#    if HAVE_XUTF8
+  XUtf8FontStruct* font; // X UTF-8 font information
+#    else
   XFontStruct* font;	// X font information
+#    endif
   FL_EXPORT Fl_FontSize(const char* xfontname);
 #  endif
   int minsize;		// smallest point size that should use this

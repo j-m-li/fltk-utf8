@@ -253,8 +253,11 @@ int fl_draw_pixmap(const char*const* di, int x, int y, Fl_Color bg) {
       }
     }
   }
-
-  fl_draw_image(chars_per_pixel==1 ? cb1 : cb2, &d, x, y, d.w, d.h, 4);
+  if (fl->type == FL_PS_DEVICE) {
+	fl->draw_image(chars_per_pixel==1 ? cb1 : cb2, &d, x, y, d.w, d.h, 4);
+  } else {
+	fltk.draw_image(chars_per_pixel==1 ? cb1 : cb2, &d, x, y, d.w, d.h, 4);
+  }
   if (chars_per_pixel > 1) for (int i = 0; i < 256; i++) delete[] d.byte1[i];
   return 1;
 }

@@ -31,8 +31,9 @@
 #include <FL/Fl_Widget.H>
 #include <FL/fl_draw.H>
 #include <FL/x.H>
+#include <FL/Fl_Fltk.H>
 
-void fl_rect(int x, int y, int w, int h) {
+void Fl_Fltk::rect(int x, int y, int w, int h) {
   if (w<=0 || h<=0) return;
 #ifdef WIN32
   MoveToEx(fl_gc, x, y, 0L); 
@@ -49,7 +50,7 @@ void fl_rect(int x, int y, int w, int h) {
 #endif
 }
 
-void fl_rectf(int x, int y, int w, int h) {
+void Fl_Fltk::rectf(int x, int y, int w, int h) {
   if (w<=0 || h<=0) return;
 #ifdef WIN32
   RECT rect;
@@ -65,7 +66,7 @@ void fl_rectf(int x, int y, int w, int h) {
 #endif
 }
 
-void fl_xyline(int x, int y, int x1) {
+void Fl_Fltk::xyline(int x, int y, int x1) {
 #ifdef WIN32
   MoveToEx(fl_gc, x, y, 0L); LineTo(fl_gc, x1+1, y);
 #elif defined(__APPLE__)
@@ -75,7 +76,7 @@ void fl_xyline(int x, int y, int x1) {
 #endif
 }
 
-void fl_xyline(int x, int y, int x1, int y2) {
+void Fl_Fltk::xyline(int x, int y, int x1, int y2) {
 #ifdef WIN32
   if (y2 < y) y2--;
   else y2++;
@@ -94,7 +95,7 @@ void fl_xyline(int x, int y, int x1, int y2) {
 #endif
 }
 
-void fl_xyline(int x, int y, int x1, int y2, int x3) {
+void Fl_Fltk::xyline(int x, int y, int x1, int y2, int x3) {
 #ifdef WIN32
   if(x3 < x1) x3--;
   else x3++;
@@ -116,7 +117,7 @@ void fl_xyline(int x, int y, int x1, int y2, int x3) {
 #endif
 }
 
-void fl_yxline(int x, int y, int y1) {
+void Fl_Fltk::yxline(int x, int y, int y1) {
 #ifdef WIN32
   if (y1 < y) y1--;
   else y1++;
@@ -128,7 +129,7 @@ void fl_yxline(int x, int y, int y1) {
 #endif
 }
 
-void fl_yxline(int x, int y, int y1, int x2) {
+void Fl_Fltk::yxline(int x, int y, int y1, int x2) {
 #ifdef WIN32
   if (x2 > x) x2++;
   else x2--;
@@ -147,7 +148,7 @@ void fl_yxline(int x, int y, int y1, int x2) {
 #endif
 }
 
-void fl_yxline(int x, int y, int y1, int x2, int y3) {
+void Fl_Fltk::yxline(int x, int y, int y1, int x2, int y3) {
 #ifdef WIN32
   if(y3<y1) y3--;
   else y3++;
@@ -169,7 +170,7 @@ void fl_yxline(int x, int y, int y1, int x2, int y3) {
 #endif
 }
 
-void fl_line(int x, int y, int x1, int y1) {
+void Fl_Fltk::line(int x, int y, int x1, int y1) {
 #ifdef WIN32
   MoveToEx(fl_gc, x, y, 0L); 
   LineTo(fl_gc, x1, y1);
@@ -184,7 +185,7 @@ void fl_line(int x, int y, int x1, int y1) {
 #endif
 }
 
-void fl_line(int x, int y, int x1, int y1, int x2, int y2) {
+void Fl_Fltk::line(int x, int y, int x1, int y1, int x2, int y2) {
 #ifdef WIN32
   MoveToEx(fl_gc, x, y, 0L); 
   LineTo(fl_gc, x1, y1);
@@ -205,7 +206,7 @@ void fl_line(int x, int y, int x1, int y1, int x2, int y2) {
 #endif
 }
 
-void fl_loop(int x, int y, int x1, int y1, int x2, int y2) {
+void Fl_Fltk::loop(int x, int y, int x1, int y1, int x2, int y2) {
 #ifdef WIN32
   MoveToEx(fl_gc, x, y, 0L); 
   LineTo(fl_gc, x1, y1);
@@ -226,7 +227,7 @@ void fl_loop(int x, int y, int x1, int y1, int x2, int y2) {
 #endif
 }
 
-void fl_loop(int x, int y, int x1, int y1, int x2, int y2, int x3, int y3) {
+void Fl_Fltk::loop(int x, int y, int x1, int y1, int x2, int y2, int x3, int y3) {
 #ifdef WIN32
   MoveToEx(fl_gc, x, y, 0L); 
   LineTo(fl_gc, x1, y1);
@@ -250,7 +251,7 @@ void fl_loop(int x, int y, int x1, int y1, int x2, int y2, int x3, int y3) {
 #endif
 }
 
-void fl_polygon(int x, int y, int x1, int y1, int x2, int y2) {
+void Fl_Fltk::polygon(int x, int y, int x1, int y1, int x2, int y2) {
   XPoint p[4];
   p[0].x = x;  p[0].y = y;
   p[1].x = x1; p[1].y = y1;
@@ -273,7 +274,7 @@ void fl_polygon(int x, int y, int x1, int y1, int x2, int y2) {
 #endif
 }
 
-void fl_polygon(int x, int y, int x1, int y1, int x2, int y2, int x3, int y3) {
+void Fl_Fltk::polygon(int x, int y, int x1, int y1, int x2, int y2, int x3, int y3) {
   XPoint p[5];
   p[0].x = x;  p[0].y = y;
   p[1].x = x1; p[1].y = y1;
@@ -298,7 +299,7 @@ void fl_polygon(int x, int y, int x1, int y1, int x2, int y2, int x3, int y3) {
 #endif
 }
 
-void fl_point(int x, int y) {
+void Fl_Fltk::point(int x, int y) {
 #ifdef WIN32
   SetPixel(fl_gc, x, y, fl_RGB());
 #elif defined(__APPLE__)
@@ -378,8 +379,9 @@ Fl_Region fl_clip_region() {
   return rstack[rstackptr];
 }
 
+
 // Intersect & push a new clip rectangle:
-void fl_push_clip(int x, int y, int w, int h) {
+void Fl_Fltk::clip(int x, int y, int w, int h) {
   Fl_Region r;
   if (w > 0 && h > 0) {
     r = XRectangleRegion(x,y,w,h);
@@ -411,13 +413,13 @@ void fl_push_clip(int x, int y, int w, int h) {
 }
 
 // make there be no clip (used by fl_begin_offscreen() only!)
-void fl_push_no_clip() {
+void Fl_Fltk::push_no_clip() {
   if (rstackptr < STACK_MAX) rstack[++rstackptr] = 0;
   fl_restore_clip();
 }
 
 // pop back to previous clip:
-void fl_pop_clip() {
+void Fl_Fltk::pop_clip() {
   if (rstackptr > 0) {
     Fl_Region oldr = rstack[rstackptr--];
     if (oldr) XDestroyRegion(oldr);
@@ -426,9 +428,11 @@ void fl_pop_clip() {
 }
 
 // does this rectangle intersect current clip?
-int fl_not_clipped(int x, int y, int w, int h) {
-  if (x+w <= 0 || y+h <= 0 || x > Fl_Window::current()->w()
+int Fl_Fltk::not_clipped(int x, int y, int w, int h) {
+  if (fl->type != FL_GDI_DEVICE) {
+    if (x+w <= 0 || y+h <= 0 || x > Fl_Window::current()->w()
       || y > Fl_Window::current()->h()) return 0;
+  }
   Fl_Region r = rstack[rstackptr];
 #ifdef WIN32
   if (!r) return 1;
@@ -446,7 +450,7 @@ int fl_not_clipped(int x, int y, int w, int h) {
 }
 
 // return rectangle surrounding intersection of this rectangle and clip:
-int fl_clip_box(int x, int y, int w, int h, int& X, int& Y, int& W, int& H){
+int Fl_Fltk::clip_box(int x, int y, int w, int h, int& X, int& Y, int& W, int& H){
   X = x; Y = y; W = w; H = h;
   Fl_Region r = rstack[rstackptr];
   if (!r) return 0;

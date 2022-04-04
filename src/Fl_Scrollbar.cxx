@@ -1,5 +1,5 @@
 //
-// "$Id: Fl_Scrollbar.cxx,v 1.7.2.14.2.13 2002/10/06 18:37:14 easysw Exp $"
+// "$Id: Fl_Scrollbar.cxx,v 1.7.2.14.2.12 2002/09/28 12:04:12 easysw Exp $"
 //
 // Scroll bar widget for the Fast Light Tool Kit (FLTK).
 //
@@ -249,5 +249,5 @@ Fl_Scrollbar::Fl_Scrollbar(int X, int Y, int W, int H, const char* L)
 }
 
 //
-// End of "$Id: Fl_Scrollbar.cxx,v 1.7.2.14.2.13 2002/10/06 18:37:14 easysw Exp $".
+// End of "$Id: Fl_Scrollbar.cxx,v 1.7.2.14.2.12 2002/09/28 12:04:12 easysw Exp $".
 //

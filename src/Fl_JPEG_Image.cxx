@@ -36,7 +36,7 @@
 #include <config.h>
 #include <stdio.h>
 #include <stdlib.h>
-
+#include <FL/fl_utf8.H>
 
 // Some releases of the Cygwin JPEG libraries don't have a correctly
 // updated header file for the INT32 data type; the following define
@@ -68,7 +68,7 @@ Fl_JPEG_Image::Fl_JPEG_Image(const char *jpeg)	// I - File to load
   JSAMPROW			row;		// Sample row pointer
 
 
-  if ((fp = fopen(jpeg, "rb")) == NULL) return;
+  if ((fp = fl_fopen(jpeg, "rb")) == NULL) return;
 
   cinfo.err = jpeg_std_error(&jerr);
   jpeg_create_decompress(&cinfo);

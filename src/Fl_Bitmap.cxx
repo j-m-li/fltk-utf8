@@ -1,5 +1,5 @@
 //
-// "$Id: Fl_Bitmap.cxx,v 1.5.2.4.2.18 2002/10/11 13:54:10 easysw Exp $"
+// "$Id: Fl_Bitmap.cxx,v 1.5.2.4.2.17 2002/08/09 01:09:48 easysw Exp $"
 //
 // Bitmap drawing routines for the Fast Light Tool Kit (FLTK).
 //
@@ -29,6 +29,7 @@
 #include <FL/Fl_Widget.H>
 #include <FL/Fl_Menu_Item.H>
 #include <FL/Fl_Bitmap.H>
+#include <FL/Fl_Fltk.H>
 #include "flstring.h"
 
 #ifdef __APPLE__ // MacOS bitmask functions
@@ -349,13 +350,23 @@ void Fl_Bitmap::draw(int XP, int YP, int WP, int HP, int cx, int cy) {
   if (H <= 0) return;
 #ifdef WIN32
   if (!id) id = fl_create_bitmap(w(), h(), array);
-
-  HDC tempdc = CreateCompatibleDC(fl_gc);
-  SelectObject(tempdc, (HGDIOBJ)id);
-  SelectObject(fl_gc, fl_brush());
-  // secret bitblt code found in old MSWindows reference manual:
-  BitBlt(fl_gc, X, Y, W, H, tempdc, cx, cy, 0xE20746L);
-  DeleteDC(tempdc);
+   
+  if (fl->type == FL_GDI_DEVICE) {
+    HDC tempdc = CreateCompatibleDC(fl_gc);
+    SelectObject(tempdc, (HGDIOBJ)id);
+	SelectObject(tempdc, fl_brush());
+	StretchBlt(fl->gc, XP*fl->s + fl->L, YP*fl->s + fl->T, WP*fl->s, HP*fl->s, tempdc,0, 0, WP, HP, 0xE20746L);
+    DeleteDC(tempdc);
+	return;
+  } else {
+    HDC tempdc = CreateCompatibleDC(fl_gc);
+    SelectObject(tempdc, (HGDIOBJ)id);
+    SelectObject(fl_gc, fl_brush());
+    // secret bitblt code found in old MSWindows reference manual:
+	BitBlt(fl_gc, X, Y, W, H, tempdc, cx, cy, 0xE20746L);
+    DeleteDC(tempdc);
+  }
+  
 #elif defined(__APPLE__)
   if (!id) id = fl_create_bitmask(w(), h(), array);
   GrafPtr dstPort;
@@ -474,5 +485,5 @@ Fl_Image *Fl_Bitmap::copy(int W, int H) {
 
 
 //
-// End of "$Id: Fl_Bitmap.cxx,v 1.5.2.4.2.18 2002/10/11 13:54:10 easysw Exp $".
+// End of "$Id: Fl_Bitmap.cxx,v 1.5.2.4.2.17 2002/08/09 01:09:48 easysw Exp $".
 //

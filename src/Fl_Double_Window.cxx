@@ -28,6 +28,7 @@
 #include <FL/Fl_Double_Window.H>
 #include <FL/x.H>
 #include <FL/fl_draw.H>
+#include <FL/Fl_Fltk.H>
 
 // On systems that support double buffering "naturally" the base
 // Fl_Window class will probably do double-buffer and this subclass
@@ -235,11 +236,15 @@ void Fl_Double_Window::flush(int eraseoverlay) {
     fl_clip_region(myi->region); myi->region = 0;
 #ifdef WIN32
     HDC _sgc = fl_gc;
-    fl_gc = fl_makeDC(myi->other_xid);
+	if (fl->type != FL_GDI_DEVICE) {
+      fl_gc = fl_makeDC(myi->other_xid);
+	}
     fl_restore_clip(); // duplicate region into new gc
     draw();
-    DeleteDC(fl_gc);
-    fl_gc = _sgc;
+	if (fl->type != FL_GDI_DEVICE) {
+      DeleteDC(fl_gc);
+      fl_gc = _sgc;
+	}
 #elif defined(__APPLE__)
     if ( myi->other_xid ) {
       fl_begin_offscreen( myi->other_xid );

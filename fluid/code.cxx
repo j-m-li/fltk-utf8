@@ -31,6 +31,7 @@
 #include <FL/Fl.H>
 #include "Fl_Type.h"
 #include "alignment_panel.h"
+#include <FL/fl_utf8.H>
 
 static FILE *code_file;
 static FILE *header_file;
@@ -261,13 +262,13 @@ int write_code(const char *s, const char *t) {
   indentation = 0;
   if (!s) code_file = stdout;
   else {
-    FILE *f = fopen(s,"w");
+    FILE *f = fl_fopen(s,"w");
     if (!f) return 0;
     code_file = f;
   }
   if (!t) header_file = stdout;
   else {
-    FILE *f = fopen(t,"w");
+    FILE *f = fl_fopen(t,"w");
     if (!f) {fclose(code_file); return 0;}
     header_file = f;
   }
@@ -332,7 +333,7 @@ int write_code(const char *s, const char *t) {
 }
 
 int write_strings(const char *sfile) {
-  FILE *fp = fopen(sfile, "w");
+  FILE *fp = fl_fopen(sfile, "w");
   Fl_Type *p;
   Fl_Widget_Type *w;
   int i;

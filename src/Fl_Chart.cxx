@@ -1,5 +1,5 @@
 //
-// "$Id: Fl_Chart.cxx,v 1.5.2.6.2.11 2002/10/11 14:17:21 easysw Exp $"
+// "$Id: Fl_Chart.cxx,v 1.5.2.6.2.10 2002/09/04 20:33:18 easysw Exp $"
 //
 // Forms-compatible chart widget for the Fast Light Tool Kit (FLTK).
 //
@@ -384,5 +384,5 @@ void Fl_Chart::maxsize(int m) {
 }
 
 //
-// End of "$Id: Fl_Chart.cxx,v 1.5.2.6.2.11 2002/10/11 14:17:21 easysw Exp $".
+// End of "$Id: Fl_Chart.cxx,v 1.5.2.6.2.10 2002/09/04 20:33:18 easysw Exp $".
 //

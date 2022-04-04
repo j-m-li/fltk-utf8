@@ -67,26 +67,29 @@ fl_file_chooser(const char *message,	// I - Message in titlebar
     if (!fname || !*fname) {
       if (fc->filter() != pat && (!pat || !fc->filter() ||
           strcmp(pat, fc->filter())) && fc->value()) {
+	if (!fc->value()) fc->value("*");
 	// if pattern is different, remove name but leave old directory:
-	strlcpy(retname, fc->value(), sizeof(retname));
+      strlcpy(retname, fc->value(), sizeof(retname));
 
-	char *p = strrchr(retname, '/');
+      char *p = strrchr(retname, '/');
 
         if (p) {
-	  // If the filename is "/foo", then the directory will be "/", not
-	  // ""...
-	  if (p == retname)
-	    retname[1] = '\0';
-	  else
-	    *p = '\0';
-	}
+        // If the filename is "/foo", then the directory will be "/", not
+        // ""...
+        if (p == retname)
+          retname[1] = '\0';
+        else
+          *p = '\0';
+      }
 
-	// Set the directory...
-	fc->directory(retname);
+      // Set the directory...
+      fc->directory(retname);
+
       }
     }
     else
       fc->value(fname);
+
   }
 
   fc->show();

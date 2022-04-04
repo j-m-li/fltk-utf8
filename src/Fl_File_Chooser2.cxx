@@ -48,6 +48,7 @@
 #include <FL/fl_ask.H>
 #include <FL/x.H>
 #include <FL/Fl_Shared_Image.H>
+#include <FL/fl_utf8.H>
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -218,7 +219,7 @@ Fl_File_Chooser::favoritesButtonCB()
 
   if (!v) {
     // Add current directory to favorites...
-    if (getenv("HOME")) v = favoritesButton->size() - 5;
+    if (fl_getenv("HOME")) v = favoritesButton->size() - 5;
     else v = favoritesButton->size() - 4;
 
     sprintf(menuname, "favorite%02d", v);
@@ -491,7 +492,7 @@ Fl_File_Chooser::fileNameCB()
     if (fl_filename_isdir(pathname)) {
 #endif /* WIN32 || __EMX__ */
       directory(pathname);
-    } else if ((type_ & CREATE) || access(pathname, 0) == 0) {
+    } else if ((type_ & CREATE) || fl_access(pathname, 0) == 0) {
       // New file or file exists...  If we are in multiple selection mode,
       // switch to single selection mode...
       if (type_ & MULTI)
@@ -629,7 +630,7 @@ Fl_File_Chooser::fileNameCB()
     }
 
     // See if we need to enable the OK button...
-    if ((type_ & CREATE || access(fileName->value(), 0) == 0) &&
+    if ((type_ & CREATE || fl_access(fileName->value(), 0) == 0) &&
         (!fl_filename_isdir(fileName->value()) || type_ & DIRECTORY))
       okButton->activate();
     else
@@ -717,11 +718,7 @@ Fl_File_Chooser::newdir()
     strlcpy(pathname, dir, sizeof(pathname));
 
   // Create the directory; ignore EEXIST errors...
-#if defined(WIN32) && ! defined (__CYGWIN__)
-  if (mkdir(pathname))
-#else
-  if (mkdir(pathname, 0777))
-#endif /* WIN32 */
+	fl_mkdir(pathname, 0777);
     if (errno != EEXIST)
     {
       fl_alert("%s", strerror(errno));
@@ -852,7 +849,7 @@ Fl_File_Chooser::update_favorites()
   favoritesButton->add(manage_favorites_label, FL_ALT + 'm', 0, 0, FL_MENU_DIVIDER);
   favoritesButton->add(filesystems_label, FL_ALT + 'f', 0);
     
-  if ((home = getenv("HOME")) != NULL) {
+  if ((home = fl_getenv("HOME")) != NULL) {
     quote_pathname(menuname, home, sizeof(menuname));
     favoritesButton->add(menuname, FL_ALT + 'h', 0);
   }
@@ -912,7 +909,7 @@ Fl_File_Chooser::update_preview()
     int		bytes;
     char	*ptr;
 
-    if (filename) fp = fopen(filename, "rb");
+    if (filename) fp = fl_fopen(filename, "rb");
     else fp = NULL;
 
     if (fp != NULL) {
@@ -952,14 +949,14 @@ Fl_File_Chooser::update_preview()
   } else {
     pbw = previewBox->w() - 20;
     pbh = previewBox->h() - 20;
-
+    if (image->w() < 1) return;
     if (image->w() > pbw || image->h() > pbh) {
       w   = pbw;
       h   = w * image->h() / image->w();
 
       if (h > pbh) {
-	h = pbh;
-	w = h * image->w() / image->h();
+        h = pbh;
+        w = h * image->w() / image->h();
       }
 
       oldimage = (Fl_Shared_Image *)image->copy(w, h);

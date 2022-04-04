@@ -1,5 +1,5 @@
 //
-// "$Id: Fl_Tabs.cxx,v 1.6.2.10.2.14 2002/10/22 17:39:12 easysw Exp $"
+// "$Id: Fl_Tabs.cxx,v 1.6.2.10.2.13 2002/09/09 02:04:46 spitzak Exp $"
 //
 // Tab widget for the Fast Light Tool Kit (FLTK).
 //
@@ -143,7 +143,7 @@ int Fl_Tabs::handle(int event) {
       int H = tab_height();
       if (H >= 0) {
         H += Fl::box_dy(box());
-	damage(FL_DAMAGE_SCROLL, x(), y(), w(), H);
+        damage(FL_DAMAGE_SCROLL, x(), y(), w(), H);
       } else {
         H = Fl::box_dy(box()) - H;
         damage(FL_DAMAGE_SCROLL, x(), y() + h() - H, w(), H);
@@ -299,5 +299,5 @@ Fl_Tabs::Fl_Tabs(int X,int Y,int W, int H, const char *l) :
 }
 
 //
-// End of "$Id: Fl_Tabs.cxx,v 1.6.2.10.2.14 2002/10/22 17:39:12 easysw Exp $".
+// End of "$Id: Fl_Tabs.cxx,v 1.6.2.10.2.13 2002/09/09 02:04:46 spitzak Exp $".
 //

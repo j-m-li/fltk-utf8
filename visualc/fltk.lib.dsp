@@ -283,6 +283,10 @@ SOURCE=..\src\fl_font.cxx
 # End Source File
 # Begin Source File
 
+SOURCE=..\src\Fl_Gdi.cxx
+# End Source File
+# Begin Source File
+
 SOURCE=..\src\Fl_get_key.cxx
 # End Source File
 # Begin Source File
@@ -407,6 +411,10 @@ SOURCE=..\src\Fl_Progress.cxx
 # End Source File
 # Begin Source File
 
+SOURCE=..\src\Fl_Ps.cxx
+# End Source File
+# Begin Source File
+
 SOURCE=..\src\fl_rect.cxx
 # End Source File
 # Begin Source File
@@ -511,6 +519,10 @@ SOURCE=..\src\Fl_Tooltip.cxx
 # End Source File
 # Begin Source File
 
+SOURCE=..\src\fl_utf8.cxx
+# End Source File
+# Begin Source File
+
 SOURCE=..\src\Fl_Valuator.cxx
 # End Source File
 # Begin Source File
@@ -572,6 +584,38 @@ SOURCE=..\src\Fl_XPM_Image.cxx
 # Begin Source File
 
 SOURCE=..\src\flstring.c
+# End Source File
+# Begin Source File
+
+SOURCE=..\src\Flv_CStyle.cxx
+# End Source File
+# Begin Source File
+
+SOURCE=..\src\Flv_Data_Source.cxx
+# End Source File
+# Begin Source File
+
+SOURCE=..\src\Flv_List.cxx
+# End Source File
+# Begin Source File
+
+SOURCE=..\src\Flv_Style.cxx
+# End Source File
+# Begin Source File
+
+SOURCE=..\src\Flv_Table.cxx
+# End Source File
+# Begin Source File
+
+SOURCE=..\src\Flve_Check_Button.cxx
+# End Source File
+# Begin Source File
+
+SOURCE=..\src\Flve_Combo.cxx
+# End Source File
+# Begin Source File
+
+SOURCE=..\src\Flve_Input.cxx
 # End Source File
 # Begin Source File
 

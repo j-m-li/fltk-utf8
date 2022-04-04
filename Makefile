@@ -1,5 +1,5 @@
 #
-# "$Id: Makefile,v 1.12.2.6.2.14 2002/09/26 01:15:33 easysw Exp $"
+# "$Id: Makefile,v 1.12.2.6.2.10 2002/01/06 13:40:27 easysw Exp $"
 #
 # Top-level makefile for the Fast Light Tool Kit (FLTK).
 #
@@ -35,16 +35,16 @@ all: makeinclude
 
 install: makeinclude
 	-mkdir -p $(bindir)
-	$(RM) $(bindir)/fltk-config
-	-cp fltk-config $(bindir)
-	-chmod 755 $(bindir)/fltk-config
+	$(RM) $(bindir)/fltk-utf8-config
+	-cp fltk-utf8-config $(bindir)
+	-chmod 755 $(bindir)/fltk-utf8-config
 	for dir in FL $(DIRS); do\
 		echo "=== installing $$dir ===";\
 		(cd $$dir; $(MAKE) $(MFLAGS) install) || break;\
 	done
 
 uninstall: makeinclude
-	$(RM) $(bindir)/fltk-config
+	$(RM) $(bindir)/fltk-utf8-config
 	for dir in FL $(DIRS); do\
 		echo "=== uninstalling $$dir ===";\
 		(cd $$dir; $(MAKE) $(MFLAGS) uninstall) || break;\
@@ -57,25 +57,17 @@ depend: makeinclude
 	done
 
 clean:
-	-$(RM) core *.o
+	$(RM) core *.o
 	for dir in $(DIRS); do\
 		echo "=== cleaning $$dir ===";\
 		(cd $$dir; $(MAKE) $(MFLAGS) clean) || break;\
 	done
 
 distclean: clean
-	$(RM) config.*
-	$(RM) fltk-config fltk.list makeinclude
-	$(RM) FL/Makefile
-	$(RM) documentation/*.$(CAT1EXT)
-	$(RM) documentation/*.$(CAT3EXT)
-	$(RM) documentation/fltk.pdf
-	$(RM) documentation/fltk.ps
-	$(RM) -r documentation/fltk.d
-	for file in test/*.fl; do\
-		$(RM) test/`basename $file .fl`.cxx; \
-		$(RM) test/`basename $file .fl`.h; \
-	done
+	$(RM) config.* makeinclude
+	(cd visualc; rm -fr *_; rm -fr Debug fltkdlld; \
+		rm -f *.plg *.ncb *.opt *.dll *.ilk *.pdb)
+	(cd lib; rm -f fltkd.lib  fltkdlld.exp  fltkdlld.lib *.a st*)
 
 makeinclude: configure configh.in makeinclude.in
 	if test -f config.status; then \
@@ -97,5 +89,5 @@ native-dist:
 
 
 #
-# End of "$Id: Makefile,v 1.12.2.6.2.14 2002/09/26 01:15:33 easysw Exp $".
+# End of "$Id: Makefile,v 1.12.2.6.2.10 2002/01/06 13:40:27 easysw Exp $".
 #

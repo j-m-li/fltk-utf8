@@ -28,7 +28,7 @@
 #include "flstring.h"
 #include <stdio.h>
 
-void fl_line_style(int style, int width, char* dashes) {
+void Fl_Fltk::line_style(int style, int width, char* dashes) {
 #ifdef WIN32
   // According to Bill, the "default" cap and join should be the
   // "fastest" mode supported for the platform.  I don't know why
@@ -48,7 +48,7 @@ void fl_line_style(int style, int width, char* dashes) {
   HPEN newpen = ExtCreatePen(s1, width, &penbrush, n, n ? a : 0);
   if (!newpen) {
     // CET - FIXME - remove this debug fprintf()?
-    fprintf(stderr, "fl_line_style(): Could not create GDI pen object.\n");
+    fprintf(stderr, "Fl_Fltk::line_style(): Could not create GDI pen object.\n");
     return;
   }
   HPEN oldpen = (HPEN)SelectObject(fl_gc, newpen);

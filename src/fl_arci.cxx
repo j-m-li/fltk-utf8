@@ -1,5 +1,5 @@
 //
-// "$Id: fl_arci.cxx,v 1.4.2.5.2.3 2002/01/01 15:11:31 easysw Exp $"
+// "$Id: Fl_Fltk::arci.cxx,v 1.4.2.5.2.3 2002/01/01 15:11:31 easysw Exp $"
 //
 // Arc (integer) drawing functions for the Fast Light Tool Kit (FLTK).
 //
@@ -39,7 +39,8 @@
 #include <FL/math.h>
 #endif
 
-void fl_arc(int x,int y,int w,int h,double a1,double a2) {
+
+void Fl_Fltk::arc(int x,int y,int w,int h,double a1,double a2) {
   if (w <= 0 || h <= 0) return;
 #ifdef WIN32
   int xa = x+w/2+int(w*cos(a1/180.0*M_PI));
@@ -56,7 +57,7 @@ void fl_arc(int x,int y,int w,int h,double a1,double a2) {
 #endif
 }
 
-void fl_pie(int x,int y,int w,int h,double a1,double a2) {
+void Fl_Fltk::pie(int x,int y,int w,int h,double a1,double a2) {
   if (w <= 0 || h <= 0) return;
 #ifdef WIN32
   if (a1 == a2) return;
@@ -76,5 +77,5 @@ void fl_pie(int x,int y,int w,int h,double a1,double a2) {
 }
 
 //
-// End of "$Id: fl_arci.cxx,v 1.4.2.5.2.3 2002/01/01 15:11:31 easysw Exp $".
+// End of "$Id: Fl_Fltk::arci.cxx,v 1.4.2.5.2.3 2002/01/01 15:11:31 easysw Exp $".
 //

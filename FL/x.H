@@ -30,7 +30,7 @@
 
 #ifndef Fl_X_H
 #  define Fl_X_H
-
+#  include <FL/Fl_Fltk.H>
 #  include "Enumerations.H"
 
 #  ifdef WIN32
@@ -48,6 +48,10 @@
 #    endif
 #    include <X11/Xatom.h>
 #    include "Fl_Window.H"
+#    if HAVE_XUTF8
+#      include <libXutf8/Xutf8.h>
+#    endif
+
 
 // Mirror X definition of Region to Fl_Region, for portability...
 typedef Region Fl_Region;
@@ -66,7 +70,12 @@ extern FL_EXPORT Colormap fl_colormap;
 // drawing functions:
 extern FL_EXPORT GC fl_gc;
 extern FL_EXPORT Window fl_window;
+
+#    if HAVE_XUTF8
+extern FL_EXPORT XUtf8FontStruct* fl_xfont;
+#    else 
 extern FL_EXPORT XFontStruct* fl_xfont;
+#    endif
 FL_EXPORT ulong fl_xpixel(Fl_Color i);
 FL_EXPORT ulong fl_xpixel(uchar r, uchar g, uchar b);
 FL_EXPORT void fl_clip_region(Fl_Region);

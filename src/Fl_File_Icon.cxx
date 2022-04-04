@@ -45,6 +45,7 @@
 #include <errno.h>
 #include <sys/types.h>
 #include <sys/stat.h>
+#include <FL/fl_utf8.H>
 #if (defined(WIN32) && ! defined(__CYGWIN__)) || defined(__EMX__)
 #  include <io.h>
 #  define F_OK	0
@@ -199,7 +200,7 @@ Fl_File_Icon::find(const char *filename,// I - Name of file */
     else
       filetype = PLAIN;
 #else
-    if (!stat(filename, &fileinfo))
+    if (!fl_stat(filename, &fileinfo))
     {
       if (S_ISDIR(fileinfo.st_mode))
         filetype = DIRECTORY;

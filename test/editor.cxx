@@ -758,10 +758,16 @@ Fl_Window* new_view() {
 }
 
 int main(int argc, char **argv) {
+#ifndef _WIN32
+  setlocale(LC_CTYPE, "");
+  XSetLocaleModifiers("");
+#endif
+ 
   textbuf = new Fl_Text_Buffer;
   style_init();
 
   Fl_Window* window = new_view();
+  Fl::set_font((Fl_Font)(FL_COURIER)," MS Gothic");
 
   window->show(1, argv);
 

@@ -23,7 +23,7 @@
 // Please report all bugs and problems to "fltk-bugs@fltk.org".
 //
 
-// Implementation of fl_color(i), fl_color(r,g,b).
+// Implementation of Fl_Fltk::color(i), Fl_Fltk::color(r,g,b).
 
 #ifdef WIN32
 #  include "fl_color_win32.cxx"
@@ -38,10 +38,14 @@
 // being used to index arrays.  So I always copy them to an integer
 // before use.
 
-#  include "Fl_XColor.H"
+
 #  include <FL/Fl.H>
 #  include <FL/x.H>
 #  include <FL/fl_draw.H>
+
+#  include "Fl_XColor.H"
+
+
 
 ////////////////////////////////////////////////////////////////
 // figure_out_visual() calculates masks & shifts for generating
@@ -135,7 +139,7 @@ ulong fl_xpixel(uchar r,uchar g,uchar b) {
      ) >> fl_extrashift;
 }
 
-void fl_color(uchar r,uchar g,uchar b) {
+void Fl_Fltk::color(uchar r,uchar g,uchar b) {
   fl_color_ = fl_rgb_color(r, g, b);
   XSetForeground(fl_display, fl_gc, fl_xpixel(r,g,b));
 }
@@ -275,10 +279,10 @@ ulong fl_xpixel(Fl_Color i) {
 
 Fl_Color fl_color_;
 
-void fl_color(Fl_Color i) {
+void Fl_Fltk::color(Fl_Color i) {
   if (i & 0xffffff00) {
     unsigned rgb = (unsigned)i;
-    fl_color((uchar)(rgb >> 24), (uchar)(rgb >> 16), (uchar)(rgb >> 8));
+    Fl_Fltk::color((uchar)(rgb >> 24), (uchar)(rgb >> 16), (uchar)(rgb >> 8));
   } else {
     fl_color_ = i;
     XSetForeground(fl_display, fl_gc, fl_xpixel(i));

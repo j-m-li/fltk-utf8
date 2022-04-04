@@ -33,11 +33,15 @@
 #define min(a,b) ((a)<(b)?(a):(b))
 #include <FL/fl_draw.H>
 #include <FL/Fl_Image.H>
+#define MAXBUF 1024
+
 
 #include "flstring.h"
 #include <ctype.h>
+#include <FL/Fl_Device.H>
 
-#define MAXBUF 1024
+Fl_Fltk fltk;
+Fl_Device * fl=&fltk;
 
 char fl_draw_shortcut;	// set by fl_labeltypes.cxx
 
@@ -92,8 +96,8 @@ expand(const char* from, char* buf, double maxw, int& n, double &width,
     } else if (c < ' ' || c == 127) { // ^X
       *o++ = '^';
       *o++ = c ^ 0x40;
-    } else if (c == 0xA0) { // non-breaking space
-      *o++ = ' ';
+    //} else if (c == 0xA0) { // non-breaking space
+    // *o++ = ' ';
     } else if (c == '@' && draw_symbols) { // Symbol???
       if (p[1] && p[1] != '@')  break;
       *o++ = c;

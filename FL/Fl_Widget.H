@@ -56,7 +56,7 @@ class FL_EXPORT Fl_Widget {
   Fl_Group* parent_;
   Fl_Callback* callback_;
   void* user_data_;
-  short x_,y_,w_,h_;
+  int x_,y_,w_,h_;
   Fl_Label label_;
   int flags_;
   unsigned color_;

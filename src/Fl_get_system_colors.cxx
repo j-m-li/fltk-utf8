@@ -27,6 +27,7 @@
 #include <FL/fl_draw.H>
 #include <FL/x.H>
 #include <FL/math.h>
+#include <FL/fl_utf8.H>
 #include "flstring.h"
 #include <stdio.h>
 #include <stdlib.h>
@@ -215,7 +216,7 @@ static Fl_Pixmap	tile(tile_xpm);
 
 int Fl::scheme(const char *s) {
   if (!s) {
-    if ((s = getenv("FLTK_SCHEME")) == NULL) {
+    if ((s = fl_getenv("FLTK_SCHEME")) == NULL) {
 #if !defined(WIN32) && !defined(__APPLE__)
       const char* key = 0;
       if (Fl::first_window()) key = Fl::first_window()->xclass();

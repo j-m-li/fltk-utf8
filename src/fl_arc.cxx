@@ -1,5 +1,5 @@
 //
-// "$Id: fl_arc.cxx,v 1.4.2.3.2.6 2002/05/07 00:17:07 easysw Exp $"
+// "$Id: Fl_Fltk::arc.cxx,v 1.4.2.3.2.6 2002/05/07 00:17:07 easysw Exp $"
 //
 // Arc functions for the Fast Light Tool Kit (FLTK).
 //
@@ -30,7 +30,7 @@
 #include <FL/fl_draw.H>
 #include <FL/math.h>
 
-void fl_arc(double x, double y, double r, double start, double end) {
+void Fl_Fltk::arc(double x, double y, double r, double start, double end) {
 
   // draw start point accurately:
   
@@ -46,7 +46,6 @@ void fl_arc(double x, double y, double r, double start, double end) {
 		      fl_transform_dy(r,0));
     double r2 = hypot(fl_transform_dx(0,r), // Vertical "radius"
 		      fl_transform_dy(0,r));
-		      
     if (r1 > r2) r1 = r2;		// r1 = minimum "radius"
     if (r1 < 2.) r1 = 2.;		// radius for circa 9 chords/circle
     
@@ -69,10 +68,10 @@ void fl_arc(double x, double y, double r, double start, double end) {
 
 #if 0 // portable version.  X-specific one in fl_vertex.cxx
 void fl_circle(double x,double y,double r) {
-  _fl_arc(x, y, r, r, 0, 360);
+  _Fl_Fltk::arc(x, y, r, r, 0, 360);
 }
 #endif
 
 //
-// End of "$Id: fl_arc.cxx,v 1.4.2.3.2.6 2002/05/07 00:17:07 easysw Exp $".
+// End of "$Id: Fl_Fltk::arc.cxx,v 1.4.2.3.2.6 2002/05/07 00:17:07 easysw Exp $".
 //

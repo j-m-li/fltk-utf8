@@ -117,10 +117,10 @@ typedef HBITMAP Fl_Offscreen;
 extern FL_EXPORT HDC fl_makeDC(HBITMAP);
 #define fl_begin_offscreen(b) \
   HDC _sgc=fl_gc; Window _sw=fl_window; \
-  fl_gc=fl_makeDC(b); fl_window=(HWND)b; fl_push_no_clip()
+  fl_gc=fl_makeDC(b); fl_window=(HWND)b; fltk.push_no_clip()
 
 #define fl_end_offscreen() \
-  fl_pop_clip(); DeleteDC(fl_gc); fl_window=_sw; fl_gc = _sgc
+  fltk.pop_clip(); DeleteDC(fl_gc); fl_window=_sw; fl_gc = _sgc
 
 FL_EXPORT void fl_copy_offscreen(int x,int y,int w,int h,HBITMAP pixmap,int srcx,int srcy);
 #define fl_delete_offscreen(bitmap) DeleteObject(bitmap);

@@ -33,6 +33,7 @@
 //
 
 #include <FL/Fl_PNG_Image.H>
+#include <FL/fl_utf8.H>
 #include <config.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -66,7 +67,7 @@ Fl_PNG_Image::Fl_PNG_Image(const char *png) // I - File to read
 
 
   // Open the PNG file...
-  if ((fp = fopen(png, "rb")) == NULL) return;
+  if ((fp = fl_fopen(png, "rb")) == NULL) return;
 
   // Setup the PNG data structures...
   pp   = png_create_read_struct(PNG_LIBPNG_VER_STRING, NULL, NULL, NULL);

@@ -35,6 +35,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include "flstring.h"
+#include <FL/fl_utf8.H>
 
 // Read a .gif file and convert it to a "xpm" format (actually my
 // modified one with compressed colormaps).
@@ -80,7 +81,7 @@ Fl_GIF_Image::Fl_GIF_Image(const char *infname) : Fl_Pixmap((char *const*)0) {
   FILE *GifFile;	// File to read
   char **new_data;	// Data array
 
-  if ((GifFile = fopen(infname, "rb")) == NULL) {
+  if ((GifFile = fl_fopen(infname, "rb")) == NULL) {
     Fl::error("Unable to open %s!", infname);
     return;
   }

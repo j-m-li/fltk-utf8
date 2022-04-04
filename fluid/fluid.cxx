@@ -24,6 +24,7 @@
 //
 
 #include <FL/Fl.H>
+#include <FL/fl_utf8.H>
 #include <FL/Fl_Double_Window.H>
 #include <FL/Fl_Box.H>
 #include <FL/Fl_Button.H>
@@ -96,7 +97,7 @@ void goto_source_dir() {
   strlcpy(buffer, filename, sizeof(buffer));
   int n = p-filename; if (n>1) n--; buffer[n] = 0;
   if (!pwd) {
-    pwd = getcwd(0,1024);
+    pwd = fl_getcwd(0,1024);
     if (!pwd) {fprintf(stderr,"getwd : %s\n",strerror(errno)); return;}
   }
   if (chdir(buffer)<0) {fprintf(stderr, "Can't chdir to %s : %s\n",
@@ -370,7 +371,7 @@ void show_help(const char *name) {
   
   if (!help_dialog) help_dialog = new Fl_Help_Dialog();
 
-  if ((docdir = getenv("FLTK_DOCDIR")) == NULL) {
+  if ((docdir = fl_getenv("FLTK_DOCDIR")) == NULL) {
 #ifdef __EMX__
     // Doesn't make sense to have a hardcoded fallback
     static char fltk_docdir[1024];

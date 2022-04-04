@@ -1,5 +1,5 @@
 //
-// "$Id: Fl.cxx,v 1.24.2.41.2.55 2002/10/22 17:39:11 easysw Exp $"
+// "$Id: Fl.cxx,v 1.24.2.41.2.54 2002/10/04 15:59:28 easysw Exp $"
 //
 // Main event handling code for the Fast Light Tool Kit (FLTK).
 //
@@ -30,7 +30,7 @@
 #include <ctype.h>
 #include <stdlib.h>
 #include "flstring.h"
-
+#include <FL/Fl_Fltk.H>
 
 //
 // Globals...
@@ -55,7 +55,7 @@ int		Fl::damage_,
 char		*Fl::e_text = (char *)"";
 int		Fl::e_length;
 int		Fl::visible_focus_ = 1,
-		Fl::dnd_text_ops_ = 1;
+		Fl::dnd_text_ops_ = 0;
 
 
 //
@@ -758,7 +758,7 @@ void Fl_Window::hide() {
 
 #ifdef WIN32
   if (ip->private_dc) ReleaseDC(ip->xid,ip->private_dc);
-  if (ip->xid == fl_window && fl_gc) {
+  if (ip->xid == fl_window && fl_gc && fl->type != FL_GDI_DEVICE) {
     ReleaseDC(fl_window, fl_gc);
     fl_window = (HWND)-1;
     fl_gc = 0;
@@ -824,7 +824,8 @@ int Fl_Window::handle(int ev)
       // unmap because when the parent window is remapped we don't
       // want to reappear.
       if (visible()) {
-       Fl_Widget* p = parent(); for (;p->visible();p = p->parent()) {}
+       Fl_Widget* p = parent(); 
+       for (;p->parent() && p->visible();p = p->parent()) {}
        if (p->type() >= FL_WINDOW) break; // don't do the unmap
       }
       XUnmapWindow(fl_display, fl_xid(this));
@@ -967,5 +968,5 @@ void Fl_Window::flush() {
 }
 
 //
-// End of "$Id: Fl.cxx,v 1.24.2.41.2.55 2002/10/22 17:39:11 easysw Exp $".
+// End of "$Id: Fl.cxx,v 1.24.2.41.2.54 2002/10/04 15:59:28 easysw Exp $".
 //
