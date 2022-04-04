@@ -1,7 +1,7 @@
 //
-// "$Id: Fl_Text_Buffer.cxx,v 1.9.2.12 2002/09/20 19:59:45 easysw Exp $"
+// "$Id: Fl_Text_Buffer.cxx,v 1.9.2.19 2003/05/28 16:09:12 matthiaswm Exp $"
 //
-// Copyright 2001-2002 by Bill Spitzak and others.
+// Copyright 2001-2003 by Bill Spitzak and others.
 // Original code Copyright Mark Edel.  Permission to distribute under
 // the LGPL for the FLTK library granted by Mark Edel.
 //
@@ -27,8 +27,16 @@
 #include <stdlib.h>
 #include "flstring.h"
 #include <ctype.h>
+#include <FL/Fl.H>
 #include <FL/Fl_Text_Buffer.H>
 #include <FL/fl_utf8.H>
+
+#ifdef __MACOS__
+#define CW_BUG 37
+//#include <MemoryManager.h>
+#else
+#define CW_BUG 0
+#endif
 
 #define PREFERRED_GAP_SIZE 80
 /* Initial size for the buffer gap (empty space
@@ -69,6 +77,13 @@ static const char *ControlCodeTable[ 32 ] = {
   "dle", "dc1", "dc2", "dc3", "dc4", "nak", "syn", "etb",
   "can", "em", "sub", "esc", "fs", "gs", "rs", "us"};
 
+
+const char* fl_ins1_failed = "Fl_Text_Buffer::insert_column(): internal consistency check ins1 failed";
+const char* fl_ovly1_failed = "Fl_Text_Buffer::overlay_rectangle(): internal consistency check ovly1 failed";
+const char* fl_repl1_failed = "Fl_Text_Buffer::replace_rectangular(): internal consistency check repl1 failed";
+const char* fl_cannot_modify_cb = "Fl_Text_Buffer::remove_modify_callback(): Can't find modify CB to remove";
+const char* fl_cannot_find_pre = "Fl_Text_Buffer::remove_predelete_callback(): Can't find pre-delete CB to remove";
+
 static int utf_len(char c)
 {
   if (!(c & 0x80)) return 1;
@@ -88,6 +103,26 @@ static int utf_len(char c)
     return 2;
   }
   return 0;
+}
+
+static char* undobuffer;
+static int undobufferlength;
+static Fl_Text_Buffer* undowidget;
+static int undoat;	// points after insertion
+static int undocut;	// number of characters deleted there
+static int undoinsert;	// number of characters inserted
+static int undoyankcut;	// length of valid contents of buffer, even if undocut=0
+
+static void undobuffersize(int n) {
+  if (n > undobufferlength) {
+    if (undobuffer) {
+      do {undobufferlength *= 2;} while (undobufferlength < n);
+      undobuffer = (char*)realloc(undobuffer, undobufferlength);
+    } else {
+      undobufferlength = n+9;
+      undobuffer = (char*)malloc(undobufferlength);
+    }
+  }
 }
 
 /*
@@ -119,6 +154,7 @@ Fl_Text_Buffer::Fl_Text_Buffer( int requestedSize ) {
   mPredeleteCbArgs = NULL;
   mCursorPosHint = 0;
   mNullSubsChar = '\0';
+  mCanUndo = 1;
 #ifdef PURIFY
 { int i; for (i = mGapStart; i < mGapEnd; i++) mBuf[ i ] = '.'; }
 #endif
@@ -130,12 +166,12 @@ Fl_Text_Buffer::Fl_Text_Buffer( int requestedSize ) {
 Fl_Text_Buffer::~Fl_Text_Buffer() {
   free( mBuf );
   if ( mNModifyProcs != 0 ) {
-    free( ( void * ) mNodifyProcs );
-    free( ( void * ) mCbArgs );
+    delete[] mNodifyProcs;
+    delete[] mCbArgs;
   }
   if ( mNPredeleteProcs != 0 ) {
-    free( ( void * ) mPredeleteProcs );
-    free( ( void * ) mPredeleteCbArgs );
+    delete[] mPredeleteProcs;
+    delete[] mPredeleteCbArgs;
   }
 }
 
@@ -194,13 +230,13 @@ void Fl_Text_Buffer::text( const char *t ) {
 ** include the character pointed to by "end"
 */
 char * Fl_Text_Buffer::text_range( int start, int end ) {
-  char * s;
+  char * s = NULL;
   int copiedLength, part1Length;
 
   /* Make sure start and end are ok, and allocate memory for returned string.
      If start is bad, return "", if end is bad, adjust it. */
   if ( start < 0 || start > mLength ) {
-    s = (char *)malloc( 1 );
+    s = (char *)malloc(1);
     s[ 0 ] = '\0';
     return s;
   }
@@ -212,17 +248,18 @@ char * Fl_Text_Buffer::text_range( int start, int end ) {
   if ( end > mLength )
     end = mLength;
   copiedLength = end - start;
-  s = (char *)malloc( copiedLength + 1 );
+  
+  s = (char *)malloc( copiedLength + 1);
 
   /* Copy the text from the buffer to the returned string */
   if ( end <= mGapStart ) {
-    memcpy( s, &mBuf[ start ], copiedLength );
+    memcpy( s, mBuf+start, copiedLength );
   } else if ( start >= mGapStart ) {
-    memcpy( s, &mBuf[ start + ( mGapEnd - mGapStart ) ], copiedLength );
+    memcpy( s, mBuf + start + ( mGapEnd - mGapStart ), copiedLength );
   } else {
     part1Length = mGapStart - start;
-    memcpy( s, &mBuf[ start ], part1Length );
-    memcpy( &s[ part1Length ], &mBuf[ mGapEnd ], copiedLength - part1Length );
+    memcpy( s, mBuf + start, part1Length );
+    memcpy( s + part1Length, mBuf + mGapEnd, copiedLength - part1Length );
   }
   s[ copiedLength ] = '\0';
   return s;
@@ -270,10 +307,11 @@ void Fl_Text_Buffer::replace( int start, int end, const char *s ) {
   call_predelete_callbacks( start, end-start );
   deletedText = text_range( start, end );
   remove_( start, end );
+  //undoyankcut = undocut;
   nInserted = insert_( start, s );
   mCursorPosHint = start + nInserted;
   call_modify_callbacks( start, end - start, nInserted, 0, deletedText );
-  free( (void *)deletedText );
+  free( (char *)deletedText );
 }
 
 void Fl_Text_Buffer::remove( int start, int end ) {
@@ -333,6 +371,51 @@ void Fl_Text_Buffer::copy( Fl_Text_Buffer *fromBuf, int fromStart,
 }
 
 /*
+** remove text according to the undo variables or insert text 
+** from the undo buffer
+*/
+int Fl_Text_Buffer::undo(int *cursorPos) {
+  if (undowidget != this || !undocut && !undoinsert &&!mCanUndo) return 0;
+
+  int ilen = undocut;
+  int xlen = undoinsert;
+  int b = undoat-xlen;
+
+  if (xlen && undoyankcut && !ilen) {
+    ilen = undoyankcut;
+  }
+
+  if (xlen && ilen) {
+    undobuffersize(ilen+1);
+    undobuffer[ilen] = 0;
+    char *tmp = strdup(undobuffer);
+    replace(b, undoat, tmp);
+    if (cursorPos) *cursorPos = mCursorPosHint;
+    free(tmp);
+  }
+  else if (xlen) {
+    remove(b, undoat);
+    if (cursorPos) *cursorPos = mCursorPosHint;
+  }
+  else if (ilen) {
+    undobuffersize(ilen+1);
+    undobuffer[ilen] = 0;
+    insert(undoat, undobuffer);
+    if (cursorPos) *cursorPos = mCursorPosHint;
+    undoyankcut = 0;
+  }
+
+  return 1;
+}
+
+/*
+** let the undo system know if we can undo changes
+*/
+void Fl_Text_Buffer::canUndo(char flag) {
+  mCanUndo = flag;
+}
+
+/*
 ** Insert "text" columnwise into buffer starting at displayed character
 ** position "column" on the line beginning at "startPos".  Opens a rectangular
 ** space the width and height of "text", by moving all text to the right of
@@ -354,7 +437,7 @@ void Fl_Text_Buffer::insert_column( int column, int startPos, const char *s,
   insert_column_( column, lineStartPos, s, &insertDeleted, &nInserted,
                   &mCursorPosHint );
   if ( nDeleted != insertDeleted )
-    fprintf( stderr, "internal consistency check ins1 failed" );
+    Fl::error(fl_ins1_failed);
   call_modify_callbacks( lineStartPos, nDeleted, nInserted, 0, deletedText );
   free( (void *) deletedText );
   if ( charsInserted != NULL )
@@ -383,7 +466,7 @@ void Fl_Text_Buffer::overlay_rectangular( int startPos, int rectStart,
   overlay_rectangular_( lineStartPos, rectStart, rectEnd, s, &insertDeleted,
                         &nInserted, &mCursorPosHint );
   if ( nDeleted != insertDeleted )
-    fprintf( stderr, "internal consistency check ovly1 failed" );
+    Fl::error(fl_ovly1_failed);
   call_modify_callbacks( lineStartPos, nDeleted, nInserted, 0, deletedText );
   free( (void *) deletedText );
   if ( charsInserted != NULL )
@@ -445,7 +528,7 @@ void Fl_Text_Buffer::replace_rectangular( int start, int end, int rectStart,
 
   /* Figure out how many chars were inserted and call modify callbacks */
   if ( insertDeleted != deleteInserted + linesPadded )
-    fprintf( stderr, "NEdit: internal consistency check repl1 failed\n" );
+    Fl::error(fl_repl1_failed);
   call_modify_callbacks( start, end - start, insertInserted, 0, deletedText );
   free( (void *) deletedText );
   if ( nInsertedLines < nDeletedLines )
@@ -672,8 +755,8 @@ void Fl_Text_Buffer::add_modify_callback( Fl_Text_Modify_Cb bufModifiedCB,
   void **newCBArgs;
   int i;
 
-  newModifyProcs = new Fl_Text_Modify_Cb [ mNModifyProcs + 1 ];
-  newCBArgs = new void * [ mNModifyProcs + 1 ];
+  newModifyProcs = new Fl_Text_Modify_Cb [ mNModifyProcs + 1 + CW_BUG];
+  newCBArgs = new void * [ mNModifyProcs + 1 + CW_BUG];
   for ( i = 0; i < mNModifyProcs; i++ ) {
     newModifyProcs[ i + 1 ] = mNodifyProcs[ i ];
     newCBArgs[ i + 1 ] = mCbArgs[ i ];
@@ -703,7 +786,7 @@ void Fl_Text_Buffer::remove_modify_callback( Fl_Text_Modify_Cb bufModifiedCB,
     }
   }
   if ( toRemove == -1 ) {
-    fprintf( stderr, "Internal Error: Can't find modify CB to remove\n" );
+    Fl::error(fl_cannot_modify_cb);
     return;
   }
 
@@ -777,7 +860,7 @@ void Fl_Text_Buffer::remove_predelete_callback(
     	}
     }
     if (toRemove == -1) {
-    	fprintf(stderr, "Internal Error: Can't find pre-delete CB to remove\n");
+    	Fl::error(fl_cannot_find_pre);
     	return;
     }
     
@@ -1323,6 +1406,19 @@ int Fl_Text_Buffer::insert_( int pos, const char *s ) {
   mLength += insertedLength;
   update_selections( pos, 0, insertedLength );
 
+  if (mCanUndo) {
+    if ( undowidget==this && undoat==pos && undoinsert ) {
+      undoinsert += insertedLength;
+    }
+    else {
+      undoinsert = insertedLength;
+      undoyankcut = (undoat==pos) ? undocut : 0 ;
+    }
+    undoat = pos+insertedLength;
+    undocut = 0;
+    undowidget = this;
+  }
+
   return insertedLength;
 }
 
@@ -1333,10 +1429,40 @@ int Fl_Text_Buffer::insert_( int pos, const char *s ) {
 */
 void Fl_Text_Buffer::remove_( int start, int end ) {
   /* if the gap is not contiguous to the area to remove, move it there */
-  if ( start > mGapStart )
+
+  if (mCanUndo) {
+    if ( undowidget==this && undoat==end && undocut ) {
+      undobuffersize( undocut+end-start+1 );
+      memmove( undobuffer+end-start, undobuffer, undocut );
+      undocut += end-start;
+    } 
+    else {
+      undocut = end-start;
+      undobuffersize(undocut);
+    }
+    undoat = start;
+    undoinsert = 0;
+    undoyankcut = 0;
+    undowidget = this;
+  }
+
+  if ( start > mGapStart ) {
+    if (mCanUndo)
+      memcpy( undobuffer, mBuf+(mGapEnd-mGapStart)+start, end-start );
     move_gap( start );
-  else if ( end < mGapStart )
+  }
+  else if ( end < mGapStart ) {
+    if (mCanUndo)
+      memcpy( undobuffer, mBuf+start, end-start );
     move_gap( end );
+  }
+  else {
+    int prelen = mGapStart - start;
+    if (mCanUndo) {
+      memcpy( undobuffer, mBuf+start, prelen );
+      memcpy( undobuffer+prelen, mBuf+mGapEnd, end-start-prelen);
+    }
+  }
 
   /* expand the gap to encompass the deleted characters */
   mGapEnd += end - mGapStart;
@@ -1887,8 +2013,10 @@ void Fl_Text_Buffer::remove_selection_( Fl_Text_Selection *sel ) {
     return;
   if ( isRect )
     remove_rectangular( start, end, rectStart, rectEnd );
-  else
+  else {
     remove( start, end );
+    //undoyankcut = undocut;
+  }
 }
 
 void Fl_Text_Buffer::replace_selection_( Fl_Text_Selection *sel, const char *s ) {
@@ -2064,7 +2192,7 @@ void Fl_Text_Buffer::reallocate_with_gap( int newGapStart, int newGapLen ) {
             &mBuf[ mGapEnd + newGapStart - mGapStart ],
             mLength - newGapStart );
   }
-  free( (void *) mBuf );
+  if (mBuf) free( (void *) mBuf );
   mBuf = newBuf;
   mGapStart = newGapStart;
   mGapEnd = newGapEnd;
@@ -2155,7 +2283,7 @@ int Fl_Text_Buffer::findchar_backward( int startPos, char searchChar,
                                      int *foundPos ) {
   int pos, gapLen = mGapEnd - mGapStart;
 
-  if ( startPos <= 0 || startPos >= mLength ) {
+  if ( startPos <= 0 || startPos > mLength ) {
     *foundPos = 0;
     return 0;
   }
@@ -2441,5 +2569,5 @@ Fl_Text_Buffer::outputfile(const char *file, int start, int end, int buflen) {
 
 
 //
-// End of "$Id: Fl_Text_Buffer.cxx,v 1.9.2.12 2002/09/20 19:59:45 easysw Exp $".
+// End of "$Id: Fl_Text_Buffer.cxx,v 1.9.2.19 2003/05/28 16:09:12 matthiaswm Exp $".
 //

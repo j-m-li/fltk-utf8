@@ -3,7 +3,7 @@
 //
 // Enumerations for the Fast Light Tool Kit (FLTK).
 //
-// Copyright 1998-2002 by Bill Spitzak and others.
+// Copyright 1998-2003 by Bill Spitzak and others.
 //
 // This library is free software; you can redistribute it and/or
 // modify it under the terms of the GNU Library General Public
@@ -45,7 +45,7 @@
 
 #define FL_MAJOR_VERSION	1
 #define FL_MINOR_VERSION	1
-#define FL_PATCH_VERSION	1
+#define FL_PATCH_VERSION	4
 #define FL_VERSION		((double)FL_MAJOR_VERSION + \
 				 (double)FL_MINOR_VERSION * 0.01 + \
 				 (double)FL_PATCH_VERSION * 0.0001)
@@ -146,6 +146,14 @@ enum Fl_When { // Fl_Widget::when():
 #define FL_BUTTON1	0x01000000
 #define FL_BUTTON2	0x02000000
 #define FL_BUTTON3	0x04000000
+#define FL_BUTTONS	0x7f000000 // All possible buttons
+#define FL_BUTTON(n)	(0x00800000<<(n))
+
+#ifdef __MACOS__
+#  define FL_COMMAND	FL_META
+#else
+#  define FL_COMMAND	FL_CTRL
+#endif // __MACOS__
 
 enum Fl_Boxtype { // boxtypes (if you change these you must fix fl_boxtype.C):
   FL_NO_BOX = 0,	FL_FLAT_BOX,
@@ -166,6 +174,7 @@ enum Fl_Boxtype { // boxtypes (if you change these you must fix fl_boxtype.C):
   _FL_OVAL_FRAME,	_FL_OFLAT_BOX,
   _FL_PLASTIC_UP_BOX,	_FL_PLASTIC_DOWN_BOX,
   _FL_PLASTIC_UP_FRAME,	_FL_PLASTIC_DOWN_FRAME,
+  _FL_PLASTIC_THIN_UP_BOX,	_FL_PLASTIC_THIN_DOWN_BOX,
   FL_FREE_BOXTYPE
 };
 extern FL_EXPORT Fl_Boxtype fl_define_FL_ROUND_UP_BOX();
@@ -195,6 +204,8 @@ extern FL_EXPORT Fl_Boxtype fl_define_FL_PLASTIC_UP_BOX();
 #define FL_PLASTIC_DOWN_BOX (Fl_Boxtype)(fl_define_FL_PLASTIC_UP_BOX()+1)
 #define FL_PLASTIC_UP_FRAME (Fl_Boxtype)(fl_define_FL_PLASTIC_UP_BOX()+2)
 #define FL_PLASTIC_DOWN_FRAME (Fl_Boxtype)(fl_define_FL_PLASTIC_UP_BOX()+3)
+#define FL_PLASTIC_THIN_UP_BOX (Fl_Boxtype)(fl_define_FL_PLASTIC_UP_BOX()+4)
+#define FL_PLASTIC_THIN_DOWN_BOX (Fl_Boxtype)(fl_define_FL_PLASTIC_UP_BOX()+5)
 
 // conversions of box types to other boxtypes:
 inline Fl_Boxtype fl_down(Fl_Boxtype b) {return (Fl_Boxtype)(b|1);}
@@ -268,7 +279,8 @@ enum Fl_Font {	// standard fonts
 
   FL_FREE_FONT		= 16,	// first one to allocate
   FL_BOLD		= 1,	// add this to helvetica, courier, or times
-  FL_ITALIC		= 2	// add this to helvetica, courier, or times
+  FL_ITALIC		= 2,	// add this to helvetica, courier, or times
+  FL_FONT_NO_VALID	= 0xffffffff
 };
 
 extern FL_EXPORT int FL_NORMAL_SIZE;
@@ -393,6 +405,8 @@ enum Fl_Damage {
   FL_DAMAGE_EXPOSE   = 0x02,
   FL_DAMAGE_SCROLL   = 0x04,
   FL_DAMAGE_OVERLAY  = 0x08,
+  FL_DAMAGE_USER1    = 0x10,
+  FL_DAMAGE_USER2    = 0x20,
   FL_DAMAGE_ALL      = 0x80
 };
 
@@ -409,7 +423,8 @@ enum PS_LAYOUT{PS_PORTRAIT=0, PS_LANDSCAPE=1, PS_UNCHANGED=-1, PS_ASK=-2};
 enum FL_DEVICE {
 	FL_FLTK_DEVICE	= 0x01,
 	FL_PS_DEVICE	= 0x02,
-	FL_GDI_DEVICE	= 0x04
+	FL_GDI_DEVICE	= 0x04,
+        FL_CPM_DEVICE	= 0x08
 };
 
 // FLTK 1.0.x compatibility definitions...

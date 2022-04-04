@@ -1,9 +1,9 @@
 #
-# "$Id: Makefile,v 1.19.2.7.2.38 2002/08/12 02:11:03 easysw Exp $"
+# "$Id: Makefile,v 1.19.2.7.2.40 2003/09/05 12:24:31 easysw Exp $"
 #
 # Test/example program makefile for the Fast Light Tool Kit (FLTK).
 #
-# Copyright 1998-2002 by Bill Spitzak and others.
+# Copyright 1998-2003 by Bill Spitzak and others.
 #
 # This library is free software; you can redistribute it and/or
 # modify it under the terms of the GNU Library General Public
@@ -78,17 +78,19 @@ CPPFILES =\
 	pixmap.cxx \
 	preferences.cxx \
 	radio.cxx \
+	readimg.cxx \
 	resizebox.cxx \
 	resize.cxx \
+	scribble.cxx \
 	scroll.cxx \
 	shape.cxx \
-	shiny.cxx \
 	subwindow.cxx \
 	symbols.cxx \
 	tabs.cxx \
 	threads.cxx \
 	tile.cxx \
 	tiled_image.cxx \
+	tree.cxx \
 	utf8.cxx \
 	valuators.cxx
 
@@ -137,8 +139,10 @@ ALL =	\
 	pixmap_browser$(EXEEXT) \
 	preferences$(EXEEXT) \
 	radio$(EXEEXT) \
+	readimg$(EXEEXT) \
 	resize$(EXEEXT) \
 	resizebox$(EXEEXT) \
+	scribble$(EXEEXT) \
 	scroll$(EXEEXT) \
 	subwindow$(EXEEXT) \
 	symbols$(EXEEXT) \
@@ -146,6 +150,7 @@ ALL =	\
 	$(THREADS) \
 	tile$(EXEEXT) \
 	tiled_image$(EXEEXT) \
+	tree$(EXEEXT) \
 	utf8$(EXEEXT) \
 	valuators$(EXEEXT)
 
@@ -156,8 +161,7 @@ GLALL = \
 	fullscreen$(EXEEXT) \
 	gl_overlay$(EXEEXT) \
 	glpuzzle$(EXEEXT) \
-	shape$(EXEEXT) \
-	shiny$(EXEEXT)
+	shape$(EXEEXT)
 
 all:	$(ALL) $(GLDEMOS)
 
@@ -170,7 +174,13 @@ depend:	$(CPPFILES)
 include makedepend
 
 clean:
-	-@ rm -f $(ALL) $(GLALL) *.o core *~
+	-@ rm -f $(ALL) $(GLALL) *.o *.obj core *~ *.exe *.ilk *.lib *.exp *.bsc
+	-@ rm -f CubeViewUI.cxx fast_slow.cxx inactive.cxx keyboard_ui.cxx \
+		mandelbrot_ui.cxx preferences.cxx radio.cxx resize.cxx \
+		tabs.cxx valuators.cxx shiny_panel.cxx
+	-@ rm -f CubeViewUI.h fast_slow.h inactive.h keyboard_ui.h \
+		mandelbrot_ui.h preferences. radio.h resize.h \
+		tabs.h valuators.h shiny_panel.h
 
 install:
 	@echo Nothing to install in test directory.
@@ -320,9 +330,16 @@ resize.cxx:	resize.fl
 
 resizebox$(EXEEXT): resizebox.o
 
+scribble$(EXEEXT): scribble.o
+
 scroll$(EXEEXT): scroll.o
 	$(CXX) $(CXXFLAGS) -o $@ scroll.o \
-		$(LINKFLTKGL) $(LINKFLTK) $(GLDLIBS) -lstdc++
+		$(LINKFLTKGL) $(LINKFLTK) $(GLDLIBS) 
+
+readimg$(EXEEXT): readimg.o
+	$(CXX) $(CXXFLAGS) -o $@ readimg.o \
+		$(LINKFLTKGL) $(LINKFLTK) $(GLDLIBS) 
+
 
 subwindow$(EXEEXT): subwindow.o
 
@@ -336,6 +353,8 @@ threads$(EXEEXT): threads.o
 tile$(EXEEXT): tile.o
 
 tiled_image$(EXEEXT): tiled_image.o
+
+tree$(EXEEXT): tree.o
 
 valuators$(EXEEXT): valuators.o
 valuators.cxx:	valuators.fl
@@ -374,13 +393,6 @@ gl_overlay$(EXEEXT): gl_overlay.o
 	echo Linking $@...
 	$(CXX) -I.. $(CXXFLAGS) -o $@ gl_overlay.o $(LINKFLTKGL) $(LINKFLTK) $(GLDLIBS)
 	$(POSTBUILD) $@ ../FL/mac.r
-shiny$(EXEEXT): shiny_panel.o shiny.o
-	echo Linking $@...
-	$(CXX) -I.. $(CXXFLAGS) -o $@ shiny.o shiny_panel.o $(LINKFLTKGL) $(LINKFLTK) $(GLDLIBS)
-	$(POSTBUILD) $@ ../FL/mac.r
-shiny_panel.o:	shiny_panel.h
-shiny_panel.cxx:	shiny_panel.fl
-
 shape$(EXEEXT): shape.o
 	echo Linking $@...
 	$(CXX) -I.. $(CXXFLAGS) -o $@ shape.o $(LINKFLTKGL) $(LINKFLTK) $(GLDLIBS)
@@ -388,5 +400,5 @@ shape$(EXEEXT): shape.o
 
 
 #
-# End of "$Id: Makefile,v 1.19.2.7.2.38 2002/08/12 02:11:03 easysw Exp $".
+# End of "$Id: Makefile,v 1.19.2.7.2.40 2003/09/05 12:24:31 easysw Exp $".
 #

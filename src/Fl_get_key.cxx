@@ -1,9 +1,9 @@
 //
-// "$Id: Fl_get_key.cxx,v 1.5.2.3.2.3 2002/01/01 15:11:31 easysw Exp $"
+// "$Id: Fl_get_key.cxx,v 1.5.2.3.2.5 2003/04/03 04:28:15 matthiaswm Exp $"
 //
 // Keyboard state routines for the Fast Light Tool Kit (FLTK).
 //
-// Copyright 1998-2002 by Bill Spitzak and others.
+// Copyright 1998-2003 by Bill Spitzak and others.
 //
 // This library is free software; you can redistribute it and/or
 // modify it under the terms of the GNU Library General Public
@@ -25,8 +25,12 @@
 
 #ifdef WIN32
 #  include "Fl_get_key_win32.cxx"
-#elif defined(__APPLE__)
+#elif defined(__MACOS__)
 #  include "Fl_get_key_mac.cxx"
+#elif defined(NANO_X)
+#  include "Fl_get_key_nx.cxx"
+#elif defined(DJGPP)
+#  include "Fl_get_key_dj2.cxx"
 #else
 
 // Return the current state of a key.  This is the X version.  I identify
@@ -50,6 +54,7 @@ int Fl::event_key(int k) {
   else
 #  endif
     i = XKeysymToKeycode(fl_display, k);
+  if (i==0) return 0;
   return fl_key_vector[i/8] & (1 << (i%8));
 }
 
@@ -62,5 +67,5 @@ int Fl::get_key(int k) {
 #endif
 
 //
-// End of "$Id: Fl_get_key.cxx,v 1.5.2.3.2.3 2002/01/01 15:11:31 easysw Exp $".
+// End of "$Id: Fl_get_key.cxx,v 1.5.2.3.2.5 2003/04/03 04:28:15 matthiaswm Exp $".
 //

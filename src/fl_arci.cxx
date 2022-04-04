@@ -36,7 +36,7 @@
 #include <FL/fl_draw.H>
 #include <FL/x.H>
 #ifdef WIN32
-#include <FL/math.h>
+#include <FL/fl_math.h>
 #endif
 
 
@@ -48,10 +48,20 @@ void Fl_Fltk::arc(int x,int y,int w,int h,double a1,double a2) {
   int xb = x+w/2+int(w*cos(a2/180.0*M_PI));
   int yb = y+h/2-int(h*sin(a2/180.0*M_PI));
   Arc(fl_gc, x, y, x+w, y+h, xa, ya, xb, yb); 
-#elif defined(__APPLE__)
+#elif defined(__MACOS__)
   Rect r; r.left=x; r.right=x+w; r.top=y; r.bottom=y+h;
   a1 = a2-a1; a2 = 450-a2;
   FrameArc(&r, (short int)a2, (short int)a1);
+#elif NANO_X
+  --w;  --h;
+
+  GrArcAngle(fl_window, fl_gc, x + w/2, y + h/2, w/2, h/2, 
+	     int(a1 * 64), int(a2 * 64), MWARC);
+
+  ++w;  ++h;
+
+#elif DJGPP
+  // FIXME_DJGPP
 #else
   XDrawArc(fl_display, fl_window, fl_gc, x,y,w-1,h-1, int(a1*64),int((a2-a1)*64));
 #endif
@@ -67,10 +77,20 @@ void Fl_Fltk::pie(int x,int y,int w,int h,double a1,double a2) {
   int yb = y+h/2-int(h*sin(a2/180.0*M_PI));
   SelectObject(fl_gc, fl_brush());
   Pie(fl_gc, x, y, x+w, y+h, xa, ya, xb, yb); 
-#elif defined(__APPLE__)
+#elif defined(__MACOS__)
   Rect r; r.left=x; r.right=x+w; r.top=y; r.bottom=y+h;
   a1 = a2-a1; a2 = 450-a2;
   PaintArc(&r, (short int)a2, (short int)a1);
+#elif NANO_X
+  --w;  --h;
+
+  GrArcAngle(fl_window, fl_gc, x + w/2, y + h/2, w/2, h/2, 
+	     int(a1 * 64), int(a2 * 64), MWPIE);
+  
+  ++w;  ++h;
+
+#elif DJGPP
+  // FIXME_DJGPP
 #else
   XFillArc(fl_display, fl_window, fl_gc, x,y,w,h, int(a1*64),int((a2-a1)*64));
 #endif

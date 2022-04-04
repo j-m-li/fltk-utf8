@@ -28,7 +28,8 @@
 // Incremental math implementation:
 
 #include <FL/fl_draw.H>
-#include <FL/math.h>
+#include <FL/fl_math.h>
+#include <FL/fl_utf8.H>
 
 void Fl_Fltk::arc(double x, double y, double r, double start, double end) {
 

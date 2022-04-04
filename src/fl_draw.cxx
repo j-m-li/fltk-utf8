@@ -1,9 +1,9 @@
 //
-// "$Id: fl_draw.cxx,v 1.6.2.4.2.12 2002/05/16 12:47:43 easysw Exp $"
+// "$Id: fl_draw.cxx,v 1.6.2.4.2.15 2003/07/18 05:53:21 matthiaswm Exp $"
 //
 // Label drawing code for the Fast Light Tool Kit (FLTK).
 //
-// Copyright 1998-2002 by Bill Spitzak and others.
+// Copyright 1998-2003 by Bill Spitzak and others.
 //
 // This library is free software; you can redistribute it and/or
 // modify it under the terms of the GNU Library General Public
@@ -39,16 +39,17 @@
 #include "flstring.h"
 #include <ctype.h>
 #include <FL/Fl_Device.H>
+#include <FL/Fl.H>
 
-Fl_Fltk fltk;
-Fl_Device * fl=&fltk;
+FL_EXPORT Fl_Fltk fltk;
+FL_EXPORT Fl_Device * fl=&fltk;
 
 char fl_draw_shortcut;	// set by fl_labeltypes.cxx
 
 static char* underline_at;
 
 // Copy p to buf, replacing unprintable characters with ^X and \nnn
-// Stop at a newline of if MAXBUF characters written to buffer.
+// Stop at a newline or if MAXBUF characters written to buffer.
 // Also word-wrap if width exceeds maxw.
 // Returns a pointer to the start of the next line of caharcters.
 // Sets n to the number of characters put into the buffer.
@@ -130,6 +131,8 @@ void fl_draw(
   int lines;
   double width;
 
+  if (draw_symbols == -1) draw_symbols = Fl::symbol_in_label();
+
   symbol[0][0] = '\0';
   symwidth[0]  = 0;
 
@@ -147,7 +150,7 @@ void fl_draw(
       symwidth[0] = min(w,h);
     }
 
-    if (str && (p = strrchr(str, '@')) != NULL && p > (str + 1)) {
+    if (str && (p = strrchr(str, '@')) != NULL && p > (str + 1) && p[-1] != '@') {
       strlcpy(symbol[1], p, sizeof(symbol[1]));
       symwidth[1] = min(w,h);
     }
@@ -160,7 +163,7 @@ void fl_draw(
       e = expand(p, buf, w - symtotal, buflen, width, align&FL_ALIGN_WRAP,
                  draw_symbols);
       lines++;
-      if (!*e || (*e == '@' && draw_symbols)) break;
+      if (!*e || (*e == '@' && e[1] != '@' && draw_symbols)) break;
       p = e;
     }
   } else lines = 0;
@@ -215,7 +218,7 @@ void fl_draw(
       if (underline_at)
 	callthis("_",1,xpos+int(fl_width(buf,underline_at-buf)),ypos-desc);
 
-      if (!*e || *e == '@') break;
+      if (!*e || (*e == '@' && e[1] != '@' && draw_symbols)) break;
       p = e;
     }
   }
@@ -285,6 +288,8 @@ void fl_measure(const char* str, int& w, int& h, int draw_symbols) {
   char symbol[2][255], *symptr;
   int symwidth[2], symtotal;
 
+  if (draw_symbols == -1) draw_symbols = Fl::symbol_in_label();
+
   // count how many lines and put the last one into the buffer:
   symbol[0][0] = '\0';
   symwidth[0]  = 0;
@@ -329,5 +334,5 @@ void fl_measure(const char* str, int& w, int& h, int draw_symbols) {
 }
 
 //
-// End of "$Id: fl_draw.cxx,v 1.6.2.4.2.12 2002/05/16 12:47:43 easysw Exp $".
+// End of "$Id: fl_draw.cxx,v 1.6.2.4.2.15 2003/07/18 05:53:21 matthiaswm Exp $".
 //

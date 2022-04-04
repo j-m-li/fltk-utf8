@@ -1,9 +1,9 @@
 //
-// "$Id: browser.cxx,v 1.5.2.6.2.4 2002/01/01 15:11:32 easysw Exp $"
+// "$Id: browser.cxx,v 1.5.2.6.2.5 2003/01/30 21:44:59 easysw Exp $"
 //
 // Browser test program for the Fast Light Tool Kit (FLTK).
 //
-// Copyright 1998-2002 by Bill Spitzak and others.
+// Copyright 1998-2003 by Bill Spitzak and others.
 //
 // This library is free software; you can redistribute it and/or
 // modify it under the terms of the GNU Library General Public
@@ -129,6 +129,18 @@ int main(int argc, char **argv) {
       printf("Can't load %s, %s\n", fname, strerror(errno));
       exit(1);
     }
+#elif __MACOS__
+    int done = 1;
+    if ( 1 ) 
+    {
+      fname = "../../../browser.cxx";
+      done = browser->load(fname);
+    }
+    if ( !done )
+    {
+      printf("Can't load %s, %s\n", fname, strerror(errno));
+      exit(1);
+    }
 #else
     printf("Can't load %s, %s\n", fname, strerror(errno));
     exit(1);
@@ -157,6 +169,6 @@ int main(int argc, char **argv) {
 }
 
 //
-// End of "$Id: browser.cxx,v 1.5.2.6.2.4 2002/01/01 15:11:32 easysw Exp $".
+// End of "$Id: browser.cxx,v 1.5.2.6.2.5 2003/01/30 21:44:59 easysw Exp $".
 //
 

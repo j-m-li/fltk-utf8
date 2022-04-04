@@ -1,9 +1,9 @@
 //
-// "$Id: Fl_Function_Type.cxx,v 1.15.2.16.2.8 2002/08/09 22:56:59 easysw Exp $"
+// "$Id: Fl_Function_Type.cxx,v 1.15.2.16.2.13 2003/08/02 21:17:30 easysw Exp $"
 //
 // C function type code for the Fast Light Tool Kit (FLTK).
 //
-// Copyright 1998-2002 by Bill Spitzak and others.
+// Copyright 1998-2003 by Bill Spitzak and others.
 //
 // This library is free software; you can redistribute it and/or
 // modify it under the terms of the GNU Library General Public
@@ -28,6 +28,7 @@
 #include <FL/fl_show_input.H>
 #include "../src/flstring.h"
 #include <stdio.h>
+#include <stdlib.h>
 
 extern int i18n_type;
 extern const char* i18n_include;
@@ -325,7 +326,8 @@ Fl_Type *Fl_Code_Type::make() {
 
 void Fl_Code_Type::open() {
   if (!code_panel) make_code_panel();
-  code_input->static_value(name());
+  const char *text = name();
+  code_input->buffer()->text( text ? text : "" );
   code_panel->show();
   const char* message = 0;
   for (;;) { // repeat as long as there are errors
@@ -336,9 +338,10 @@ void Fl_Code_Type::open() {
       else if (w == code_panel_ok) break;
       else if (!w) Fl::wait();
     }
-    const char*c = code_input->value();
+    char*c = code_input->buffer()->text();
     message = c_check(c); if (message) continue;
     name(c);
+    free(c);
     break;
   }
  BREAK2:
@@ -615,11 +618,17 @@ const char* Fl_Type::class_name(const int need_nest) const {
 
 int Fl_Class_Type::is_public() const {return public_;}
 
+void Fl_Class_Type::prefix(const char*p) {
+  free((void*) class_prefix);
+  class_prefix=strdup(p ? p : "" );
+}
+
 Fl_Type *Fl_Class_Type::make() {
   Fl_Type *p = Fl_Type::current;
   while (p && !p->is_decl_block()) p = p->parent;
   Fl_Class_Type *o = new Fl_Class_Type();
   o->name("UserInterface");
+  o->class_prefix=0;
   o->subclass_of = 0;
   o->public_ = 1;
   o->add(p);
@@ -648,11 +657,19 @@ void Fl_Class_Type::read_property(const char *c) {
 
 void Fl_Class_Type::open() {
   if (!class_panel) make_class_panel();
-  c_name_input->static_value(name());
+  char fullname[1024]="";
+  if (prefix() && strlen(prefix())) 
+    sprintf(fullname,"%s %s",prefix(),name());
+  else 
+    strcpy(fullname, name());
+  c_name_input->static_value(fullname);
   c_subclass_input->static_value(subclass_of);
   c_public_button->value(public_);
   class_panel->show();
   const char* message = 0;
+
+  char *na=0,*pr=0,*p=0; // name and prefix substrings
+
   for (;;) { // repeat as long as there are errors
     if (message) fl_alert(message);
     for (;;) {
@@ -662,14 +679,30 @@ void Fl_Class_Type::open() {
       else if (!w) Fl::wait();
     }
     const char*c = c_name_input->value();
-    while (isspace(*c)) c++;
-    if (!*c) goto OOPS;
-    while (is_id(*c)) c++;
-    while (isspace(*c)) c++;
-    if (*c) {OOPS: message = "class name must be C++ identifier"; continue;}
+    char *s = strdup(c);
+    size_t len = strlen(s);
+    if (!*s) goto OOPS;
+    p = (char*) (s+len-1);
+    while (p>=s && isspace(*p)) *(p--)='\0';
+    if (p<s) goto OOPS;
+    while (p>=s && is_id(*p)) p--;
+    if ( (p<s && !is_id(*(p+1))) || !*(p+1) ) {
+      OOPS: message = "class name must be C++ identifier";
+      free((void*)s);
+      continue;
+    }
+    na=p+1; // now we have the name
+    if(p>s) *p--='\0';
+    while (p>=s && isspace(*p)) *(p--)='\0';
+    while (p>=s && is_id(*p))   p--;
+    if (p<s)                    p++;
+    if (is_id(*p) && p<na)      pr=p; // prefix detected
     c = c_subclass_input->value();
-    message = c_check(c); if (message) continue;
-    name(c_name_input->value());
+    message = c_check(c); 
+    if (message) { free((void*)s);continue;}
+    name(na);
+    prefix(pr);
+    free((void*)s);
     storestring(c, subclass_of);
     public_ = c_public_button->value();
     break;
@@ -693,7 +726,10 @@ void Fl_Class_Type::write_code1() {
   parent_class = current_class;
   current_class = this;
   write_public_state = 0;
-  write_h("\nclass %s ", name());
+  if (prefix() && strlen(prefix()))
+      write_h("\nclass %s %s ", prefix(), name());
+  else
+      write_h("\nclass %s ", name());
   if (subclass_of) write_h(": %s ", subclass_of);
   write_h("{\n");
 }
@@ -704,5 +740,5 @@ void Fl_Class_Type::write_code2() {
 }
 
 //
-// End of "$Id: Fl_Function_Type.cxx,v 1.15.2.16.2.8 2002/08/09 22:56:59 easysw Exp $".
+// End of "$Id: Fl_Function_Type.cxx,v 1.15.2.16.2.13 2003/08/02 21:17:30 easysw Exp $".
 //

@@ -164,23 +164,23 @@
  * Do we have various image libraries?
  */
 
-#undef HAVE_LIBPNG
-#undef HAVE_LIBZ
-#undef HAVE_LIBJPEG
+#define HAVE_LIBPNG 1
+#define HAVE_LIBZ 1
+#define HAVE_LIBJPEG 1
 
 /*
  * Which header file do we include for libpng?
  */
 
-#undef HAVE_PNG_H
-#undef HAVE_LIBPNG_PNG_H
+#define HAVE_PNG_H 1
+#undef HAVE_LIBPNG_PNG_H 
 
 /*
  * Do we have the png_xyz() functions?
  */
 
-#undef HAVE_PNG_GET_VALID
-#undef HAVE_PNG_SET_TRNS_TO_ALPHA
+#define HAVE_PNG_GET_VALID 1
+#define HAVE_PNG_SET_TRNS_TO_ALPHA 1
 
 
 /*

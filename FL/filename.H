@@ -1,9 +1,9 @@
 /*
- * "$Id: filename.H,v 1.11.2.4.2.10 2002/07/08 15:20:57 easysw Exp $"
+ * "$Id: filename.H,v 1.11.2.4.2.13 2003/08/02 05:54:43 matthiaswm Exp $"
  *
  * Filename header file for the Fast Light Tool Kit (FLTK).
  *
- * Copyright 1998-2002 by Bill Spitzak and others.
+ * Copyright 1998-2003 by Bill Spitzak and others.
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Library General Public
@@ -51,10 +51,12 @@ inline int fl_filename_relative(char *to, const char *from) { return fl_filename
 #  endif /* __cplusplus */
 
 
-#  if defined(WIN32) && !defined(__CYGWIN__)
+#  if (MSDOS || defined(WIN32)) && !defined(__CYGWIN__) 
 
 struct dirent {char d_name[1];};
 
+#  elif __MACOS__
+struct dirent {char d_name[1];};
 #  else
 /*
  * WARNING: on some systems (very few nowadays?) <dirent.h> may not exist.
@@ -94,6 +96,14 @@ typedef int (Fl_File_Sort_F)(struct dirent **, struct dirent **);
 
 FL_EXPORT int fl_filename_list(const char *d, struct dirent ***l,
                                Fl_File_Sort_F *s = fl_numericsort);
+
+/*
+ * CARBON path to FSRef converter
+ */
+#    if __MACOS__
+FL_EXPORT OSErr fl_get_fsref(const char *path, FSRef *Directory);
+#    endif /* __MACOS__*/
+
 #  endif /* __cplusplus */
 
 /*
@@ -109,6 +119,7 @@ FL_EXPORT int fl_filename_list(const char *d, struct dirent ***l,
 #    define filename_match	fl_filename_match
 #    define filename_name	fl_filename_name
 #    define filename_relative	fl_filename_relative
+#    define filename_setext	fl_filename_setext
 #    define numericsort		fl_numericsort
 #  endif /* FLTK_1_0_COMPAT */
 
@@ -116,5 +127,5 @@ FL_EXPORT int fl_filename_list(const char *d, struct dirent ***l,
 #endif /* FL_FILENAME_H */
 
 /*
- * End of "$Id: filename.H,v 1.11.2.4.2.10 2002/07/08 15:20:57 easysw Exp $".
+ * End of "$Id: filename.H,v 1.11.2.4.2.13 2003/08/02 05:54:43 matthiaswm Exp $".
  */

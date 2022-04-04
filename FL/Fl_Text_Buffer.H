@@ -1,9 +1,9 @@
 //
-// "$Id: Fl_Text_Buffer.H,v 1.3.2.5 2002/09/20 19:59:45 easysw Exp $"
+// "$Id: Fl_Text_Buffer.H,v 1.3.2.8 2003/01/30 21:40:17 easysw Exp $"
 //
 // Header file for Fl_Text_Buffer class.
 //
-// Copyright 2001-2002 by Bill Spitzak and others.
+// Copyright 2001-2003 by Bill Spitzak and others.
 // Original code Copyright Mark Edel.  Permission to distribute under
 // the LGPL for the FLTK library granted by Mark Edel.
 //
@@ -83,6 +83,8 @@ class FL_EXPORT Fl_Text_Buffer {
     void remove(int start, int end);
     void replace(int start, int end, const char *text);
     void copy(Fl_Text_Buffer* fromBuf, int fromStart, int fromEnd, int toPos);
+    int undo(int *cp=0);
+    void canUndo(char flag=1);
     int insertfile(const char *file, int pos, int buflen = 128*1024);
     int appendfile(const char *file, int buflen = 128*1024)
       { return insertfile(file, length(), buflen); }
@@ -244,10 +246,12 @@ class FL_EXPORT Fl_Text_Buffer {
                                    with something else.  This is the else, but
                                    of course, things get quite messy when you
                                    use it */
+    char mCanUndo;		/* if this buffer is used for attributes, it must
+				   not do any undo calls */
 };
 
 #endif
 
 //
-// End of "$Id: Fl_Text_Buffer.H,v 1.3.2.5 2002/09/20 19:59:45 easysw Exp $".
+// End of "$Id: Fl_Text_Buffer.H,v 1.3.2.8 2003/01/30 21:40:17 easysw Exp $".
 //

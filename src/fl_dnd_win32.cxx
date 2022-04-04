@@ -1,9 +1,9 @@
 //
-// "$Id: fl_dnd_win32.cxx,v 1.5.2.13 2002/08/20 15:29:25 easysw Exp $"
+// "$Id: fl_dnd_win32.cxx,v 1.5.2.15 2003/05/04 21:45:46 easysw Exp $"
 //
 // Drag & Drop code for the Fast Light Tool Kit (FLTK).
 //
-// Copyright 1998-2002 by Bill Spitzak and others.
+// Copyright 1998-2003 by Bill Spitzak and others.
 //
 // This library is free software; you can redistribute it and/or
 // modify it under the terms of the GNU Library General Public
@@ -56,7 +56,7 @@ Fl_Window *fl_dnd_target_window = 0;
 #if !defined(__GNUC__) || __GNUC__ >= 3
 
 #include <ole2.h>
-#include <ShellAPI.h>
+#include <shellapi.h>
 #include <shlobj.h>
 /**
  * subclass the IDropTarget to receive data from DnD operations
@@ -197,10 +197,10 @@ public:
         nf = DragQueryFileW( hdrop, (UINT)-1, 0, 0 );
         for ( i=0; i<nf; i++ ) nn += DragQueryFileW( hdrop, i, 0, 0 );
         nn += nf;
-        unsigned short *dst = (unsigned short *)malloc(nn * sizeof(short));
-	unsigned short *bu = dst;
+        xchar *dst = (xchar *)malloc(nn * sizeof(xchar));
+	xchar *bu = dst;
         for ( i=0; i<nf; i++ ) {
-	  n = DragQueryFileW( hdrop, i, dst, nn );
+	  n = DragQueryFileW( hdrop, i, (WCHAR*)dst, nn );
 	  dst += n;
 	  if ( i<nf-1 ) {
 	    *dst++ = L'\n';
@@ -325,7 +325,7 @@ public:
 	  df->fNC = FALSE;
 	  df->fWide = TRUE;
 	  int l = fl_utf2unicode((unsigned char*)fl_selection_buffer[0], 
-		  fl_selection_length[0], (unsigned short*)(((char*)pMem) + sizeof(DROPFILES)));
+		  fl_selection_length[0], (xchar*)(((char*)pMem) + sizeof(DROPFILES)));
 	  pMem[l] = 0;
 	  pMem[l + 1] = 0;
 	  pMem[l + 2] = 0;
@@ -396,5 +396,5 @@ int Fl::dnd()
 
 
 //
-// End of "$Id: fl_dnd_win32.cxx,v 1.5.2.13 2002/08/20 15:29:25 easysw Exp $".
+// End of "$Id: fl_dnd_win32.cxx,v 1.5.2.15 2003/05/04 21:45:46 easysw Exp $".
 //

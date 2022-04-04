@@ -1,9 +1,9 @@
 //
-// "$Id: input.cxx,v 1.5.2.4.2.4 2002/07/23 16:28:19 easysw Exp $"
+// "$Id: input.cxx,v 1.5.2.4.2.6 2003/06/05 21:14:19 easysw Exp $"
 //
 // Input field test program for the Fast Light Tool Kit (FLTK).
 //
-// Copyright 1998-2002 by Bill Spitzak and others.
+// Copyright 1998-2003 by Bill Spitzak and others.
 //
 // This library is free software; you can redistribute it and/or
 // modify it under the terms of the GNU Library General Public
@@ -59,7 +59,8 @@ void button_cb(Fl_Widget *,void *) {
 
 void color_cb(Fl_Widget* button, void* v) {
   Fl_Color c;
-  switch ((int)v) {
+  long val = (long)v;
+  switch ((int)val) {
   case 0: c = FL_WHITE; break;
   case 1: c = FL_SELECTION_COLOR; break;
   default: c = FL_BLACK; break;
@@ -97,16 +98,16 @@ int main(int argc, char **argv) {
   int y1 = y;
 
   Fl_Button *b;
-  b = new Fl_Toggle_Button(10,y,200,25,"FL_WHEN_&CHANGED");
+  b = new Fl_Toggle_Button(10,y,200,25,"FL_WHEN_CHANGED");
   b->callback(toggle_cb, FL_WHEN_CHANGED); y += 25;
   b->tooltip("Do callback each time the text changes");
-  b = new Fl_Toggle_Button(10,y,200,25,"FL_WHEN_&RELEASE");
+  b = new Fl_Toggle_Button(10,y,200,25,"FL_WHEN_RELEASE");
   b->callback(toggle_cb, FL_WHEN_RELEASE); y += 25;
   b->tooltip("Do callback when widget loses focus");
-  b = new Fl_Toggle_Button(10,y,200,25,"FL_WHEN_&ENTER_KEY");
+  b = new Fl_Toggle_Button(10,y,200,25,"FL_WHEN_ENTER_KEY");
   b->callback(toggle_cb, FL_WHEN_ENTER_KEY); y += 25;
   b->tooltip("Do callback when user hits Enter key");
-  b = new Fl_Toggle_Button(10,y,200,25,"FL_WHEN_&NOT_CHANGED");
+  b = new Fl_Toggle_Button(10,y,200,25,"FL_WHEN_NOT_CHANGED");
   b->callback(toggle_cb, FL_WHEN_NOT_CHANGED); y += 25;
   b->tooltip("Do callback even if the text is not changed");
   y += 5;
@@ -132,5 +133,5 @@ int main(int argc, char **argv) {
 }
 
 //
-// End of "$Id: input.cxx,v 1.5.2.4.2.4 2002/07/23 16:28:19 easysw Exp $".
+// End of "$Id: input.cxx,v 1.5.2.4.2.6 2003/06/05 21:14:19 easysw Exp $".
 //

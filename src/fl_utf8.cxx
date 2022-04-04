@@ -1,53 +1,74 @@
-//
+
 // "$Id: $"
 //
 // Unicode to UTF-8 conversion functions.
 //
+//                Copyright 2000-2003 by O'ksi'D.
+//                      All rights reserved.
 //
-// Copyright 2000-2002 by O'ksi'D.
+// Redistribution and use in source and binary forms, with or without
+// modification, are permitted provided that the following conditions
+// are met:
 //
-// This library is free software; you can redistribute it and/or
-// modify it under the terms of the GNU Library General Public
-// License as published by the Free Software Foundation; either
-// version 2 of the License, or (at your option) any later version.
+//      Redistributions of source code must retain the above copyright
+//      notice, this list of conditions and the following disclaimer.
 //
-// This library is distributed in the hope that it will be useful,
-// but WITHOUT ANY WARRANTY; without even the implied warranty of
-// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
-// Library General Public License for more details.
+//      Redistributions in binary form must reproduce the above copyright
+//      notice, this list of conditions and the following disclaimer in the
+//      documentation and/or other materials provided with the distribution.
 //
-// You should have received a copy of the GNU Library General Public
-// License along with this library; if not, write to the Free Software
-// Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307
-// USA.
-//
-// Please report all bugs and problems to "oksid@bluewin.ch".
-//
-// Author: Jean-Marc Lienher ( http://oksid.ch )
+//      Neither the name of O'ksi'D nor the names of its contributors
+//      may be used to endorse or promote products derived from this software
+//      without specific prior written permission.
 //
 //
+// THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
+// "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
+// LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
+// A PARTICULAR PURPOSE ARE DISCLAIMED.  IN NO EVENT SHALL THE COPYRIGHT OWNER
+// OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL,
+// EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO,
+// PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR
+// PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF
+// LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING
+// NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
+// SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+//
+
 
 
 #include <config.h>
 #include "spacing.h"
+#include <FL/filename.H>
 
-#ifndef WIN32
-#if HAVE_XUTF8
-#include <libXutf8/Xutf8.h>
-#else 
-#include <ctype.h>
-
-#endif //HAVE_XUTF8
-#include <sys/types.h>
-#include <sys/stat.h>
-#include <fcntl.h>
-#include <unistd.h>
-#else
+#if defined(WIN32)
 #include <ctype.h>
 #include <io.h>
 #include <direct.h>
 #include <windows.h>
 #include <winbase.h>
+#include <process.h>
+
+#elif defined(__MACOS__)
+#include <stdio.h>
+#include <time.h>
+#include <unix.h>
+#include <fcntl.h>
+#include <unistd.h>
+#include <wchar.h>
+#include <stdlib.h>
+#else
+
+#if HAVE_XUTF8 && !NANO_X
+#include <libXutf8/Xutf8.h>
+#else 
+#include <ctype.h>
+#endif //HAVE_XUTF8
+
+#include <sys/types.h>
+#include <sys/stat.h>
+#include <fcntl.h>
+#include <unistd.h>
 #endif //WIN32
 
 #include <FL/fl_utf8.H>
@@ -132,28 +153,32 @@ Tolower(
 
 	return ucs;
 }
-
+#if MSDOS
+#define NBC 255
+#else
+#define NBC 0xFFFF + 1
+#endif
 static int 
 Toupper(
 	int ucs)
 {
-	int i;
+	long i;
 	static unsigned short *table = NULL;
 
 	if (!table) {
 		table = (unsigned short*) malloc(
-			sizeof(unsigned short) * 0x10000);
-		for (i = 0; i < 0x10000; i++) {
+			sizeof(unsigned short) * (NBC));
+		for (i = 0; i < NBC; i++) {
 			table[i] = (unsigned short) i;
 		}	
-		for (i = 0; i < 0x10000; i++) {
+		for (i = 0; i < NBC; i++) {
 			int l;
 			l = Tolower(i);			
 			if (l != i) table[l] = (unsigned short) i;
 		}	
 
 	}
-	if (ucs >= 0x10000 || ucs < 0) return ucs;
+	if (ucs >= NBC || ucs < 0) return ucs;
 	return table[ucs];
 }
 
@@ -421,7 +446,7 @@ int fl_utf_toupper(const unsigned char *str, int len, char *buf)
  * converts a UTF-8 str to unicode
  * Warning: buf must a least len long
  */
-int fl_utf2unicode(const unsigned char *str, int len, unsigned short *buf)
+int fl_utf2unicode(const unsigned char *str, int len, xchar *buf)
 {
 	int i;
 	int l = 0;
@@ -430,7 +455,7 @@ int fl_utf2unicode(const unsigned char *str, int len, unsigned short *buf)
 		int l1;
 
                 l1 = fl_utf2ucs((unsigned char*)str + i, len - i, &u1);
-		buf[l] = (unsigned short) u1;
+		buf[l] = (xchar) u1;
                 if (l1 < 1) {
                         i += 1;
                 } else {
@@ -446,7 +471,7 @@ int fl_utf2unicode(const unsigned char *str, int len, unsigned short *buf)
  * convert Unicode str to UTF-8
  * Warning: buf must be at least 3 * len long
  */
-int fl_unicode2utf(const unsigned short *str, int len, char *buf)
+int fl_unicode2utf(const xchar *str, int len, char *buf)
 {
 	int i;
 	int l = 0;
@@ -497,13 +522,14 @@ int fl_latin12utf(const unsigned char *str, int len, char *buf)
 {
 	int i;
 	int l = 0;
+	int l1 = 0;
         for (i = 0; i < len; i++) {
-		int l1;
-		l1 = fl_ucs2utf((unsigned int) str[i], buf + l);
+		unsigned int n = (unsigned int) str[i];
+		l1 = fl_ucs2utf(n, buf + l);
                 if (l1 < 1) {
-                        l += 1;
+                        l = l + 1;
                 } else {
-                        l += l1;
+                        l = l + l1;
 		}
 
 	}
@@ -565,19 +591,22 @@ unsigned int fl_nonspacing(unsigned int ucs)
         return 0;
 }
 
+#if defined(WIN32) || __MACOS__
+static xchar *mbwbuf = NULL;
+#endif
+
 char * fl_utf2mbcs(const char *s)
 {
 	if (!s) return NULL;
-#ifdef WIN32
+#if defined(WIN32) || __MACOS__
 	int l = strlen(s);
 	static char *buf = NULL;
-	
-	unsigned short* wbuf = (unsigned short*)malloc((l+6) * sizeof(short));
-	l = fl_utf2unicode((unsigned char*)s, l, wbuf);
-	wbuf[l] = 0;
+
+	mbwbuf = (xchar*)realloc(mbwbuf, (l+6) * sizeof(xchar));
+	l = fl_utf2unicode((unsigned char*)s, l, mbwbuf);
+	mbwbuf[l] = 0;
 	buf = (char*)realloc(buf, l * 6 + 1);
-	l = wcstombs(buf, wbuf, l);
-	free(wbuf);
+	l = wcstombs(buf, mbwbuf, l);
 	buf[l] = 0;
 	return buf;
 #else
@@ -585,19 +614,151 @@ char * fl_utf2mbcs(const char *s)
 #endif
 }
 
+#if __MACOS__
+static int get_home(char *b, int l)
+{
+  FSRef Directory;
+  b[0] = 0;
+  FSSpec src, os;
+  FSRefParam param;
+  FSRef newRef;
+  Str255 fname;
+  OSErr ret;
+  char *p1 = b + l - 1;
+  *p1 = 0;
+  FindFolder(kOnSystemDisk, kDesktopFolderType, kDontCreateFolder, 
+		&src.vRefNum, &src.parID);
+  FSMakeFSSpec(src.vRefNum, src.parID, 0, &src);
+  FSpMakeFSRef(&src, &Directory);
+  os.parID = 0;
+  os.vRefNum = 0;
+  do {
+    for (int i= 0; i < 64; i++) src.name[i] = 0;
+    ret = FSGetCatalogInfo(&Directory, kFSCatInfoNone, NULL, NULL, &src, &Directory);
+    if(ret == noErr && (os.vRefNum != src.vRefNum || os.parID != src.parID)) {
+      int n = src.name[0];
+      unsigned char *p2 = src.name + n;
+      p1--;
+      if (p1 < b) return -1;
+      *p1 = ':';
+      while (n > 0) {
+        n--;
+        p1--;
+        if (p1 < b) return -1;
+        *p1 = *p2;
+        p2--;
+      } 
+    }
+    os.vRefNum = src.vRefNum;
+    os.parID = src.parID;
+  } while (ret == noErr);
+  if (p1 > b) strcat(b, p1);
+ 
+  return 0;
+}
+#endif
+
+#if __MACOS__
+
+static void clean_rel(char *s) {
+  char *p1, *p2, *p3;
+  p1 = s;
+  p2 = s + strlen(s);
+  
+  while (*p1) {
+    if (p1[0] == '.') {
+      if (p1[1] == ':') { 
+        p1[0] = 0;
+        p2 = p1;
+        p1 += 2;
+        strcat(p2, p1);
+        p1 -= 2;
+      } else if (p1[1] == 0) {
+        p1[0] = 0;
+      } else if (p1[1] == '.') {
+        p3 = p2 = p1;
+        p3 += 2;
+        if (p3[0] == ':' || p3[0] == 0) {
+          p2 -= 2;
+          while (p2 > s && *p2 != ':') p2--; 
+          *p2 = 0;
+          strcat(p2, p3);
+          p1 -= p3 - p2;
+        }
+      } else {
+        p1++;
+      }
+    } else {
+      p1++;
+    }
+  }
+  
+}
+
+char * fl_utf2path(const char *s)
+{
+	int l = strlen(s);
+	static char *buf = NULL;
+	xchar *ptr, *p1;
+
+	mbwbuf = (xchar*)realloc(mbwbuf, (l+6) * sizeof(xchar));
+	l = fl_utf2unicode((unsigned char*)s, l, mbwbuf+1);
+	ptr = mbwbuf + 1;
+	p1 = ptr;
+	if (l < 1) return NULL;
+	ptr[l] = 0;
+	while (*p1) {
+		if (*p1 == ':') {
+			*p1 = '/';
+		} else if (*p1 == '/') {
+			*p1 = ':';
+		} 
+		p1++;
+	}
+	
+	if (ptr[0] != ':') {
+	  char bu[1024];
+	  int ll;
+	  char b[1024];
+	  int ln, d = 0;
+	  char *p1, *p2;
+	  if (ptr[0] == 0x7d && ptr[1] == ':') {
+	    get_home(b, 1024);
+	    d = 2;
+	  } else {
+	    getcwd(b, 1024);
+	  }
+	  ll = wcstombs(bu, ptr + d, l - d);
+	  bu[ll] = 0;
+	  ln = strlen(b);
+	  buf = (char*)realloc(buf, ll + ln + 1);
+	  buf[0] = 0;
+	  strcat(buf, b);
+	  strcat(buf, bu);
+	  clean_rel(buf);  	
+	} else {
+	  buf = (char*)realloc(buf, l * 6 + 1);  
+	  l = wcstombs(buf, ptr+1, l-1);
+	  buf[l] = 0;
+	  clean_rel(buf);
+	}
+	//printf("%s\n", buf);
+	return buf;
+}
+#endif
+
 char * fl_mbcs2utf(const char *s)
 {
 	if (!s) return NULL;
-#ifdef WIN32
+#if defined(WIN32) || __MACOS__
 	int l = strlen(s);
 	static char *buf = NULL;
 	
-	unsigned short* wbuf = (unsigned short*)malloc(
-		(l * 6 +6) * sizeof(short));
-	l = mbstowcs(wbuf, s, l);
+	mbwbuf = (xchar*)realloc(mbwbuf,
+		(l * 6 +6) * sizeof(xchar));
+	l = mbstowcs(mbwbuf, s, l);
 	buf = (char*)realloc(buf, l * 6 + 1);
-	l = fl_unicode2utf(wbuf, l, buf);
-	free(wbuf);
+	l = fl_unicode2utf(mbwbuf, l, buf);
 	buf[l] = 0;
 	return buf;
 #else
@@ -626,19 +787,21 @@ int fl_is_nt4(void)
 #endif
 }
 
-#ifdef WIN32
-static unsigned short *wbuf = NULL;
-static unsigned short *wbuf1 = NULL;
+
+#if defined(WIN32) || __MACOS__
+static xchar *wbuf = NULL;
+static xchar *wbuf1 = NULL;
 #endif 
+
 
 char *fl_getenv(const char* v)
 {
 #ifdef WIN32
 	int l = strlen(v);
-	static unsigned short* wbuf = NULL;
-	wbuf = (unsigned short*)realloc(wbuf, sizeof(short) * (l+1));
+	static xchar* wbuf = NULL;
+	wbuf = (xchar*)realloc(wbuf, sizeof(xchar) * (l+1));
 	wbuf[fl_utf2unicode((const unsigned char*)v, l, wbuf)] = 0;
-	unsigned short *ret = _wgetenv(wbuf);
+	xchar *ret = _wgetenv(wbuf);
 	static char *buf = NULL;
 	if (ret) {
 		l = wcslen(ret);
@@ -648,6 +811,17 @@ char *fl_getenv(const char* v)
 	} else {
 		return NULL;
 	}
+#elif __MACOS__
+	char *ret;
+	ret = getenv(fl_utf2mbcs(v));
+	if (ret) {
+		return fl_mbcs2utf(ret);
+	} else if (!strcmp(v, "HOME")) {
+	    char b[1024];
+	    get_home(b, 1024);
+		return fl_mbcs2utf(b);	
+	}
+	return NULL; 
 #else 
 	return getenv(v);
 #endif
@@ -658,7 +832,7 @@ int fl_open(const char* f, int oflags, int pmode)
 #ifdef WIN32
 	if (fl_is_nt4()) {
 		int l = strlen(f);
-		wbuf = (unsigned short*)realloc(wbuf, sizeof(short) * (l+1));
+		wbuf = (xchar*)realloc(wbuf, sizeof(xchar) * (l+1));
 		wbuf[fl_utf2unicode((const unsigned char*)f, l, wbuf)] = 0;
 		if (pmode == -1) return _wopen(wbuf, oflags);
 		else return _wopen(wbuf, oflags, pmode);
@@ -666,6 +840,8 @@ int fl_open(const char* f, int oflags, int pmode)
 		if (pmode == -1) return _open(fl_utf2mbcs(f), oflags);
 		else return _open(fl_utf2mbcs(f), oflags, pmode);
 	}
+#elif __MACOS__
+	return open(fl_utf2path(f), oflags, pmode);
 #else
 	if (pmode == -1) return open(f, oflags);
 	else return open(f, oflags, pmode);
@@ -677,31 +853,104 @@ FILE *fl_fopen(const char* f, const char *mode)
 #ifdef WIN32
 	if (fl_is_nt4()) {
 		int l = strlen(f);
-		wbuf = (unsigned short*)realloc(wbuf, sizeof(short) * (l+1));
+		wbuf = (xchar*)realloc(wbuf, sizeof(xchar) * (l+1));
 		wbuf[fl_utf2unicode((const unsigned char*)f, l, wbuf)] = 0;
 		l = strlen(mode);
-		wbuf1 = (unsigned short*)realloc(wbuf1, sizeof(short) * (l+1));
+		wbuf1 = (xchar*)realloc(wbuf1, sizeof(xchar) * (l+1));
 		wbuf1[fl_utf2unicode((const unsigned char*)mode, l, wbuf1)] = 0;
 		return _wfopen(wbuf, wbuf1);
 	} else {
 		return fopen(fl_utf2mbcs(f), mode);
 	}
+#elif __MACOS__
+	return fopen(fl_utf2path(f), mode);
 #else
 	return fopen(f, mode);
 #endif
 }
+
+int fl_system(const char* f)
+{
+#ifdef WIN32
+#ifdef __MINGW32__
+	return system(fl_utf2mbcs(f));
+#else
+	if (fl_is_nt4()) {
+		int l = strlen(f);
+		wbuf = (xchar*)realloc(wbuf, sizeof(xchar) * (l+1));
+		wbuf[fl_utf2unicode((const unsigned char*)f, l, wbuf)] = 0;	
+		return _wsystem(wbuf);
+	} else {
+		return system(fl_utf2mbcs(f));
+	}
+#endif
+#elif __MACOS__
+	return system(fl_utf2path(f));
+#else
+	return system(f);
+#endif
+}
+
+int fl_execvp(const char *file, char *const *argv)
+{
+#ifdef WIN32
+#ifdef __MINGW32__
+	return _execvp(fl_utf2mbcs(file), argv);
+#else
+	if (fl_is_nt4()) {
+		int l = strlen(file);
+		int i, n, ret;
+		xchar **ar;
+		wbuf = (xchar*)realloc(wbuf, sizeof(xchar) * (l+1));
+		wbuf[fl_utf2unicode((const unsigned char*)file, l, wbuf)] = 0;
+
+		i = 0; n = 0;
+		while (argv[i]) {i++; n++;}
+		ar = (xchar**) malloc(sizeof(xchar*) * (n + 1));
+		i = 0;
+		while (i <= n) {
+			l = strlen(argv[i]);
+			ar[i] = (xchar*)malloc(sizeof(xchar) * (l+1));
+			ar[i][fl_utf2unicode(
+				(const unsigned char*)argv[i], 
+				l, ar[i])] = 0;
+			i++;
+		}
+		ar[n] = NULL;
+		ret = _wexecvp(wbuf, ar);
+		i = 0;
+		while (i <= n) {
+			free(ar[i]);
+			i++;
+		}
+		free(ar);
+		return ret;
+	} else {
+		return _execvp(fl_utf2mbcs(file), argv);
+	}
+#endif
+#elif __MACOS__
+	return execvp(fl_utf2path(file), argv);
+#else
+	return execvp(file, argv);
+#endif
+}
+
+
 
 int fl_chmod(const char* f, int mode)
 {
 #ifdef WIN32
 	if (fl_is_nt4()) {
 		int l = strlen(f);
-		wbuf = (unsigned short*)realloc(wbuf, sizeof(short) * (l+1));
+		wbuf = (xchar*)realloc(wbuf, sizeof(xchar) * (l+1));
 		wbuf[fl_utf2unicode((const unsigned char*)f, l, wbuf)] = 0;
 		return _wchmod(wbuf, mode);
 	} else {
 		return _chmod(fl_utf2mbcs(f), mode);
 	}
+#elif __MACOS__
+	return chmod(fl_utf2path(f), mode);
 #else
 	return chmod(f, mode);
 #endif
@@ -712,28 +961,40 @@ int fl_access(const char* f, int mode)
 #ifdef WIN32
 	if (fl_is_nt4()) {
 		int l = strlen(f);
-		wbuf = (unsigned short*)realloc(wbuf, sizeof(short) * (l+1));
+		wbuf = (xchar*)realloc(wbuf, sizeof(xchar) * (l+1));
 		wbuf[fl_utf2unicode((const unsigned char*)f, l, wbuf)] = 0;
 		return _waccess(wbuf, mode);
 	} else {
 		return _access(fl_utf2mbcs(f), mode);
 	}
+#elif __MACOS__
+	return access(fl_utf2path(f), mode);
 #else
 	return access(f, mode);
 #endif
 }
+
 
 int fl_stat(const char* f, struct stat *b)
 {
 #ifdef WIN32
 	if (fl_is_nt4()) {
 		int l = strlen(f);
-		wbuf = (unsigned short*)realloc(wbuf, sizeof(short) * (l+1));
+		wbuf = (xchar*)realloc(wbuf, sizeof(xchar) * (l+1));
 		wbuf[fl_utf2unicode((const unsigned char*)f, l, wbuf)] = 0;
 		return _wstat(wbuf, (struct _stat*)b);
 	} else {
 		return _stat(fl_utf2mbcs(f), (struct _stat*)b);
 	}
+#elif __MACOS__
+	char bu[1024];
+	f = fl_utf2path(f);
+	if (!f || f[0] == 0 || (f[0] == ':' && f[1] == 0)) {
+		 // stat a random directory
+		fl_getcwd(bu, 1024);
+		f = bu;
+	}
+	return stat(f, b);
 #else
 	return stat(f, b);
 #endif
@@ -746,13 +1007,13 @@ char *fl_getcwd(char* b, int l)
 	}
 #ifdef WIN32
 	if (fl_is_nt4()) {
-		static unsigned short *wbuf = NULL;
-		wbuf = (unsigned short*)realloc(wbuf, sizeof(short) * (l+1));
-		unsigned short *ret = _wgetcwd(wbuf, l / 5);
+		static xchar *wbuf = NULL;
+		wbuf = (xchar*)realloc(wbuf, sizeof(xchar) * (l+1));
+		xchar *ret = _wgetcwd(wbuf, l / 5);
 		if (ret) {
-				l = wcslen(wbuf);
-				b[fl_unicode2utf(wbuf, l, b)] = 0;
-				return b;
+			l = wcslen(wbuf);
+			b[fl_unicode2utf(wbuf, l, b)] = 0;
+			return b;
 		} else {
 			return NULL;
 		}
@@ -761,18 +1022,42 @@ char *fl_getcwd(char* b, int l)
 		if (ret) {
 			char *s = fl_mbcs2utf(b);
 			l = strlen(s);
-			for(int i= 0; i < l; i++) b[i] = s[i];
-			b[l] = 0;
+			for(int i= 0; i < l; i++) {
+				b[i] = s[i];
+			}
+			b[l+1] = 0;
 			return b;
 		} else {
 			return NULL;
 		}
 	}
+#elif __MACOS__
+	char *ret = getcwd(b, l / 5);
+	if (ret) {
+		char *s = fl_mbcs2utf(b);
+		l = strlen(s);
+		b[0] = '/';
+		for(int i= 0; i < l; i++) {
+			if (s[i] == '/') {
+				b[i+1] = ':';
+			} else if (s[i] == ':') {
+				b[i+1] = '/';
+			} else {
+				b[i+1] = s[i];
+			}
+		}
+		b[l+1] = 0;
+		return b;
+	} else {
+		return NULL;
+	}
+#elif MSDOS
+	b[0] = 0;
+	return b;
 #else
 	return getcwd(b, l);
 #endif
 }
-
 
 
 int fl_unlink(const char* f)
@@ -780,12 +1065,14 @@ int fl_unlink(const char* f)
 #ifdef WIN32
 	if (fl_is_nt4()) {
 		int l = strlen(f);
-		wbuf = (unsigned short*)realloc(wbuf, sizeof(short) * (l+1));
+		wbuf = (xchar*)realloc(wbuf, sizeof(xchar) * (l+1));
 		wbuf[fl_utf2unicode((const unsigned char*)f, l, wbuf)] = 0;
 		return _wunlink(wbuf);
 	} else {
 		return _unlink(fl_utf2mbcs(f));
 	}
+#elif __MACOS__
+	return unlink(fl_utf2path(f));
 #else
 	return unlink(f);
 #endif
@@ -796,17 +1083,99 @@ int fl_mkdir(const char* f, int mode)
 #if defined(WIN32) && !defined(__CYGWIN__)
 	if (fl_is_nt4()) {
 		int l = strlen(f);
-		wbuf = (unsigned short*)realloc(wbuf, sizeof(short) * (l+1));
+		wbuf = (xchar*)realloc(wbuf, sizeof(short) * (l+1));
 		wbuf[fl_utf2unicode((const unsigned char*)f, l, wbuf)] = 0;
 		return _wmkdir(wbuf);
 	} else {
 		return _mkdir(fl_utf2mbcs(f));
 	}
+#elif __MACOS__
+	return mkdir(fl_utf2path(f), mode);
+#elif MSDOS
+	return -1;
 #else
 	return mkdir(f, mode);
 #endif
 }
 
+
+int fl_rmdir(const char* f)
+{
+#ifdef WIN32
+	if (fl_is_nt4()) {
+		int l = strlen(f);
+		wbuf = (xchar*)realloc(wbuf, sizeof(xchar) * (l+1));
+		wbuf[fl_utf2unicode((const unsigned char*)f, l, wbuf)] = 0;
+		return _wrmdir(wbuf);
+	} else {
+		return _rmdir(fl_utf2mbcs(f));
+	}
+#elif __MACOS__
+	return rmdir(fl_utf2path(f));
+#else
+	return rmdir(f);
+#endif
+}
+
+int fl_rename(const char* f, const char *n)
+{
+#ifdef WIN32
+	if (fl_is_nt4()) {
+		int l = strlen(f);
+		wbuf = (xchar*)realloc(wbuf, sizeof(xchar) * (l+1));
+		wbuf[fl_utf2unicode((const unsigned char*)f, l, wbuf)] = 0;
+		l = strlen(n);
+		wbuf1 = (xchar*)realloc(wbuf1, sizeof(xchar) * (l+1));
+		wbuf1[fl_utf2unicode((const unsigned char*)n, l, wbuf1)] = 0;
+		return _wrename(wbuf, wbuf1);
+	} else {
+		int ret;
+		char *s = strdup(fl_utf2mbcs(f));
+		ret = rename(s, fl_utf2mbcs(n));
+		free(s);
+		return ret;
+	}
+#elif __MACOS__
+	{
+		int ret;
+		char *s = strdup(fl_utf2path(f));
+		ret = rename(s, fl_utf2path(n));
+		free(s);
+		return ret;
+	}
+#else
+	return rename(f, n);
+#endif
+}
+
+// recursively create a path in the file system
+char fl_make_path( const char *path ) {
+  if (fl_access(path, 0)) {
+    const char *s = strrchr( path, '/' );
+    if ( !s ) return 0;
+    int len = s-path;
+    char *p = (char*)malloc( len+1 );
+    memcpy( p, path, len );
+    p[len] = 0;
+    fl_make_path( p );
+    free( p );
+    fl_mkdir(path, 0700);
+  }
+  return 1;
+}
+
+// strip the filename and create a path
+void fl_make_path_for_file( const char *path )
+{
+  const char *s = strrchr( path, '/' );
+  if ( !s ) return;
+  int len = s-path;
+  char *p = (char*)malloc( len+1 );
+  memcpy( p, path, len );
+  p[len] = 0;
+  fl_make_path( p );
+  free( p );
+}
 
 //
 // End of "$Id: $".

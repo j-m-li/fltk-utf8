@@ -1,11 +1,11 @@
 //
-// "$Id: Fl_File_Icon2.cxx,v 1.1.2.17 2002/10/03 15:23:46 easysw Exp $"
+// "$Id: Fl_File_Icon2.cxx,v 1.1.2.19 2003/01/30 21:41:43 easysw Exp $"
 //
 // Fl_File_Icon system icon routines.
 //
 // KDE icon code donated by Maarten De Boer.
 //
-// Copyright 1999-2002 by Michael Sweet.
+// Copyright 1999-2003 by Michael Sweet.
 //
 // This library is free software; you can redistribute it and/or
 // modify it under the terms of the GNU Library General Public
@@ -40,8 +40,10 @@
 #include "flstring.h"
 #include <ctype.h>
 #include <errno.h>
-#include <FL/math.h>
-#include <sys/types.h>
+#include <FL/fl_math.h>
+#if !__MACOS__
+#  include <sys/types.h>
+#endif
 #include <sys/stat.h>
 #include <FL/fl_utf8.H>
 
@@ -58,6 +60,9 @@
 #include <FL/fl_draw.H>
 #include <FL/filename.H>
 
+#if MSDOS
+#define strncasecmp strnicmp
+#endif
 
 //
 // Define missing POSIX/XPG4 macros as needed...
@@ -87,7 +92,7 @@ static char	*get_kde_val(char *str, const char *key);
 //
 
 static const char *kdedir = NULL;
-
+const char* fl_unable_to_load_icon = "Fl_File_Icon::load(): Unable to load icon file \"%s\".";
 
 //
 // 'Fl_File_Icon::load()' - Load an icon file...
@@ -109,11 +114,17 @@ Fl_File_Icon::load(const char *f)	// I - File to read from
 
   if (i)
   {
-    Fl::warning("Fl_File_Icon::load(): Unable to load icon file \"%s\".", f);
+    Fl::warning(fl_unable_to_load_icon, f);
     return;
   }
 }
 
+const char* fl_unable_to_open_fti = "Fl_File_Icon::load_fti(): Unable to open \"%s\" - %s";
+const char* fl_expected_letter_fti =  "Fl_File_Icon::load_fti(): Expected a letter at file position %ld (saw '%c')";
+const char* fl_expected_a_fti = "Fl_File_Icon::load_fti(): Expected a ( at file position %ld (saw '%c')";
+const char* fl_expected_b_fti = "Fl_File_Icon::load_fti(): Expected a ) at file position %ld (saw '%c')";
+const char* fl_expected_c_fti = "Fl_File_Icon::load_fti(): Expected a ; at file position %ld (saw '%c')";
+const char* fl_unknown_command_fti = "Fl_File_Icon::load_fti(): Unknown command \"%s\" at file position %ld.";
 
 //
 // 'Fl_File_Icon::load_fti()' - Load an SGI-format FTI file...
@@ -133,8 +144,7 @@ Fl_File_Icon::load_fti(const char *fti)	// I - File to read from
   // Try to open the file...
   if ((fp = fl_fopen(fti, "rb")) == NULL)
   {
-    Fl::error("Fl_File_Icon::load_fti(): Unable to open \"%s\" - %s",
-              fti, strerror(errno));
+    Fl::error(fl_unable_to_open_fti, fti, strerror(errno));
     return -1;
   }
 
@@ -163,8 +173,7 @@ Fl_File_Icon::load_fti(const char *fti)	// I - File to read from
     // OK, this character better be a letter...
     if (!isalpha(ch))
     {
-      Fl::error("Fl_File_Icon::load_fti(): Expected a letter at file position %ld (saw '%c')",
-                ftell(fp) - 1, ch);
+      Fl::error(fl_expected_letter_fti, ftell(fp) - 1, ch);
       break;
     }
 
@@ -185,8 +194,7 @@ Fl_File_Icon::load_fti(const char *fti)	// I - File to read from
     // Make sure we stopped on a parenthesis...
     if (ch != '(')
     {
-      Fl::error("Fl_File_Icon::load_fti(): Expected a ( at file position %ld (saw '%c')",
-                ftell(fp) - 1, ch);
+      Fl::error(fl_expected_a_fti, ftell(fp) - 1, ch);
       break;
     }
 
@@ -206,16 +214,14 @@ Fl_File_Icon::load_fti(const char *fti)	// I - File to read from
     // Make sure we stopped on a parenthesis...
     if (ch != ')')
     {
-      Fl::error("Fl_File_Icon::load_fti(): Expected a ) at file position %ld (saw '%c')",
-                ftell(fp) - 1, ch);
+      Fl::error(fl_expected_b_fti, ftell(fp) - 1, ch);
       break;
     }
 
     // Make sure the next character is a semicolon...
     if ((ch = getc(fp)) != ';')
     {
-      Fl::error("Fl_File_Icon::load_fti(): Expected a ; at file position %ld (saw '%c')",
-                ftell(fp) - 1, ch);
+      Fl::error(fl_expected_c_fti, ftell(fp) - 1, ch);
       break;
     }
 
@@ -248,7 +254,7 @@ Fl_File_Icon::load_fti(const char *fti)	// I - File to read from
 	  // Composite color; compute average...
 	  c = -c;
 	  add_color(fl_color_average((Fl_Color)(c >> 4),
-	                             (Fl_Color)(c & 15), 0.5));
+	                             (Fl_Color)(c & 15), 0.5f));
 	}
 	else
 	  add_color((Fl_Color)c);
@@ -286,7 +292,7 @@ Fl_File_Icon::load_fti(const char *fti)	// I - File to read from
 	{
 	  // Composite color; compute average...
 	  c = -c;
-	  cval = fl_color_average((Fl_Color)(c >> 4), (Fl_Color)(c & 15), 0.5);
+	  cval = fl_color_average((Fl_Color)(c >> 4), (Fl_Color)(c & 15), 0.5f);
 	}
 	else
 	  cval = c;
@@ -313,8 +319,7 @@ Fl_File_Icon::load_fti(const char *fti)	// I - File to read from
     }
     else
     {
-      Fl::error("Fl_File_Icon::load_fti(): Unknown command \"%s\" at file position %ld.",
-                command, ftell(fp) - 1);
+      Fl::error(fl_unknown_command_fti, command, ftell(fp) - 1);
       break;
     }
   }
@@ -511,7 +516,7 @@ Fl_File_Icon::load_image(const char *ifile)	// I - File to read from
 		break;
 	  }
 
-	  colors[ch] = fl_rgb_color(red, green, blue);
+	  colors[ch] = fl_rgb_color((uchar)red, (uchar)green, (uchar)blue);
 	} else {
 	  // Read a color name...
 	  if (strncasecmp(lineptr + 2, "white", 5) == 0) colors[ch] = FL_WHITE;
@@ -973,5 +978,5 @@ get_kde_val(char       *str,
 
 
 //
-// End of "$Id: Fl_File_Icon2.cxx,v 1.1.2.17 2002/10/03 15:23:46 easysw Exp $".
+// End of "$Id: Fl_File_Icon2.cxx,v 1.1.2.19 2003/01/30 21:41:43 easysw Exp $".
 //

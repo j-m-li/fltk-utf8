@@ -1,9 +1,9 @@
 //
-// "$Id: Fl_Double_Window.cxx,v 1.12.2.4.2.5 2002/01/01 15:11:30 easysw Exp $"
+// "$Id: Fl_Double_Window.cxx,v 1.12.2.4.2.8 2003/05/20 19:09:32 easysw Exp $"
 //
 // Double-buffered window code for the Fast Light Tool Kit (FLTK).
 //
-// Copyright 1998-2002 by Bill Spitzak and others.
+// Copyright 1998-2003 by Bill Spitzak and others.
 //
 // This library is free software; you can redistribute it and/or
 // modify it under the terms of the GNU Library General Public
@@ -29,6 +29,7 @@
 #include <FL/x.H>
 #include <FL/fl_draw.H>
 #include <FL/Fl_Fltk.H>
+#include <stdlib.h>
 
 // On systems that support double buffering "naturally" the base
 // Fl_Window class will probably do double-buffer and this subclass
@@ -60,7 +61,7 @@ static int can_xdbe() {
 #endif
 
 void Fl_Double_Window::show() {
-#if !defined(WIN32) && !defined(__APPLE__)
+#if !defined(WIN32) && !defined(__MACOS__) && !DJGPP
   if (!shown()) { // don't set the background pixel
     fl_open_display();
     Fl_X::make_xid(this);
@@ -95,7 +96,7 @@ void fl_copy_offscreen(int x,int y,int w,int h,HBITMAP bitmap,int srcx,int srcy)
 
 extern void fl_restore_clip();
 
-#elif defined(__APPLE__)
+#elif defined(__MACOS__)
 
 /**
  * Mac:
@@ -196,9 +197,12 @@ void Fl_Double_Window::flush(int eraseoverlay) {
       XdbeAllocateBackBufferName(fl_display, fl_xid(this), XdbeUndefined);
     else
 #endif
-#ifdef __APPLE__
-    // the Apple OS X window manager double buffers ALL windows anyway, so there is no need to waste memory and time
-    // BTW: Windows2000 and later also forces doublebuffering if transparent windows are beeing used (alpha channel)
+#ifdef __MACOS__
+    // the Apple OS X window manager double buffers ALL windows
+    // anyway, so there is no need to waste memory and time.
+    //
+    // BTW: Windows2000 and later also forces doublebuffering if
+    // transparent windows are beeing used (alpha channel)
     if ( ( !QDIsPortBuffered( GetWindowPort(myi->xid) ) ) || force_doublebuffering_ )
       myi->other_xid = fl_create_offscreen(w(), h());
 #else
@@ -217,7 +221,9 @@ void Fl_Double_Window::flush(int eraseoverlay) {
     if (damage()) {
       fl_clip_region(myi->region); myi->region = 0;
       fl_window = myi->other_xid;
+
       draw();
+
       fl_window = myi->xid;
     }
     if (!copy) {
@@ -236,16 +242,16 @@ void Fl_Double_Window::flush(int eraseoverlay) {
     fl_clip_region(myi->region); myi->region = 0;
 #ifdef WIN32
     HDC _sgc = fl_gc;
-	if (fl->type != FL_GDI_DEVICE) {
+    if (fl->type != FL_GDI_DEVICE) {
       fl_gc = fl_makeDC(myi->other_xid);
-	}
+    }
     fl_restore_clip(); // duplicate region into new gc
     draw();
-	if (fl->type != FL_GDI_DEVICE) {
+    if (fl->type != FL_GDI_DEVICE) {
       DeleteDC(fl_gc);
       fl_gc = _sgc;
-	}
-#elif defined(__APPLE__)
+    }
+#elif defined(__MACOS__)
     if ( myi->other_xid ) {
       fl_begin_offscreen( myi->other_xid );
       fl_clip_region( 0 );   
@@ -254,6 +260,12 @@ void Fl_Double_Window::flush(int eraseoverlay) {
     } else {
       draw();
     }
+#elif DJGPP // X:
+    fl_window = myi->other_xid;
+    GrSetContext(fl_get_context(fl_window));
+    draw();
+    fl_window = myi->xid;
+    GrSetContext(fl_get_context(fl_window));
 #else // X:
     fl_window = myi->other_xid;
     draw();
@@ -264,7 +276,7 @@ void Fl_Double_Window::flush(int eraseoverlay) {
   // on Irix (at least) it is faster to reduce the area copied to
   // the current clip region:
   int X,Y,W,H; fl_clip_box(0,0,w(),h(),X,Y,W,H);
-#ifdef __APPLE__
+#ifdef __MACOS__
   if (myi->other_xid) fl_copy_offscreen(X, Y, W, H, myi->other_xid, X, Y);
 #else
   fl_copy_offscreen(X, Y, W, H, myi->other_xid, X, Y);
@@ -301,5 +313,5 @@ Fl_Double_Window::~Fl_Double_Window() {
 }
 
 //
-// End of "$Id: Fl_Double_Window.cxx,v 1.12.2.4.2.5 2002/01/01 15:11:30 easysw Exp $".
+// End of "$Id: Fl_Double_Window.cxx,v 1.12.2.4.2.8 2003/05/20 19:09:32 easysw Exp $".
 //

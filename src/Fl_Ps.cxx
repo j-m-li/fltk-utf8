@@ -32,6 +32,12 @@
 #include <FL/fl_utf8.H>
 #include <FL/Fl_Gdi.H>
 
+#ifdef WIN32
+#include "Fl_Gdi.cxx"
+#elif __MACOS__
+#include "Fl_Cpm.cxx"
+#endif 
+
 void FL_EXPORT Fl_PrintingGroup::print(Fl_Device *d){
 		Fl_Device *t=fl;
 		fl=d;
@@ -43,6 +49,7 @@ void FL_EXPORT Fl_PrintingGroup::print(Fl_Device *d){
 		fltk.pop_clip();
 		fl=t;
 		Fl::redraw();
+
 }
 
 static int  PageFormat[30][2]={
@@ -375,6 +382,8 @@ void Fl_Ps::page( int lm, int tm, int rm, int bm, int orientation,  int w, int h
 };
 
 void Fl_Ps::fit(int x, int y, int w, int h, int align){
+	if (w == 0) w = 1;
+	if (h == 0) h = 1;
 	double dx=0;
 	double s=double(width_)/double(w);
 	double dy=(height_ - s*h)/2;
@@ -532,7 +541,8 @@ int Fl_Ps::clip_box(double x, double y, double w, double h, double &X, double &Y
 
 int Fl_Ps::clip_box(int x, int y, int w, int h, int& X, int& Y, int& W, int& H){
 	double _x, _y, _w, _h;
-	int ret = clip_box(x, y, w, h, _x, _y, _w, _h);
+	int ret = clip_box((double)x, (double)y, (double)w, (double)h,
+		 _x, _y, _w, _h);
 	X=(int)(_x+.5);
 	Y=(int)(_y+.5);
 	W=(int)(_w+.5);
@@ -688,6 +698,7 @@ void Fl_Ps::yxline(int x, int y, int y1){
 
 void Fl_Ps::arc(int x, int y, int w, int h, double a1, double a2) {
 
+	if (!w || !h) return;
 	fprintf(output, "GS\n");
 	fprintf(output, "BP\n");
 	fprintf(output, "%g %g TR\n", (x + w/2.0), (y + h/2.0));
@@ -843,6 +854,7 @@ void Fl_Ps::font(int f, int s) {
 
 
 void Fl_Ps::line_style(int style, int width, char* dashes){
+	int i;
 	line_styled_=1;
 	if(!width)
 
@@ -860,13 +872,15 @@ void Fl_Ps::line_style(int style, int width, char* dashes){
 	}
 	fprintf(output,"] 0 setdash\n");
 	style>>=8;
-	if(int i=style&0xf)
+	i = style&0xf;
+	if(i)
 		fprintf(output, "%d setlinecap\n", (i-1));
 	else
 		fprintf(output, "1 setlinecap\n"); //standard cap
 
 	style>>=4;
-	if(int i=style&0xf)
+	i = style&0xf;
+	if(i)
 		fprintf(output, "%d setlinejoin\n", (style&0xf-1));
 	else
 		fprintf(output,"1 setlinejoin\n");
@@ -896,7 +910,10 @@ int Fl_Ps::get_width(unsigned int ucs)
 	int width;
 	int height;
 #ifdef WIN32
-
+#elif NANO_X
+#elif DJGPP
+#elif __MACOS__
+ // FIXME
 #else
 	XImage *i = NULL;	
 #endif
@@ -913,7 +930,7 @@ int Fl_Ps::get_width(unsigned int ucs)
 	if (fonts[fl_font_] == NULL) {
 		fonts[fl_font_] = (int*) malloc(sizeof(int) * 0x10000);
 		glyphs = fonts[fl_font_];
-		for (int i=0;i<0x10000;i++) glyphs[i] = 0;
+		for (long i=0;i<0x10000;i++) glyphs[i] = 0;
 	}
 	glyphs = fonts[fl_font_];
 
@@ -954,8 +971,14 @@ int Fl_Ps::get_width(unsigned int ucs)
 		}
 		fprintf(output, "/f%d_%d {\n", fl_font_, ucs); 
 #ifndef WIN32
+#if !NANO_X
+#if !DJGPP
+#if !__MACOS__
 		i = XGetImage(fl_display, fl_window, 0, 0, 
 			width, height, 1, XYPixmap);
+#endif
+#endif
+#endif
 #endif	
 			int l;
 			for (l=0; l < height; l++) {
@@ -965,6 +988,12 @@ int Fl_Ps::get_width(unsigned int ucs)
 				for (c=0; c < width; c++) {
 #ifdef WIN32
 					int pix = GetPixel(fl_gc, c, l) ? 1 : 0;
+#elif DJGPP
+					int pix = 0; // FIXME_DJGPP
+#elif NANO_X
+					int pix = 0; // FIXME
+#elif __MACOS__
+					int pix = 0; // FIXME
 #else
 					int pix = XGetPixel(i, c, l) ? 1 : 0;
 #endif
@@ -982,7 +1011,9 @@ int Fl_Ps::get_width(unsigned int ucs)
 				}
 			}
 #ifndef WIN32
+#if !NANO_X && !DJGPP && !__MACOS__
 		XDestroyImage(i);
+#endif
 #endif
 		fl_end_offscreen();
 	} else {
@@ -998,7 +1029,7 @@ int Fl_Ps::get_width(unsigned int ucs)
 void Fl_Ps::transformed_draw(const char* str, int n, double x, double y){
 	int i;
 	if (!n||!str||!*str)return;
-	unsigned short *buf = (unsigned short *)malloc(n * sizeof(short));
+	xchar *buf = (xchar *)malloc(n * sizeof(short));
 	n = fl_utf2unicode((const unsigned char*)str, n, buf);
 	for(i=0; i < n; i++) {
 		get_width(buf[i]);
@@ -1019,7 +1050,7 @@ void Fl_Ps::transformed_draw(const char* str, int n, double x, double y){
 void Fl_Ps::rtl_draw(const char *str, int n, int x, int y) {
 	int i;
 	if (!n||!str||!*str)return;
-	unsigned short *buf = (unsigned short *)malloc(n * sizeof(short));
+	xchar *buf = (xchar *)malloc(n * sizeof(short));
 	n = fl_utf2unicode((const unsigned char*)str, n, buf);
 	for(i=0; i < n; i++) {
 		get_width(buf[i]);

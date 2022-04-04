@@ -1,9 +1,9 @@
 //
-// "$Id: fl_curve.cxx,v 1.4.2.4.2.4 2002/08/09 03:17:30 easysw Exp $"
+// "$Id: fl_curve.cxx,v 1.4.2.4.2.5 2003/01/30 21:43:32 easysw Exp $"
 //
 // Bezier curve functions for the Fast Light Tool Kit (FLTK).
 //
-// Copyright 1998-2002 by Bill Spitzak and others.
+// Copyright 1998-2003 by Bill Spitzak and others.
 //
 // This library is free software; you can redistribute it and/or
 // modify it under the terms of the GNU Library General Public
@@ -58,7 +58,7 @@ void Fl_Fltk::curve(double X0, double Y0,
   // use that to guess at the number of segments:
   int n = int(sqrt(a)/4);
   if (n > 1) {
-    if (n > 100) n = 100; // make huge curves not hang forever
+    if (n > 1000) n = 1000; // make huge curves not hang forever
 
     double e = 1.0/n;
 
@@ -100,5 +100,5 @@ void Fl_Fltk::curve(double X0, double Y0,
 }
 
 //
-// End of "$Id: fl_curve.cxx,v 1.4.2.4.2.4 2002/08/09 03:17:30 easysw Exp $".
+// End of "$Id: fl_curve.cxx,v 1.4.2.4.2.5 2003/01/30 21:43:32 easysw Exp $".
 //

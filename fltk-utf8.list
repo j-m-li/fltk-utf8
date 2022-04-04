@@ -30,26 +30,26 @@
 %vendor FLTK Development Team
 %license COPYING
 %readme README
-%version 1.1.1
+%version 1.1.4
 %description FLTK is a cross-platform GUI toolkit for C++.
 
-$prefix=/usr/local
+$prefix=/usr
 $exec_prefix=${prefix}
 $bindir=${exec_prefix}/bin
 $datadir=${prefix}/share
 $includedir=${prefix}/include
 $libdir=${exec_prefix}/lib
-$mandir=${prefix}/man
+$mandir=/usr/share/man
 
 $CAT1EXT=1
 $CAT3EXT=3
 
-$DSONAME=
-$FLDSONAME=
+$DSONAME=libfltk-utf8.so.1.1
+$FLDSONAME=libfltk-utf8_forms.so.1.1
 $FLLIBNAME=../lib/libfltk-utf8_forms.a
-$GLDSONAME=
+$GLDSONAME=libfltk-utf8_gl.so.1.1
 $GLLIBNAME=../lib/libfltk-utf8_gl.a
-$FLUID=fluid
+$FLUID=fluid-shared
 
 %system darwin
 %postinstall $bindir/fltk-config -post $bindir/fluid

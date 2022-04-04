@@ -27,7 +27,7 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
-#ifndef WIN32
+#if !defined(WIN32) && !NANO_X
 #include <unistd.h>
 #include <signal.h>
 #include <sys/wait.h>
@@ -75,7 +75,7 @@ int My_Input::handle(int event)
                 return 1;
         case FL_DND_DRAG:
 		printf("FL_DND_DRAG\n");
-#ifndef WIN32
+#if !defined(WIN32) && !NANO_X
 		if (fl_dnd_source_action == XdndActionAsk) {
 			fl_dnd_action = XdndActionAsk;
 		}
@@ -91,24 +91,22 @@ int My_Input::handle(int event)
 		button->color(1);
                 button->redraw();
                 return 1;
-	case FL_PASTE:
+	case FL_DROP:
 		if (!Fl::event_text()) return 0;
-#ifndef WIN32
-		if (fl_dnd_source_window) {
-			if (fl_dnd_source_action == XdndActionAsk) {
-			  sprintf(buffer, "Ask Action: %s", Fl::event_text());
-			} else {
-#endif
-			  sprintf(buffer, "Copied: %s", Fl::event_text());
-#ifndef WIN32
-			}
-#endif
-			value(buffer);
-			return 1;
-#ifndef WIN32
+#if !defined(WIN32) && !NANO_
+		if (fl_dnd_source_action == XdndActionAsk) {
+		  sprintf(buffer, "Ask Action: %s", Fl::event_text());
+		} else {
+		  sprintf(buffer, "Copied: %s", Fl::event_text());
 		}
+#else
+		sprintf(buffer, "Copied: %s", Fl::event_text());
 #endif
-		break;
+		printf("%s\n", buffer);
+		value(buffer);
+		return 1;
+        case FL_PASTE:
+		printf("paste, %s\n",  Fl::event_text());
         default:
 		break;
 	}
@@ -119,10 +117,10 @@ int My_Input::handle(int event)
 int My_Button::handle(int event)
 {
         static char buffer[64 * 1024];
-	sprintf(buffer, "c:\\temp\\test.txt");
-	Fl::copy(buffer, strlen(buffer) + 10, 0);
+        sprintf(buffer, "%s", inp->value());
         switch(event) {
         case FL_PUSH:
+		Fl::copy(buffer, strlen(buffer), 0);
 		Fl::dnd();
 		return 1;
         default:
@@ -132,7 +130,7 @@ int My_Button::handle(int event)
 }
 
 int main(int argc, char ** argv) {
-#ifndef WIN32
+#if !defined(WIN32) && !NANO_X
    fl_open_display();
    XdndActionAsk     = XInternAtom(fl_display, "XdndActionAsk",     0);
 #endif
@@ -142,10 +140,10 @@ int main(int argc, char ** argv) {
    button = new My_Button(10,10,80,40,"Drag'n'Drop");
    button->color(1);
    inp = new My_Input(10, 60, 230, 30);
-#ifdef _WIN32
-   inp->value("C:\\Temp\\dnd_test.txt");
+#if !defined(WIN32) && !NANO_X
+   inp->value("file:///tmp/dnd_test.txt");
 #else 
-   inp->value("/tmp/dnd_test.txt");
+   inp->value("C:\\Temp\\dnd_test.txt");
 #endif
    window->show(argc,argv);
    Fl::flush();

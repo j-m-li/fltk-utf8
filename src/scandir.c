@@ -18,6 +18,10 @@ USA.  */
 
 #if defined(WIN32) && !defined(__CYGWIN__)
 #  include "scandir_win32.c"
+#elif MSDOS
+#  include "scandir_dos.c"
+#elif __MACOS__
+#  include "scandir_mac.c"
 #else
 
 #  include "flstring.h"

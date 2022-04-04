@@ -35,7 +35,7 @@ extern FL_EXPORT int fl_size_;
 extern FL_EXPORT int fl_font_;
 extern FL_EXPORT HDC fl_gc;
 
-class Fl_Gdi: public Fl_Device
+class FL_EXPORT Fl_Gdi: public Fl_Device
 {
 public:
 	 int R;
@@ -45,16 +45,16 @@ public:
 	 double s1;
 	 int page_;
 
-	 FL_EXPORT void page(int lm=0, int tm=0, int rm=0, int bm=0, int orientation=PS_UNCHANGED, int format=PS_UNCHANGED);
-	 FL_EXPORT void fit(int x, int y, int w, int h, int align=FL_ALIGN_CENTER);
+	 void page(int lm=0, int tm=0, int rm=0, int bm=0, int orientation=PS_UNCHANGED, int format=PS_UNCHANGED);
+	 void fit(int x, int y, int w, int h, int align=FL_ALIGN_CENTER);
 
-	 FL_EXPORT void color(Fl_Color color) {
+	 void color(Fl_Color color) {
 		 o = fl_gc;
 		 fl_gc = gc;
 		 fltk.color(color);
 		 fl_gc = o;
 	 };
-	 FL_EXPORT void color(uchar r, uchar g, uchar b) {
+	 void color(uchar r, uchar g, uchar b) {
 		 o = fl_gc;
 		 fl_gc = gc;
 		 fltk.color(r,g,b);
@@ -62,308 +62,320 @@ public:
 	 };
 	 Fl_Color color(){return fl_color_;};
 		 
-	 FL_EXPORT void clip(int x, int y, int w, int h) {
+	 void clip(int x, int y, int w, int h) {
 		 o = fl_gc;
 		 fl_gc = gc;
 		 fltk.clip((int)(x*s+L), (int)(y*s+T), (int)(w*s), (int)(h*s));
 		 fl_gc = o;
 	 };
 
-	 FL_EXPORT void push_no_clip() {
+	 void push_no_clip() {
 		 o = fl_gc;
 		 fl_gc = gc;
 		 fltk.push_no_clip();
 		 fl_gc = o;
 	 };
-	 FL_EXPORT void pop_clip() { 
+	 void pop_clip() { 
 		 o = fl_gc;
 		 fl_gc = gc;
 		 fltk.pop_clip();
 		 fl_gc = o;
 	 };
 	 
-	 FL_EXPORT int not_clipped(int x, int y, int w, int h) {
+	 int not_clipped(int x, int y, int w, int h) {
 		 o = fl_gc;
 		 fl_gc = gc;
 		 int ret = fltk.not_clipped((int)(x*s+L),(int)(y*s+T),(int)(w*s),(int)(h*s));
 		 fl_gc = o;
 		 return ret;
 	 };
-	 FL_EXPORT int clip_box(int _x, int _y, int _w, int _h, int& x, int& y, int& w, int& h) {
-		 x*=s;y*=s;w*=s;h*=s;
+	 int clip_box(int _x, int _y, int _w, int _h, int& x, int& y, int& w, int& h) {
+		 x= (int)(x*s);y=(int)(y*s);w=(int)(y*s);h=(int)(h*s);
 		 x += L; y += T;
 		 o = fl_gc;
 		 fl_gc = gc;
 		 int ret = fltk.clip_box((int)(_x*s+L), (int)(_y*s+T), (int)(_w*s), (int)(_h*s), x, y, w, h);
 		 x -= L; y -= T;
-		 x /= s; y /= s; w /= s; h /= s;
+		 x = (int)(x/s); y =(int)(y/s); w = (int)(w/s); h = (int)(h/s);
 		 fl_gc = o;	 
 		 return ret;
 	 };
 	
-	 FL_EXPORT void point(int x, int y) {
+	 void point(int x, int y) {
 		 o = fl_gc;
 		 fl_gc = gc;
-		 fltk.point(x*s+L, y*s+T);
+		 fltk.point((int)(x*s+L), (int)(y*s+T));
 		 fl_gc = o;
 	 };
 
-	 FL_EXPORT void line_style(int style, int width, char* dashes){
+	 void line_style(int style, int width, char* dashes){
 		 o = fl_gc;
 		 fl_gc = gc;
-		 fltk.line_style(style, width * s, dashes);
+		 fltk.line_style(style, (int)(width * s), dashes);
 		 fl_gc = o;
 	 };
 
-	 FL_EXPORT void rect(int x, int y, int w, int h){
+	 void rect(int x, int y, int w, int h){
 		 o = fl_gc;
 		 fl_gc = gc;
-		 fltk.rect(x*s+L, y*s+T, w*s, h*s);
+		 fltk.rect((int)(x*s+L), (int)(y*s+T), (int)(w*s), (int)(h*s));
 		 fl_gc = o;
 	 };
-	 FL_EXPORT void rectf(int x, int y, int w, int h){
+	 void rectf(int x, int y, int w, int h){
 		 o = fl_gc;
 		 fl_gc = gc;
-		 fltk.rectf(x*s+L, y*s+T, w*s, h*s);
-		 fl_gc = o;
-	 };
-
-	 FL_EXPORT void line(int x1, int y1, int x2, int y2){
-		 o = fl_gc;
-		 fl_gc = gc;
-		 fltk.line(x1*s+L,y1*s+T,x2*s+L,y2*s+T);
-		 fl_gc = o;
-	 };
-	 FL_EXPORT void line(int x1, int y1, int x2, int y2, int x3, int y3){
-		 o = fl_gc;
-		 fl_gc = gc;
-		 fltk.line(x1*s+L,y1*s+T,x2*s+L,y2*s+T,x3*s+L,y3*s+T);
+		 fltk.rectf((int)(x*s+L), (int)(y*s+T), (int)(w*s), (int)(h*s));
 		 fl_gc = o;
 	 };
 
-	 FL_EXPORT void loop(int x1, int y1, int x2 ,int y2, int x3, int y3){
+	 void line(int x1, int y1, int x2, int y2){
 		 o = fl_gc;
 		 fl_gc = gc;
-		 fltk.loop(x1*s+L, y1*s+T, x2*s+L, y2*s+T, x3*s+L, y3*s+T);
+		 fltk.line((int)(x1*s+L),(int)(y1*s+T),(int)(x2*s+L),(int)(y2*s+T));
 		 fl_gc = o;
 	 };
-	 FL_EXPORT void loop(int x1, int y1, int x2 ,int y2, int x3, int y3, int x4, int y4){
+	 void line(int x1, int y1, int x2, int y2, int x3, int y3){
 		 o = fl_gc;
 		 fl_gc = gc;
-		 fltk.loop(x1*s+L, y1*s+T, x2*s+L, y2*s+T, x3*s+L, y3*s+T, x4*s+L, y4*s+T);
-		 fl_gc = o;
-	 };
-
-	 FL_EXPORT void polygon(int x1, int y1, int x2 ,int y2, int x3, int y3){
-		 o = fl_gc;
-		 fl_gc = gc;
-		 fltk.polygon(x1*s+L, y1*s+T, x2*s+L, y2*s+T, x3*s+L, y3*s+T);
-		 fl_gc = o;
-	 };
-	 FL_EXPORT void polygon(int x1 ,int y1, int x2, int y2, int x3, int y3, int x4, int y4){
-		 o = fl_gc;
-		 fl_gc = gc;
-		 fltk.polygon(x1*s+L, y1*s+T, x2*s+L, y2*s+T, x3*s+L, y3*s+T, x4*s+L, y4*s+T);
+		 fltk.line((int)(x1*s+L),(int)(y1*s+T),(int)(x2*s+L),
+			 (int)(y2*s+T),(int)(x3*s+L),(int)(y3*s+T));
 		 fl_gc = o;
 	 };
 
-	 FL_EXPORT void xyline(int x, int y, int x1){
+	 void loop(int x1, int y1, int x2 ,int y2, int x3, int y3){
 		 o = fl_gc;
 		 fl_gc = gc;
-		 fltk.xyline(x*s+L, y*s+T, x1*s+L);
+		 fltk.loop((int)(x1*s+L), (int)(y1*s+T), (int)(x2*s+L), 
+			 (int)(y2*s+T), (int)(x3*s+L), (int)(y3*s+T));
 		 fl_gc = o;
 	 };
-	 FL_EXPORT void xyline(int x, int y, int x1, int y2){
+	 void loop(int x1, int y1, int x2 ,int y2, int x3, int y3, int x4, int y4){
+		 o = fl_gc;
+		 fl_gc = gc;
+		 fltk.loop((int)(x1*s+L), (int)(y1*s+T), (int)(x2*s+L), 
+			 (int)(y2*s+T), (int)(x3*s+L), (int)(y3*s+T), 
+			 (int)(x4*s+L), (int)(y4*s+T));
+		 fl_gc = o;
+	 };
+
+	 void polygon(int x1, int y1, int x2 ,int y2, int x3, int y3){
+		 o = fl_gc;
+		 fl_gc = gc;
+		 fltk.polygon((int)(x1*s+L), (int)(y1*s+T), (int)(x2*s+L), 
+			 (int)(y2*s+T), (int)(x3*s+L), (int)(y3*s+T));
+		 fl_gc = o;
+	 };
+	 void polygon(int x1 ,int y1, int x2, int y2, int x3, int y3, int x4, int y4){
+		 o = fl_gc;
+		 fl_gc = gc;
+		 fltk.polygon((int)(x1*s+L), (int)(y1*s+T), (int)(x2*s+L), 
+			 (int)(y2*s+T), (int)(x3*s+L), (int)(y3*s+T), 
+			 (int)(x4*s+L), (int)(y4*s+T));
+		 fl_gc = o;
+	 };
+
+	 void xyline(int x, int y, int x1){
+		 o = fl_gc;
+		 fl_gc = gc;
+		 fltk.xyline((int)(x*s+L), (int)(y*s+T), (int)(x1*s+L));
+		 fl_gc = o;
+	 };
+	 void xyline(int x, int y, int x1, int y2){
 		  o = fl_gc;
 		 fl_gc = gc;
-		 fltk.xyline(x*s+L, y*s+T, x1*s+L, y2*s+T);
+		 fltk.xyline((int)(x*s+L), (int)(y*s+T), (int)(x1*s+L), 
+			 (int)(y2*s+T));
 		 fl_gc = o;
 	 };
-	 FL_EXPORT void xyline(int x, int y, int x1, int y2, int x3){
+	 void xyline(int x, int y, int x1, int y2, int x3){
 		 o = fl_gc;
 		 fl_gc = gc;
-		 fltk.xyline(x*s+L, y*s+T, x1*s+L, y2*s+T, x3*s+L);
+		 fltk.xyline((int)(x*s+L), (int)(y*s+T), 
+			 (int)(x1*s+L), (int)(y2*s+T), (int)(x3*s+L));
 		 fl_gc = o;
 	 };
 
-	 FL_EXPORT void yxline(int x, int y, int y1){
+	 void yxline(int x, int y, int y1){
 	     o = fl_gc;
 		 fl_gc = gc;
-		 fltk.yxline(x*s+L, y*s+T, y1*s+T);
+		 fltk.yxline((int)(x*s+L), (int)(y*s+T), (int)(y1*s+T));
 		 fl_gc = o;
 	 };
-	 FL_EXPORT void yxline(int x, int y, int y1, int x2){
+	 void yxline(int x, int y, int y1, int x2){
 	     o = fl_gc;
 		 fl_gc = gc;
-		 fltk.yxline(x*s+L, y*s+T, y1*s+T, x2*s+L);
+		 fltk.yxline((int)(x*s+L), (int)(y*s+T), 
+			 (int)(y1*s+T), (int)(x2*s+L));
 		 fl_gc = o;
 	 };
-	 FL_EXPORT void yxline(int x, int y, int y1, int x2, int y3){
+	 void yxline(int x, int y, int y1, int x2, int y3){
 		 o = fl_gc;
 		 fl_gc = gc;
-		 fltk.yxline(x*s+L, y*s+T, y1*s+T, x2*s+L, y3*s+T);
+		 fltk.yxline((int)(x*s+L), (int)(y*s+T), (int)(y1*s+T), 
+			 (int)(x2*s+L), (int)(y3*s+T));
 		 fl_gc = o;
 	 };
 
-	 FL_EXPORT void arc(int x, int y, int w, int h, double a1, double a2){
+	 void arc(int x, int y, int w, int h, double a1, double a2){
 		 o = fl_gc;
 		 fl_gc = gc;
-		 fltk.arc(x*s+L, y*s+T, w*s, h*s, a1, a2);
+		 fltk.arc((int)(x*s+L), (int)(y*s+T), (int)(w*s), (int)(h*s), a1, a2);
 		 fl_gc = o;
 	 };
-	 FL_EXPORT void pie(int x, int y, int w, int h, double a1, double a2){
+
+	 void pie(int x, int y, int w, int h, double a1, double a2){
 	 	 o = fl_gc;
 		 fl_gc = gc;
-		 fltk.pie(x*s+L, y*s+T, w*s, h*s, a1, a2);
+		 fltk.pie((int)(x*s+L), (int)(y*s+T), (int)(w*s), (int)(h*s), a1, a2);
 		 fl_gc = o;
 	 };
 
-	 FL_EXPORT void begin_points(){
+	 void begin_points(){
          o = fl_gc;
 		 fl_gc = gc;
 		 fltk.begin_points();
 		 fl_gc = o;
 	 };
-	 FL_EXPORT void begin_line(){
+	 void begin_line(){
 	     o = fl_gc;
 		 fl_gc = gc;
 		 fltk.begin_line();
 		 fl_gc = o;
 	 };
-	 FL_EXPORT void begin_loop(){
+	 void begin_loop(){
 	     o = fl_gc;
 		 fl_gc = gc;
 		 fltk.begin_loop();
 		 fl_gc = o;
 	 };
-	 FL_EXPORT void begin_polygon(){
+	 void begin_polygon(){
 	     o = fl_gc;
 		 fl_gc = gc;
 		 fltk.begin_polygon();
 		 fl_gc = o;
 	 };
-	 FL_EXPORT void vertex(double x, double y){
+	 void vertex(double x, double y){
 		 fltk.vertex(x, y);
 	 };
-	 FL_EXPORT void curve(double x, double y, double x1, double y1, double x2, double y2, double x3, double y3){
+	 void curve(double x, double y, double x1, double y1, double x2, double y2, double x3, double y3){
 	 	 o = fl_gc;
 		 fl_gc = gc;
 		 fltk.curve(x, y, x1, y1, x2, y2, x3, y3);
 		 fl_gc = o;
 	 };
-	 FL_EXPORT void arc(double x, double y, double r, double start, double a){
+	 void arc(double x, double y, double r, double start, double a){
 	 	 o = fl_gc;
 		 fl_gc = gc;
 		 fltk.arc(x, y, r, start, a);
 		 fl_gc = o;
 	 };
-	 FL_EXPORT void circle(double x, double y, double r){
+	 void circle(double x, double y, double r){
 	 	 o = fl_gc;
 		 fl_gc = gc;
 		 fltk.circle(x, y, r);
 		 fl_gc = o;
 	 };
-	 FL_EXPORT void end_points(){
+	 void end_points(){
 	     o = fl_gc;
 		 fl_gc = gc;
 		 fltk.end_points();
 		 fl_gc = o;
 	 };
-	 FL_EXPORT void end_line(){
+	 void end_line(){
 	     o = fl_gc;
 		 fl_gc = gc;
 		 fltk.end_line();
 		 fl_gc = o;
 	 };
-	 FL_EXPORT void end_loop(){
+	 void end_loop(){
 	     o = fl_gc;
 		 fl_gc = gc;
 		 fltk.end_loop();
 		 fl_gc = o;
 	 };
-	 FL_EXPORT void end_polygon(){
+	 void end_polygon(){
 	     o = fl_gc;
 		 fl_gc = gc;
 		 fltk.end_polygon();
 		 fl_gc = o;
 	 };
-	 FL_EXPORT void begin_complex_polygon(){
+	 void begin_complex_polygon(){
 	     o = fl_gc;
 		 fl_gc = gc;
 		 fltk.begin_complex_polygon();
 		 fl_gc = o;
 	 };
-	 FL_EXPORT void gap(){
+	 void gap(){
 	     o = fl_gc;
 		 fl_gc = gc;
 		 fltk.gap();
 		 fl_gc = o;
 	 };
-	 FL_EXPORT void end_complex_polygon(){
+	 void end_complex_polygon(){
 	     o = fl_gc;
 		 fl_gc = gc;
 		 fltk.end_complex_polygon();
 		 fl_gc = o;
 	 };
-	 FL_EXPORT void transformed_vertex(double x, double y){
+	 void transformed_vertex(double x, double y){
 	     o = fl_gc;
 		 fl_gc = gc;
 		 fltk.transformed_vertex(x, y);
 		 fl_gc = o;
 	 };
-	 FL_EXPORT void translate(double x, double y) {
+	 void translate(double x, double y) {
 		 o = fl_gc;
 		 fl_gc = gc;
 		 fltk.translate(x, y);
 		 fl_gc = o;
 	 }
 
-	 FL_EXPORT void font(int face, int size) {
+	 void font(int face, int size) {
 		 o = fl_gc;
 		 fl_gc = gc;
-		 fltk.font(face, size * s);
+		 fltk.font(face, (int)(size * s));
 		 fl_gc = o;		
 	 };
 	 int font(){return fl_font_;};
 	 int size(){return (int)(fl_size_ / s);};
-	 FL_EXPORT int height(){ return fltk.height() / s;};
-	 FL_EXPORT double width(const char* c){return fltk.width(c) / s;};
-	 FL_EXPORT double width(const char* c, int n){return fltk.width(c, n) / s;};
-	 FL_EXPORT double width(unsigned int c) {return (fltk.width(c) / s);};
-	 FL_EXPORT int descent(){return fltk.descent() / s;};
-	 FL_EXPORT void draw(const char* c, int x, int y){draw(c, strlen(c), x, y);};
-	 FL_EXPORT void draw(const char* c, int n, int x, int y){
+	 int height(){ return (int)(fltk.height() / s);};
+	 double width(const char* c){return fltk.width(c) / s;};
+	 double width(const char* c, int n){return fltk.width(c, n) / s;};
+	 double width(unsigned int c) {return (fltk.width(c) / s);};
+	 int descent(){return (int)(fltk.descent() / s);};
+	 void draw(const char* c, int x, int y){draw(c, strlen(c), x, y);};
+	 void draw(const char* c, int n, int x, int y){
 		 o = fl_gc;
 		 fl_gc = gc;
 		 fltk.draw(c, n, (int)(x*s+L), (int)(y*s+T));
 		 fl_gc = o;
 	 };
-	 FL_EXPORT void rtl_draw(const char* c, int n, int x, int y){
+	 void rtl_draw(const char* c, int n, int x, int y){
 	     o = fl_gc;
 		 fl_gc = gc;
-		 fltk.rtl_draw(c, n, x*s+L, y*s+T);
+		 fltk.rtl_draw(c, n, (int)(x*s+L), (int)(y*s+T));
 		 fl_gc = o;
 	 };
 	
-	 FL_EXPORT void draw_image(const uchar*, int,int,int,int, int delta=3, int ldelta=0);
-	 FL_EXPORT void draw_image_mono(const uchar*, int,int,int,int, int delta=1, int ld=0);
-	 FL_EXPORT void draw_image(Fl_Draw_Image_Cb, void*, int,int,int,int, int delta=3);
-	 FL_EXPORT void draw_image_mono(Fl_Draw_Image_Cb, void*, int,int,int,int, int delta=1);
+	 void draw_image(const uchar*, int,int,int,int, int delta=3, int ldelta=0);
+	 void draw_image_mono(const uchar*, int,int,int,int, int delta=1, int ld=0);
+	 void draw_image(Fl_Draw_Image_Cb, void*, int,int,int,int, int delta=3);
+	 void draw_image_mono(Fl_Draw_Image_Cb, void*, int,int,int,int, int delta=1);
 
-	 FL_EXPORT void rectf(int x, int y, int w, int h, uchar r, uchar g, uchar b){
+	 void rectf(int x, int y, int w, int h, uchar r, uchar g, uchar b){
 		 o = fl_gc;
 		 fl_gc = gc;
 		 fltk.rectf((int)(x*s+L),(int)(y*s+T),(int)(w*s),(int)(h*s), r, g, b);
 		 fl_gc = o;
 	 };
      
-	 FL_EXPORT Fl_Gdi() {type = FL_GDI_DEVICE; s = 4.0; gc = 0; page_=0;};
-	 FL_EXPORT ~Fl_Gdi(); 
+	 Fl_Gdi() {type = FL_GDI_DEVICE; s = 4.0; gc = 0; page_=0;};
+	 ~Fl_Gdi(); 
 
 	 void clip(double x,double y,double w,double h){clip((int)x, (int)y, (int)w, (int)h);};
 	 int not_clipped(double x,double y,double w,double h){return not_clipped((int)x, (int)y, (int)w, (int)h);};
 	 int clip_box(double _x,double _y,double _w,double _h,double &x,double &y,double &w,double &h){
-		 int xx = x, yy = y, ww = w, hh = h;
+		 int xx = (int)x, yy = (int)y, ww = (int)w, hh = (int)h;
 		 int ret = fltk.clip_box((int)(_x), (int)(_y), (int)(_w), (int)(_h), xx, yy, ww, hh);
 		 x = xx; y = yy; w = ww; h = hh; 
 		 return ret;

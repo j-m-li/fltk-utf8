@@ -38,6 +38,8 @@
 #include "flstring.h"
 #include <FL/fl_utf8.H>
 
+const char* fl_pnm_early_eof = "Early end-of-file in PNM file \"%s\"!";
+
 //
 // 'Fl_PNM_Image::Fl_PNM_Image()' - Load a PNM image...
 //
@@ -74,7 +76,7 @@ Fl_PNM_Image::Fl_PNM_Image(const char *name)	// I - File to read
   lineptr = fgets(line, sizeof(line), fp);
   if (!lineptr) {
     fclose(fp);
-    Fl::error("Early end-of-file in PNM file \"%s\"!", name);
+    Fl::error(fl_pnm_early_eof, name);
     return;
   }
 
@@ -130,26 +132,26 @@ Fl_PNM_Image::Fl_PNM_Image(const char *name)	// I - File to read
       case 1 :
       case 2 :
           for (x = w(); x > 0; x --)
-            if (fscanf(fp, "%d", &val) == 1) *ptr++ = 255 * val / maxval;
+            if (fscanf(fp, "%d", &val) == 1) *ptr++ = (uchar)(255 * val / maxval);
           break;
 
       case 3 :
           for (x = w(); x > 0; x --) {
-            if (fscanf(fp, "%d", &val) == 1) *ptr++ = 255 * val / maxval;
-            if (fscanf(fp, "%d", &val) == 1) *ptr++ = 255 * val / maxval;
-            if (fscanf(fp, "%d", &val) == 1) *ptr++ = 255 * val / maxval;
+            if (fscanf(fp, "%d", &val) == 1) *ptr++ = (uchar)(255 * val / maxval);
+            if (fscanf(fp, "%d", &val) == 1) *ptr++ = (uchar)(255 * val / maxval);
+            if (fscanf(fp, "%d", &val) == 1) *ptr++ = (uchar)(255 * val / maxval);
           }
           break;
 
       case 4 :
-          for (x = w(), byte = getc(fp), bit = 128; x > 0; x --) {
+          for (x = w(), byte = (uchar)getc(fp), bit = 128; x > 0; x --) {
 	    if (byte & bit) *ptr++ = 255;
 	    else *ptr++ = 0;
 
             if (bit > 1) bit >>= 1;
             else {
               bit  = 128;
-              byte = getc(fp);
+              byte = (uchar)getc(fp);
             }
           }
           break;
@@ -161,11 +163,11 @@ Fl_PNM_Image::Fl_PNM_Image(const char *name)	// I - File to read
 
       case 7 : /* XV 3:3:2 thumbnail format */
           for (x = w(); x > 0; x --) {
-	    byte = getc(fp);
+	    byte = (uchar)getc(fp);
 
-	    *ptr++ = 255 * ((byte >> 5) & 7) / 7;
-	    *ptr++ = 255 * ((byte >> 2) & 7) / 7;
-	    *ptr++ = 255 * (byte & 3) / 3;
+	    *ptr++ = (uchar)(255 * ((byte >> 5) & 7) / 7);
+	    *ptr++ = (uchar)(255 * ((byte >> 2) & 7) / 7);
+	    *ptr++ = (uchar)(255 * (byte & 3) / 3);
 	  }
           break;
     }

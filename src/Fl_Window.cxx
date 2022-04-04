@@ -1,9 +1,9 @@
 //
-// "$Id: Fl_Window.cxx,v 1.6.2.3.2.10 2002/08/09 03:17:30 easysw Exp $"
+// "$Id: Fl_Window.cxx,v 1.6.2.3.2.11 2003/01/30 21:42:58 easysw Exp $"
 //
 // Window widget class for the Fast Light Tool Kit (FLTK).
 //
-// Copyright 1998-2002 by Bill Spitzak and others.
+// Copyright 1998-2003 by Bill Spitzak and others.
 //
 // This library is free software; you can redistribute it and/or
 // modify it under the terms of the GNU Library General Public
@@ -29,7 +29,10 @@
 // equivalent (but totally different) crap for MSWindows is in Fl_win32.cxx
 
 #include <FL/Fl.H>
+#include <FL/x.H>
 #include <FL/Fl_Window.H>
+#include <stdlib.h>
+
 
 void Fl_Window::_Fl_Window() {
   type(FL_WINDOW);
@@ -48,6 +51,7 @@ void Fl_Window::_Fl_Window() {
   resizable(0);
   size_range_set = 0;
   minw = maxw = minh = maxh = 0;
+  wm_resize = 0;
   callback((Fl_Callback*)default_callback);
 }
 
@@ -127,5 +131,5 @@ Fl_Window *Fl_Window::current() {
 
 
 //
-// End of "$Id: Fl_Window.cxx,v 1.6.2.3.2.10 2002/08/09 03:17:30 easysw Exp $".
+// End of "$Id: Fl_Window.cxx,v 1.6.2.3.2.11 2003/01/30 21:42:58 easysw Exp $".
 //

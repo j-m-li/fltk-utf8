@@ -1,9 +1,9 @@
 //
-// "$Id: fl_dnd_x.cxx,v 1.5.2.5 2002/08/09 03:17:30 easysw Exp $"
+// "$Id: fl_dnd_x.cxx,v 1.5.2.7 2003/05/04 21:45:46 easysw Exp $"
 //
 // Drag & Drop code for the Fast Light Tool Kit (FLTK).
 //
-// Copyright 1998-2002 by Bill Spitzak and others.
+// Copyright 1998-2003 by Bill Spitzak and others.
 //
 // This library is free software; you can redistribute it and/or
 // modify it under the terms of the GNU Library General Public
@@ -27,6 +27,11 @@
 #include <FL/Fl_Window.H>
 #include <FL/x.H>
 #include <stdio.h>
+#include "config.h"
+
+#if HAVE_XTEST
+#include <X11/extensions/XTest.h>
+#endif
 
 extern Atom fl_XdndAware;
 extern Atom fl_XdndSelection;
@@ -39,6 +44,7 @@ extern Atom fl_XdndStatus;
 extern Atom fl_XdndActionCopy;
 extern Atom fl_XdndFinished;
 extern Atom fl_XdndProxy;
+extern Atom fl_XaTextUriList;
 
 extern char fl_i_own_selection[2];
 extern char *fl_selection_buffer[2];
@@ -132,15 +138,18 @@ static Window get_proxy(Window win)
 Window fl_dnd_target_window = 0;
 
 int Fl::dnd() {
+  int lx = 0, ly = 0;
   static char is_here = 0;
   if (is_here) return 0;
   Fl_Widget *foc = NULL;
+  //Fl_Window *source_fl_win = Fl::first_window();
   Fl::first_window()->cursor((Fl_Cursor)21);
   Window source_window = fl_xid(Fl::first_window());
   fl_local_grab = grabfunc;
   Fl_Window* local_window = 0;
   int dndversion = 4; int dest_x, dest_y;
   fl_dnd_target_window = 0;
+  Window m = fl_message_window;
 
   if (!fl_message_window) fl_message_window = source_window;
 
@@ -180,17 +189,19 @@ int Fl::dnd() {
 	local_handle(FL_DND_ENTER, local_window);
       } else if (dndversion) {
 	fl_sendClientMessage(fl_dnd_target_window, fl_XdndEnter, source_window,
-			  dndversion<<24, XA_STRING, 0, 0);
+			  dndversion<<24, fl_XaTextUriList/*XA_STRING*/, 0, 0);
       }
     }
     if (local_window) {
       local_handle(FL_DND_DRAG, local_window);
       foc = focus_;
-    } else if (dndversion) {
+    } else if (dndversion && (e_x_root != lx || e_y_root != ly)) {
       fl_sendClientMessage(fl_dnd_target_window, fl_XdndPosition, source_window,
 			0, (e_x_root<<16)|e_y_root, fl_event_time,
 			fl_XdndActionCopy);
     }
+    lx = e_x_root;
+    ly = e_y_root;
     Fl::wait();
     Fl::check();
     Fl::flush();
@@ -210,6 +221,27 @@ int Fl::dnd() {
     fl_sendClientMessage(fl_dnd_target_window, fl_XdndDrop, source_window,
 		      0, fl_event_time);
   } else if (fl_dnd_target_window) {
+    char *ptr = fl_selection_buffer[0];
+    char *d = ptr;
+    int l = fl_selection_length[0];
+    int i = 0;
+    int inf = 1;
+    while (i < l) {
+	if (inf && *ptr == ':') {
+		inf = 0;
+	} else if (inf) {
+	} else if (*ptr == '\r') {
+		*d = ' ';
+		inf = 1;
+		d++;
+	} else {
+		*d = *ptr;
+		d++;
+	}
+	i++; ptr++;
+    } 
+    *d = 0;
+    fl_selection_length[0] = d - fl_selection_buffer[0];	
     // fake a drop by clicking the middle mouse button:
     XButtonEvent msg;
     msg.type = ButtonPress;
@@ -223,16 +255,33 @@ int Fl::dnd() {
     msg.y_root = Fl::e_y_root;
     msg.state = 0x0;
     msg.button = Button2;
+
+#if HAVE_XTEST
+    Fl::check();
+    XFlush(fl_display);
+    XTestGrabControl(fl_display, 1);
+    XTestFakeButtonEvent(fl_display, 2, 1, 0);
+    XSync(fl_display, 0);
+    XTestGrabControl(fl_display, 0);
+#else
     XSendEvent(fl_display, fl_dnd_target_window, False, 0L, (XEvent*)&msg);
+#endif
     msg.time++;
     msg.state = 0x200;
     msg.type = ButtonRelease;
+#if HAVE_XTEST
+    XTestGrabControl(fl_display, 1);
+    XTestFakeButtonEvent(fl_display, 2, 0, 0);
+    XSync(fl_display, 0);
+    XTestGrabControl(fl_display, 0);
+#else
     XSendEvent(fl_display, fl_dnd_target_window, False, 0L, (XEvent*)&msg);
+#endif
   }
 
   fl_local_grab = 0;
-  Fl::first_window()->cursor(FL_CURSOR_DEFAULT);
-  fl_message_window = 0;
+ // Fl::first_window()->cursor(FL_CURSOR_DEFAULT);
+  fl_message_window = m;
   is_here = 0;
   return 1;
 }

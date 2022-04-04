@@ -1,9 +1,9 @@
 //
-// "$Id: Fl_Pixmap.H,v 1.6.2.8.2.9 2002/08/09 01:09:48 easysw Exp $"
+// "$Id: Fl_Pixmap.H,v 1.6.2.8.2.12 2003/01/30 21:39:50 easysw Exp $"
 //
 // Pixmap header file for the Fast Light Tool Kit (FLTK).
 //
-// Copyright 1998-2002 by Bill Spitzak and others.
+// Copyright 1998-2003 by Bill Spitzak and others.
 //
 // This library is free software; you can redistribute it and/or
 // modify it under the terms of the GNU Library General Public
@@ -46,14 +46,20 @@ class FL_EXPORT Fl_Pixmap : public Fl_Image {
 
   public:
 
+  uchar *array; // usefull to create a Fl_Bitmap;
   int alloc_data; // Non-zero if data was allocated
-  Fl_Offscreen id; // for internal use
-  Fl_Bitmask mask; // for internal use (mask bitmap)
+#if defined(__MACOS__) || defined(WIN32)
+  void *id; // for internal use
+  void *mask; // for internal use (mask bitmap)
+#else
+  unsigned id; // for internal use
+  unsigned mask; // for internal use (mask bitmap)
+#endif // __MACOS__ || WIN32
 
-  explicit Fl_Pixmap(char * const * D) : Fl_Image(-1,0,1), alloc_data(0), id(0), mask(0) {set_data((const char*const*)D); measure();}
-  explicit Fl_Pixmap(uchar* const * D) : Fl_Image(-1,0,1), alloc_data(0), id(0), mask(0) {set_data((const char*const*)D); measure();}
-  explicit Fl_Pixmap(const char * const * D) : Fl_Image(-1,0,1), alloc_data(0), id(0), mask(0) {set_data((const char*const*)D); measure();}
-  explicit Fl_Pixmap(const uchar* const * D) : Fl_Image(-1,0,1), alloc_data(0), id(0), mask(0) {set_data((const char*const*)D); measure();}
+  explicit Fl_Pixmap(char * const * D) : Fl_Image(-1,0,1), array(0), alloc_data(0), id(0), mask(0) {set_data((const char*const*)D); measure();}
+  explicit Fl_Pixmap(uchar* const * D) : Fl_Image(-1,0,1), array(0), alloc_data(0), id(0), mask(0) {set_data((const char*const*)D); measure();}
+  explicit Fl_Pixmap(const char * const * D) : Fl_Image(-1,0,1), array(0), alloc_data(0), id(0), mask(0) {set_data((const char*const*)D); measure();}
+  explicit Fl_Pixmap(const uchar* const * D) : Fl_Image(-1,0,1), array(0), alloc_data(0), id(0), mask(0) {set_data((const char*const*)D); measure();}
   virtual ~Fl_Pixmap();
   virtual Fl_Image *copy(int W, int H);
   Fl_Image *copy() { return copy(w(), h()); }
@@ -69,5 +75,5 @@ class FL_EXPORT Fl_Pixmap : public Fl_Image {
 #endif
 
 //
-// End of "$Id: Fl_Pixmap.H,v 1.6.2.8.2.9 2002/08/09 01:09:48 easysw Exp $".
+// End of "$Id: Fl_Pixmap.H,v 1.6.2.8.2.12 2003/01/30 21:39:50 easysw Exp $".
 //

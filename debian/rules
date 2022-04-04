@@ -8,13 +8,19 @@
 # Uncomment this to turn on verbose mode. 
 #export DH_VERBOSE=1
 
-CONFIGURE_FLAGS := --prefix=/usr --sysconfdir=/etc --enable-debug --mandir=/usr/share/man --enable-shared --disable-gl
+CONFIGURE_FLAGS := --prefix=/usr --sysconfdir=/etc --enable-debug --mandir=/usr/share/man --enable-shared 
 
 LIBFLTK         := libfltk-utf8
 LIBFLTK_DEV     := libfltk-utf8-dev
 SHARED_LIB      := libfltk-utf8.so.1.1
 SONAME_LIB      := libfltk-utf8.so.1.1
 STATIC_LIB	:= libfltk-utf8.a
+SHARED_IMG_LIB  := libfltk-utf8_images.so.1.1
+SONAME_IMG_LIB  := libfltk-utf8_images.so.1.1
+STATIC_IMG_LIB	:= libfltk-utf8_images.a
+STATIC_GL_LIB	:= libfltk-utf8_gl.a
+SHARED_GL_LIB  := libfltk-utf8_gl.so.1.1
+SONAME_GL_LIB  := libfltk-utf8_gl.so.1.1
 
 LIBFLTK_TMP     := $(shell pwd)/debian/tmp
 LIBFLTK_DEV_TMP := $(shell pwd)/debian/$(LIBFLTK_DEV)
@@ -61,6 +67,9 @@ binary-arch: build
 	$(INSTALL_DIR)      $(LIBFLTK_TMP)/$(DOCDIR)/$(LIBFLTK)
 	$(INSTALL_R_FILE)   src/$(SHARED_LIB) $(LIBFLTK_TMP)/$(LIBDIR)
 #	ln -nsf             $(SHARED_LIB) $(LIBFLTK_TMP)/$(LIBDIR)/$(SONAME_LIB)
+	$(INSTALL_R_FILE)   src/$(SHARED_IMG_LIB) $(LIBFLTK_TMP)/$(LIBDIR)
+	$(INSTALL_R_FILE)   src/$(SHARED_GL_LIB) $(LIBFLTK_TMP)/$(LIBDIR)
+#	ln -nsf             $(SHARED_IMG_LIB) $(LIBFLTK_TMP)/$(LIBDIR)/$(SONAME_IMG_LIB)
 	$(INSTALL_R_FILE)   debian/copyright $(LIBFLTK_TMP)/$(DOCDIR)/$(LIBFLTK)/copyright
 	$(INSTALL_R_FILE)   debian/changelog $(LIBFLTK_TMP)/$(DOCDIR)/$(LIBFLTK)/changelog.Debian
 
@@ -79,6 +88,10 @@ binary-arch: build
 
 	$(INSTALL_R_FILE)   lib/$(STATIC_LIB) $(LIBFLTK_DEV_TMP)/$(LIBDIR)
 	ln -nsf             $(SHARED_LIB) $(LIBFLTK_DEV_TMP)/$(LIBDIR)/libfltk-utf8.so
+	$(INSTALL_R_FILE)   lib/$(STATIC_IMG_LIB) $(LIBFLTK_DEV_TMP)/$(LIBDIR)
+	$(INSTALL_R_FILE)   lib/$(STATIC_GL_LIB) $(LIBFLTK_DEV_TMP)/$(LIBDIR)
+	ln -nsf             $(SHARED_IMG_LIB) $(LIBFLTK_DEV_TMP)/$(LIBDIR)/libfltk-utf8_images.so
+	ln -nsf             $(SHARED_GL_LIB) $(LIBFLTK_DEV_TMP)/$(LIBDIR)/libfltk-utf8_gl.so
 	-cp -r FL/*.h FL/*.H $(LIBFLTK_DEV_TMP)/$(INCDIR)/FL
 	ln -nfs FL $(LIBFLTK_DEV_TMP)/$(INCDIR)/Fl
 	( cd $(LIBFLTK_DEV_TMP)/$(INCDIR)/FL && \
@@ -91,6 +104,7 @@ binary-arch: build
 	chmod    755        $(LIBFLTK_DEV_TMP)/$(INCDIR)
 	chmod    755        $(LIBFLTK_DEV_TMP)/$(INCDIR)/FL
 	$(INSTALL_X_FILE)   fluid/fluid   $(LIBFLTK_DEV_TMP)/$(BINDIR)/fluid
+	$(INSTALL_X_FILE)   fltk-config   $(LIBFLTK_DEV_TMP)/$(BINDIR)/fltk-config
 
 	cp makeinclude $(LIBFLTK_DEV_TMP)/$(DOCDIR)/$(LIBFLTK)/examples/
 	sed -e 's!\.\./makeinclude!makeinclude!g' \

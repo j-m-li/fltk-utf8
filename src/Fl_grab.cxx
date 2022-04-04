@@ -1,9 +1,9 @@
 //
-// "$Id: Fl_grab.cxx,v 1.1.2.4.2.7 2002/08/09 03:17:30 easysw Exp $"
+// "$Id: Fl_grab.cxx,v 1.1.2.4.2.8 2003/01/30 21:43:07 easysw Exp $"
 //
 // Grab/release code for the Fast Light Tool Kit (FLTK).
 //
-// Copyright 1998-2002 by Bill Spitzak and others.
+// Copyright 1998-2003 by Bill Spitzak and others.
 //
 // This library is free software; you can redistribute it and/or
 // modify it under the terms of the GNU Library General Public
@@ -44,7 +44,7 @@ extern void fl_fix_focus(); // in Fl.cxx
 extern HWND fl_capture;
 #endif
 
-#ifdef __APPLE__
+#ifdef __MACOS__
 // MacOS Carbon does not seem to have a mechanism to grab the mouse pointer
 extern WindowRef fl_capture;
 #endif
@@ -55,9 +55,11 @@ void Fl::grab(Fl_Window* win) {
 #ifdef WIN32
       SetActiveWindow(fl_capture = fl_xid(first_window()));
       SetCapture(fl_capture);
-#elif defined(__APPLE__)
+#elif defined(__MACOS__)
       fl_capture = fl_xid( first_window() );
       SetUserFocusWindow( fl_capture );
+#elif NANO_X
+#elif DJGPP
 #else
       XGrabPointer(fl_display,
 		   fl_xid(first_window()),
@@ -83,9 +85,11 @@ void Fl::grab(Fl_Window* win) {
 #ifdef WIN32
       fl_capture = 0;
       ReleaseCapture();
-#elif defined(__APPLE__)
+#elif defined(__MACOS__)
       fl_capture = 0;
       SetUserFocusWindow( (WindowRef)kUserFocusAuto );
+#elif NANO_X
+#elif DJGPP
 #else
       XUngrabKeyboard(fl_display, fl_event_time);
       XUngrabPointer(fl_display, fl_event_time);
@@ -100,5 +104,5 @@ void Fl::grab(Fl_Window* win) {
 }
 
 //
-// End of "$Id: Fl_grab.cxx,v 1.1.2.4.2.7 2002/08/09 03:17:30 easysw Exp $".
+// End of "$Id: Fl_grab.cxx,v 1.1.2.4.2.8 2003/01/30 21:43:07 easysw Exp $".
 //

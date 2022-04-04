@@ -1,9 +1,9 @@
 //
-// "$Id: Fl.H,v 1.8.2.11.2.21 2002/08/14 16:19:47 easysw Exp $"
+// "$Id: Fl.H,v 1.8.2.11.2.22 2003/01/30 21:38:33 easysw Exp $"
 //
 // Main header file for the Fast Light Tool Kit (FLTK).
 //
-// Copyright 1998-2002 by Bill Spitzak and others.
+// Copyright 1998-2003 by Bill Spitzak and others.
 //
 // This library is free software; you can redistribute it and/or
 // modify it under the terms of the GNU Library General Public
@@ -58,7 +58,7 @@ public: // should be private!
   static int e_y_root;
   static int e_dx;
   static int e_dy;
-  static int e_state;
+  static long e_state;
   static int e_clicks;
   static int e_is_click;
   static int e_keysym;
@@ -74,6 +74,8 @@ public: // should be private!
   static int compose_state;
   static int visible_focus_;
   static int dnd_text_ops_;
+  static int minimal_shortcuts_;
+   static int symbol_in_label_;
   static void damage(int d) {damage_ = d;}
 
   static void (*idle)();
@@ -155,8 +157,8 @@ public:
   static int event_is_click()	{return e_is_click;}
   static void event_is_click(int i) {e_is_click = i;} // only 0 works!
   static int event_button()	{return e_keysym-FL_Button;}
-  static int event_state()	{return e_state;}
-  static int event_state(int i) {return e_state&i;}
+  static long event_state()	{return e_state;}
+  static int event_state(long i) {return e_state&i;}
   static int event_key()	{return e_keysym;}
   static int event_key(int);
   static int get_key(int);
@@ -190,13 +192,13 @@ public:
   static void paste(Fl_Widget &receiver);
 
   // screen size:
-#if defined(WIN32) || defined(__APPLE__)
+#if defined(WIN32) || defined(__MACOS__)
   static int x();
   static int y();
 #else
   static int x() {return 0;}
   static int y() {return 0;}
-#endif /* WIN32 || __APPLE__ */
+#endif /* WIN32 || __MACOS__ */
   static int w();
   static int h();
 
@@ -253,6 +255,14 @@ public:
   static void dnd_text_ops(int v) { dnd_text_ops_ = v; }
   static int  dnd_text_ops() { return dnd_text_ops_; }
 
+  // Symbols text operation methods...
+  static void symbol_in_label(int v) { symbol_in_label_ = v; }
+  static int  symbol_in_label() { return symbol_in_label_; }
+
+  // Keyboard shortcuts operation methods...
+  static void minimal_shortcuts(int v) { minimal_shortcuts_ = v; }
+  static int  minimal_shortcuts() { return minimal_shortcuts_; }
+
   // Multithreading support:
   static void lock();
   static void unlock();
@@ -263,5 +273,5 @@ public:
 #endif // !Fl_H
 
 //
-// End of "$Id: Fl.H,v 1.8.2.11.2.21 2002/08/14 16:19:47 easysw Exp $".
+// End of "$Id: Fl.H,v 1.8.2.11.2.22 2003/01/30 21:38:33 easysw Exp $".
 //

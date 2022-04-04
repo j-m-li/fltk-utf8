@@ -1,9 +1,9 @@
 //
-// "$Id: Fl_Check_Browser.H,v 1.1.2.4 2002/08/14 16:49:37 easysw Exp $"
+// "$Id: Fl_Check_Browser.H,v 1.1.2.6 2003/01/30 21:38:49 easysw Exp $"
 //
 // Fl_Check_Browser header file for the Fast Light Tool Kit (FLTK).
 //
-// Copyright 1998-2002 by Bill Spitzak and others.
+// Copyright 1998-2003 by Bill Spitzak and others.
 //
 // This library is free software; you can redistribute it and/or
 // modify it under the terms of the GNU Library General Public
@@ -71,6 +71,11 @@ class FL_EXPORT Fl_Check_Browser : public Fl_Browser_ {
   int add(char *s);               // add an (unchecked) item
   int add(char *s, int b);        // add an item and set checked
 				  // both return the new nitems()
+
+  // inline const char * methods to avoid breaking binary compatibility...
+  int add(const char *s) { return add((char *)s); }
+  int add(const char *s, int b) { return add((char *)s, b); }
+
   void clear();                   // delete all items
   int nitems() const { return nitems_; }
   int nchecked() const { return nchecked_; }
@@ -86,6 +91,6 @@ class FL_EXPORT Fl_Check_Browser : public Fl_Browser_ {
 #endif // Fl_Check_Browser_H
 
 //
-// End of "$Id: Fl_Check_Browser.H,v 1.1.2.4 2002/08/14 16:49:37 easysw Exp $".
+// End of "$Id: Fl_Check_Browser.H,v 1.1.2.6 2003/01/30 21:38:49 easysw Exp $".
 //
 

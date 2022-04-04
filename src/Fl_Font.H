@@ -1,9 +1,9 @@
 //
-// "$Id: Fl_Font.H,v 1.6.2.3.2.3 2002/08/09 01:09:48 easysw Exp $"
+// "$Id: Fl_Font.H,v 1.6.2.3.2.4 2003/01/30 21:41:46 easysw Exp $"
 //
 // Font definitions for the Fast Light Tool Kit (FLTK).
 //
-// Copyright 1998-2002 by Bill Spitzak and others.
+// Copyright 1998-2003 by Bill Spitzak and others.
 //
 // This library is free software; you can redistribute it and/or
 // modify it under the terms of the GNU Library General Public
@@ -36,7 +36,7 @@
 #ifndef FL_FONT_
 #define FL_FONT_
 
-#if HAVE_XUTF8
+#if HAVE_XUTF8 && !NANO_X
 #include <libXutf8/Xutf8.h>
 #endif
 
@@ -52,12 +52,18 @@ public:
   int *width[64];
   TEXTMETRIC metr;
   FL_EXPORT Fl_FontSize(const char* fontname, int size);
-#  elif defined(__APPLE__)
+#  elif defined(DJGPP)
+  GrFont *fid;
   FL_EXPORT Fl_FontSize(const char* fontname, int size);
-  short font, face, size;
+#  elif defined(__MACOS__)
+  FL_EXPORT Fl_FontSize(const char* fontname, int size);
+  Fixed size;
+  Boolean bold;
+  Boolean italic;
+  ATSUFontID font;
   short ascent, descent;
-  short width[256];
-  bool knowMetrics;
+  char knowMetrics;
+  short *width[64];
 #  elif USE_XFT
   XftFont* font;
   const char* encoding;
@@ -65,8 +71,14 @@ public:
   FL_EXPORT Fl_FontSize(const char* xfontname);
 
 #  else
-#    if HAVE_XUTF8
+#    if HAVE_XUTF8 | NANO_X
+#    if NANO_X
+   char isTTF;
+   void Resize(int size);
+   GR_FONT_ID font;	
+#    else
   XUtf8FontStruct* font; // X UTF-8 font information
+#    endif
 #    else
   XFontStruct* font;	// X font information
 #    endif
@@ -76,6 +88,7 @@ public:
   int maxsize;		// largest point size that should use this
 #  if HAVE_GL
   unsigned int listbase;// base of display list, 0 = none
+  char glok[64];
 #  endif
   FL_EXPORT ~Fl_FontSize();
 };
@@ -103,5 +116,5 @@ FL_EXPORT char *fl_find_fontsize(char *name);
 #endif
 
 //
-// End of "$Id: Fl_Font.H,v 1.6.2.3.2.3 2002/08/09 01:09:48 easysw Exp $".
+// End of "$Id: Fl_Font.H,v 1.6.2.3.2.4 2003/01/30 21:41:46 easysw Exp $".
 //

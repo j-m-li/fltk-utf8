@@ -64,6 +64,7 @@ Fl_FontSize::Fl_FontSize(const char* name, int size) {
   for (i = 0; i < 64; i++) width[i] = NULL;
 #if HAVE_GL
   listbase = 0;
+  for (i = 0; i < 64; i++) glok[i] = 0;
 #endif
   minsize = maxsize = size;
 }
@@ -129,8 +130,8 @@ static Fl_FontSize* find(int fnum, int size) {
 ////////////////////////////////////////////////////////////////
 // Public interface:
 
-int fl_font_ = 0;
-int fl_size_ = 0;
+FL_EXPORT int fl_font_ = 0;
+FL_EXPORT int fl_size_ = 0;
 //static HDC font_gc;
 
 void Fl_Fltk::font(int fnum, int size) {
@@ -149,7 +150,7 @@ int Fl_Fltk::descent() {
 
 
 // Unicode string buffer
-static unsigned short *wstr = NULL;
+static xchar *wstr = NULL;
 static int wstr_len	= 0;
 
 double Fl_Fltk::width(const char* c, int n) {
@@ -176,7 +177,7 @@ double Fl_Fltk::width(unsigned int c) {
         SIZE s;
 	unsigned short i = 0, ii = r * 0x400;
 	for (; i < 0x400; i++) {
-		GetTextExtentPoint32W(fl_gc, &ii, 1, &s);
+		GetTextExtentPoint32W(fl_gc, (WCHAR*)&ii, 1, &s);
 		fl_fontsize->width[r][i] = s.cx;
 		ii++;
 	} 
@@ -185,7 +186,6 @@ double Fl_Fltk::width(unsigned int c) {
 }
 
 void Fl_Fltk::draw(const char* str, int n, int x, int y) {
-  int wn = 0;
   int i = 0;
   int lx = 0;
   COLORREF oldColor = SetTextColor(fl_gc, fl_RGB());
@@ -202,7 +202,7 @@ void Fl_Fltk::draw(const char* str, int n, int x, int y) {
     ucs = u; 
     if (l < 1) l = 1;
     i += l;
-    TextOutW(fl_gc, x, y, &ucs, 1);
+    TextOutW(fl_gc, x, y, (WCHAR*)&ucs, 1);
     x += lx;
   }
   SetTextColor(fl_gc, oldColor);
@@ -213,7 +213,7 @@ void Fl_Fltk::rtl_draw(const char* c, int n, int x, int y) {
   int i = 0;
   int lx = 0;
   if (n > wstr_len) {
-    wstr = (unsigned short*) realloc(wstr, sizeof(short) * n);
+    wstr = (xchar*) realloc(wstr, sizeof(xchar) * n);
     wstr_len = n;
   }
   wn = fl_utf2unicode((const unsigned char *)c, n, wstr);
@@ -222,7 +222,7 @@ void Fl_Fltk::rtl_draw(const char* c, int n, int x, int y) {
   while (i < wn) {
     lx = (int) Fl_Fltk::width(wstr[i]);
     x -= lx;
-    TextOutW(fl_gc, x, y, wstr + i, 1);
+    TextOutW(fl_gc, x, y, (WCHAR*)wstr + i, 1);
 	if (fl_nonspacing(wstr[i])) {
 		x += lx;
 	}

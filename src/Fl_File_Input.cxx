@@ -1,9 +1,9 @@
 //
-// "$Id: Fl_File_Input.cxx,v 1.1.2.6 2002/08/09 01:09:48 easysw Exp $"
+// "$Id: Fl_File_Input.cxx,v 1.1.2.10 2003/01/30 21:41:45 easysw Exp $"
 //
 // File_Input header file for the Fast Light Tool Kit (FLTK).
 //
-// Copyright 1998-2002 by Bill Spitzak and others.
+// Copyright 1998-2003 by Bill Spitzak and others.
 // Original version Copyright 1998 by Curtis Edwards.
 //
 // This library is free software; you can redistribute it and/or
@@ -26,6 +26,7 @@
 
 #include <FL/Fl.H>
 #include <FL/Fl_File_Input.H>
+#include <FL/Fl_Window.H>
 #include <FL/fl_draw.H>
 #include <stdio.h>
 #include "flstring.h"
@@ -127,7 +128,7 @@ Fl_File_Input::update_buttons() {
 
     end ++;
 
-    buttons_[i] = (int)fl_width(start, end - start);
+    buttons_[i] = (short)fl_width(start, end - start);
     if (!i) buttons_[i] += Fl::box_dx(box()) + 6;
   }
 
@@ -152,8 +153,7 @@ Fl_File_Input::value(const char *str,		// I - New string value
 int						// O - TRUE on success
 Fl_File_Input::value(const char *str) {		// I - New string value
   damage(FL_DAMAGE_BAR);
-  if (*str) return Fl_Input::value(str);
-  else return 0;
+  return Fl_Input::value(str);
 }
 
 
@@ -184,8 +184,8 @@ Fl_File_Input::handle(int event) 		// I - Event
     case FL_MOVE :
     case FL_ENTER :
       if (active_r()) {
-	if (Fl::event_y() < (y() + DIR_HEIGHT)) fl_cursor(FL_CURSOR_DEFAULT);
-	else fl_cursor(FL_CURSOR_INSERT);
+	if (Fl::event_y() < (y() + DIR_HEIGHT)) window()->cursor(FL_CURSOR_DEFAULT);
+	else window()->cursor(FL_CURSOR_INSERT);
       }
 
       return 1;
@@ -234,7 +234,7 @@ Fl_File_Input::handle_button(int event)		// I - Event
 
   // Redraw the directory bar...
   if (event == FL_RELEASE) pressed_ = -1;
-  else pressed_ = i;
+  else pressed_ = (short)i;
 
   draw_buttons();
 
@@ -260,7 +260,6 @@ Fl_File_Input::handle_button(int event)		// I - Event
     // Found the end; truncate the value and update the buttons...
     *start = '\0';
     value(newvalue, start - newvalue);
-
     // Then do the callbacks, if necessary...
     if (when() & FL_WHEN_CHANGED) do_callback();
   }
@@ -270,5 +269,5 @@ Fl_File_Input::handle_button(int event)		// I - Event
 
 
 //
-// End of "$Id: Fl_File_Input.cxx,v 1.1.2.6 2002/08/09 01:09:48 easysw Exp $".
+// End of "$Id: Fl_File_Input.cxx,v 1.1.2.10 2003/01/30 21:41:45 easysw Exp $".
 //

@@ -46,7 +46,7 @@ char *get_value(int R, int C )
 	} else if (C==-1 && R>-1)	//	Column header 1, 2, 3...
 		sprintf( buf, "%d", R );
 	else if (R>-1 && C>-1)		//	Normal cell from bufs
-		strcpy(buf, bufs[R][C]);
+		strcpy(buf, bufs[R & 0x07][C & 0x03]);
 	return buf;
 }
 
@@ -89,13 +89,16 @@ void Flvt_Edit::save_editor( Fl_Widget *e, int R, int C )
 			switch( R )
 			{
 				case 2:
-					strcpy( bufs[R][C], (((Flve_Check_Button *)e)->value()?"1":"0") );
+					strncpy( bufs[R][C], (((Flve_Check_Button *)e)->value()?"1":"0"), 40 );
 					break;
 				default:
-					strcpy( bufs[R][C], ((Flve_Input *)e)->value() );
+					strncpy( bufs[R&0x7][C], ((Flve_Input *)e)->value() , 40);
 					break;
 			}
 			break;
+		default:
+		   strncpy( bufs[R&0x7][C &0x3], ((Flve_Input *)e)->value() , 40);
+		break;
 	}
 }
 
@@ -189,8 +192,8 @@ int main(int argc, char **argv)
 	l->global_style.x_margin(5);
 	l->global_style.locked(false);
 
-	l->rows(10);
-	l->cols(2);
+	l->rows(10000);
+	l->cols(100);
 
     l->col_width(50,-1);
 	l->feature(FLVF_DIVIDERS|FLVF_PERSIST_SELECT|FLVF_HEADERS|FLVF_MULTI_SELECT);

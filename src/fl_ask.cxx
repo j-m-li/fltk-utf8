@@ -1,9 +1,9 @@
 //
-// "$Id: fl_ask.cxx,v 1.8.2.8.2.10 2002/08/30 16:58:16 easysw Exp $"
+// "$Id: fl_ask.cxx,v 1.8.2.8.2.12 2003/01/30 21:43:26 easysw Exp $"
 //
 // Standard dialog functions for the Fast Light Tool Kit (FLTK).
 //
-// Copyright 1998-2002 by Bill Spitzak and others.
+// Copyright 1998-2003 by Bill Spitzak and others.
 //
 // This library is free software; you can redistribute it and/or
 // modify it under the terms of the GNU Library General Public
@@ -147,7 +147,7 @@ void resizeform() {
 
   message->resize(20 + icon_size, 10, message_w, message_h);
   icon->resize(10, 10, icon_size, icon_size);
-  icon->labelsize(icon_size - 10);
+  icon->labelsize((uchar)(icon_size - 10));
   input->resize(20 + icon_size, 10 + message_h, message_w, 25);
 
   for (x = w, i = 0; i < 3; i ++)
@@ -234,7 +234,7 @@ void fl_beep(int type) {
       MessageBeep(0xFFFFFFFF);
       break;
   }
-#elif defined(__APPLE__)
+#elif defined(__MACOS__)
   switch (type) {
     case FL_BEEP_DEFAULT :
     case FL_BEEP_ERROR :
@@ -243,6 +243,9 @@ void fl_beep(int type) {
     default :
       break;
   }
+#elif NANO_X
+#elif DJGPP
+  // FIXME_DJGPP
 #else
   switch (type) {
     case FL_BEEP_DEFAULT :
@@ -344,5 +347,5 @@ const char *fl_password(const char *fmt, const char *defstr, ...) {
 }
 
 //
-// End of "$Id: fl_ask.cxx,v 1.8.2.8.2.10 2002/08/30 16:58:16 easysw Exp $".
+// End of "$Id: fl_ask.cxx,v 1.8.2.8.2.12 2003/01/30 21:43:26 easysw Exp $".
 //

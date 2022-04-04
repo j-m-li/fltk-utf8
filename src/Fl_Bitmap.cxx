@@ -32,7 +32,7 @@
 #include <FL/Fl_Fltk.H>
 #include "flstring.h"
 
-#ifdef __APPLE__ // MacOS bitmask functions
+#ifdef __MACOS__ // MacOS bitmask functions
 Fl_Bitmask fl_create_bitmask(int w, int h, const uchar *array) {
   Rect srcRect;
   srcRect.left = 0; srcRect.right = w;
@@ -95,8 +95,8 @@ static Fl_Bitmask fl_create_bitmap(int w, int h, const uchar *data) {
 
   for (int y=0; y < h; y++) {
     for (int n = 0; n < w1; n++, src++)
-      *dest++ = (reverse[*src & 0x0f] & 0xf0) |
-	        (reverse[(*src >> 4) & 0x0f] & 0x0f);
+      *dest++ = (uchar)((reverse[*src & 0x0f] & 0xf0) |
+	                (reverse[(*src >> 4) & 0x0f] & 0x0f));
     dest += w2-w1;
   }
 
@@ -132,10 +132,10 @@ Fl_Bitmask fl_create_bitmask(int w, int h, const uchar *data) {
     for (int j=w1; j>0; j--) {
       uchar b = *src++;
       if (bpp==1) {
-        *dst++ = ( hiNibble[b&15] ) | ( loNibble[(b>>4)&15] );
+        *dst++ = (uchar)( hiNibble[b&15] ) | ( loNibble[(b>>4)&15] );
       } else if (bpp==4) {
         for (int k=(j==1)?shr:4; k>0; k--) {
-          *dst++ = "\377\360\017\000"[b&3];
+          *dst++ = (uchar)("\377\360\017\000"[b&3]);
           b = b >> 2;
         }
       } else {
@@ -162,7 +162,6 @@ Fl_Bitmask fl_create_bitmask(int w, int h, const uchar *data) {
 
   id = CreateBitmap(w, h, np, bpp, newarray);
   delete[] newarray;
-
   return id;
 }
 
@@ -198,6 +197,54 @@ Fl_Bitmask fl_create_bitmask(int w, int h, const uchar *data, int for_mask) {
 void fl_delete_bitmask(Fl_Bitmask bm) {
   DeleteObject((HGDIOBJ)bm);
 }
+#elif NANO_X || DJGPP
+Fl_Bitmask fl_create_bitmask(int w, int h, const uchar *array) {
+    int k = 0;
+    int w1 = (w+7)/8;
+    int w2 = ((w+15)/16)*2;
+
+    uchar * new_array = new uchar [ w2 * h ];
+
+    static uchar reverse_table [ 16 ] = // bit reversal lookup table
+    {
+      0x00, 0x88, 0x44, 0xCC, 0x22, 0xAA, 0x66, 0xEE,
+      0x11, 0x99, 0x55, 0xDD, 0x33, 0xBB, 0x77, 0xFF
+    };
+
+    if (w < 8)
+    {
+      for ( int y = 0; y < h; ++y )
+      {
+        char p = array[y];
+        new_array[k] = 0;
+        new_array[k+1] =
+          (reverse_table[ p    &0x0F] & 0xF0) |
+          (reverse_table[(p>>4)&0x0F] & 0x0F);
+        k += 2;
+      }
+    }
+    else
+    {
+      uchar * dest = new_array;
+      for ( int y = 0; y < h; ++y )
+      {
+        for ( int n = 0; n < w1; ++n, ++k )
+	{
+          uchar p = array[k + ((n % 2) ? -1 : 1)];
+          *dest++ = 
+            (reverse_table[ p    &0x0F] & 0xF0) |
+	    (reverse_table[(p>>4)&0x0F] & 0x0F);
+	}
+        dest += w2-w1;
+      }
+    }
+    return new_array;
+}
+
+void fl_delete_bitmask(Fl_Bitmask bm) {
+  delete(bm);
+}
+
 #else // X11 bitmask functions
 Fl_Bitmask fl_create_bitmask(int w, int h, const uchar *data) {
   return XCreateBitmapFromData(fl_display, fl_window, (const char *)data,
@@ -207,14 +254,14 @@ Fl_Bitmask fl_create_bitmask(int w, int h, const uchar *data) {
 void fl_delete_bitmask(Fl_Bitmask bm) {
   fl_delete_offscreen((Fl_Offscreen)bm);
 }
-#endif // __APPLE__
+#endif // __MACOS__
 
 
 // MRS: Currently it appears that CopyDeepMask() does not work with an 8-bit alpha mask.
-//      If you want to test/fix this, uncomment the "#ifdef __APPLE__" and comment out
+//      If you want to test/fix this, uncomment the "#ifdef __MACOS__" and comment out
 //      the "#if 0" here.  Also see Fl_Image.cxx for a similar check...
 
-//#ifdef __APPLE__
+//#ifdef __MACOS__
 #if 0
 // Create an 8-bit mask used for alpha blending
 Fl_Bitmask fl_create_alphamask(int w, int h, int d, int ld, const uchar *array) {
@@ -330,7 +377,7 @@ Fl_Bitmask fl_create_alphamask(int w, int h, int d, int ld, const uchar *array) 
 
   return (mask);
 }
-#endif // __APPLE__
+#endif // __MACOS__
 
 void Fl_Bitmap::draw(int XP, int YP, int WP, int HP, int cx, int cy) {
   if (!array) {
@@ -355,7 +402,7 @@ void Fl_Bitmap::draw(int XP, int YP, int WP, int HP, int cx, int cy) {
     HDC tempdc = CreateCompatibleDC(fl_gc);
     SelectObject(tempdc, (HGDIOBJ)id);
 	SelectObject(tempdc, fl_brush());
-	StretchBlt(fl->gc, XP*fl->s + fl->L, YP*fl->s + fl->T, WP*fl->s, HP*fl->s, tempdc,0, 0, WP, HP, 0xE20746L);
+	StretchBlt(fl->gc, (int)(XP*fl->s + fl->L), (int)(YP*fl->s + fl->T), (int)(WP*fl->s), (int)(HP*fl->s), tempdc,0, 0, WP, HP, 0xE20746L);
     DeleteDC(tempdc);
 	return;
   } else {
@@ -367,20 +414,29 @@ void Fl_Bitmap::draw(int XP, int YP, int WP, int HP, int cx, int cy) {
     DeleteDC(tempdc);
   }
   
-#elif defined(__APPLE__)
+#elif defined(__MACOS__)
   if (!id) id = fl_create_bitmask(w(), h(), array);
   GrafPtr dstPort;
   GetPort( &dstPort );
   Rect src, dst;
-  GetPortBounds( id, &src );
+  GetPortBounds( (Fl_Offscreen)id, &src );
   SetRect( &src, cx, cy, cx+W, cy+H );
   SetRect( &dst, X, Y, X+W, Y+H );
-  CopyBits(GetPortBitMapForCopyBits(id),	// srcBits
+  CopyBits(GetPortBitMapForCopyBits((Fl_Offscreen)id),	// srcBits
 	   GetPortBitMapForCopyBits(dstPort),	// dstBits
 	   &src,		 		// src bounds
 	   &dst, 				// dst bounds
 	   srcOr, 				// mode
 	   0L);					// mask region
+#elif defined(NANO_X)
+  if (!id) id = fl_create_bitmask(w(), h(), array);
+  {
+    // if you don't set this the first time the bitmap is drawn in test/bitmap.cxx the background color is wrong (WHITE): all subsequent draws are correct -- why?
+    GrSetGCUseBackground(fl_gc,false);
+  }
+  GrBitmap(fl_window,fl_gc,X,Y,W,H,(GR_BITMAP*)id);
+#elif defined(DJGPP)
+	//FIXME_DJGPP
 #else
   if (!id) id = fl_create_bitmask(w(), h(), array);
 
@@ -401,9 +457,9 @@ Fl_Bitmap::~Fl_Bitmap() {
 
 void Fl_Bitmap::uncache() {
   if (id) {
-    fl_delete_bitmask(id);
-    id = 0;
+    fl_delete_bitmask((Fl_Offscreen)id);
   }
+  id = 0;
 }
 
 void Fl_Bitmap::label(Fl_Widget* widget) {
@@ -448,11 +504,11 @@ Fl_Image *Fl_Bitmap::copy(int W, int H) {
   memset(new_array, 0, H * (W + 7) / 8);
 
   // Scale the image using a nearest-neighbor algorithm...
-  for (dy = H, sy = 0, yerr = H / 2, new_ptr = new_array; dy > 0; dy --) {
-    for (dx = W, xerr = W / 2, old_ptr = array + sy * (w() + 7) / 8, sx = 0, new_bit = 128;
+  for (dy = H, sy = 0, yerr = H, new_ptr = new_array; dy > 0; dy --) {
+    for (dx = W, xerr = W, old_ptr = array + sy * (w() + 7) / 8, sx = 0, new_bit = 128;
 	 dx > 0;
 	 dx --) {
-      old_bit = 128 >> (sx & 7);
+      old_bit = (uchar)(128 >> (sx & 7));
       if (old_ptr[sx / 8] & old_bit) *new_ptr |= new_bit;
 
       if (new_bit > 1) new_bit >>= 1;

@@ -1,9 +1,9 @@
 //
-// "$Id: Fl_Counter.cxx,v 1.8.2.3.2.10 2002/08/09 01:09:48 easysw Exp $"
+// "$Id: Fl_Counter.cxx,v 1.8.2.3.2.13 2003/01/30 21:41:38 easysw Exp $"
 //
 // Counter widget for the Fast Light Tool Kit (FLTK).
 //
-// Copyright 1998-2002 by Bill Spitzak and others.
+// Copyright 1998-2003 by Bill Spitzak and others.
 //
 // This library is free software; you can redistribute it and/or
 // modify it under the terms of the GNU Library General Public
@@ -137,7 +137,7 @@ int Fl_Counter::handle(int event) {
     i = calc_mouseobj();
     if (i != mouseobj) {
       Fl::remove_timeout(repeat_callback, this);
-      mouseobj = i;
+      mouseobj = (uchar)i;
       if (i) Fl::add_timeout(INITIALREPEAT, repeat_callback, this);
       increment_cb();
       redraw();
@@ -183,10 +183,10 @@ Fl_Counter::Fl_Counter(int X, int Y, int W, int H, const char* l)
   lstep_ = 1.0;
   mouseobj = 0;
   textfont_ = FL_HELVETICA;
-  textsize_ = FL_NORMAL_SIZE;
+  textsize_ = (uchar)FL_NORMAL_SIZE;
   textcolor_ = FL_FOREGROUND_COLOR;
 }
 
 //
-// End of "$Id: Fl_Counter.cxx,v 1.8.2.3.2.10 2002/08/09 01:09:48 easysw Exp $".
+// End of "$Id: Fl_Counter.cxx,v 1.8.2.3.2.13 2003/01/30 21:41:38 easysw Exp $".
 //

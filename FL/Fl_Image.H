@@ -26,10 +26,11 @@
 #ifndef Fl_Image_H
 #  define Fl_Image_H
 
-#  include "x.H"
+#  include "Enumerations.H"
 
 class Fl_Widget;
 struct Fl_Menu_Item;
+struct Fl_Label;
 
 class FL_EXPORT Fl_Image {
   int w_, h_, d_, ld_, count_;
@@ -80,8 +81,13 @@ class FL_EXPORT Fl_RGB_Image : public Fl_Image {
   const uchar *array;
   int alloc_array; // Non-zero if array was allocated
 
-  Fl_Offscreen id; // for internal use
-  Fl_Bitmask mask; // for internal use (mask bitmap)
+#if defined(__MACOS__) || defined(WIN32)
+  void *id; // for internal use
+  void *mask; // for internal use (mask bitmap)
+#else
+  unsigned id; // for internal use
+  unsigned mask; // for internal use (mask bitmap)
+#endif // __MACOS__ || WIN32
 
   Fl_RGB_Image(const uchar *bits, int W, int H, int D=3, int LD=0) :
     Fl_Image(W,H,D), array(bits), alloc_array(0), id(0), mask(0) {data((const char **)&array, 1); ld(LD);}

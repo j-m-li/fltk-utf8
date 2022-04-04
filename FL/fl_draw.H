@@ -27,7 +27,6 @@
 #define fl_draw_H
 
 
-
 #include "Enumerations.H"  // for the color names
 #include "Fl_Fltk.H"
 
@@ -184,7 +183,7 @@ inline int fl_height(int, int size) {return size;}
 inline int   fl_descent(){return fl->descent();};
 inline double fl_width(const char* s){return fl->width(s);};
 inline double fl_width(const char* s, int n){return fl->width(s,n);};
-inline double fl_width(uchar c){return fl->width(c);};
+inline double fl_width(unsigned int c){return fl->width(c);};
 
 
 // draw using current font:
@@ -196,14 +195,15 @@ inline void fl_transformed_draw(const char* s, int n, double x, double y){fl->tr
 inline void fl_transformed_draw(const char* s, double x, double y){fl->transformed_draw(s,x,y);};
 
 
-FL_EXPORT void fl_measure(const char*, int& x, int& y, int draw_symbols = 1);
+FL_EXPORT void fl_measure(const char*, int& x, int& y, int draw_symbols = -1);
 FL_EXPORT void fl_draw(const char*, int,int,int,int, Fl_Align, Fl_Image* img=0,
                        int draw_symbols = 1);
 FL_EXPORT void fl_draw(const char*, int,int,int,int, Fl_Align,
 	               void (*callthis)(const char *, int n, int x, int y),
-		       Fl_Image* img=0, int draw_symbols = 1);
-
-
+		       Fl_Image* img=0, int draw_symbols = -1);
+FL_EXPORT void fl_set_status(int X, int Y, int W, int H);
+FL_EXPORT void fl_set_spot(int font, int size, int x, int y, int w, int h);
+FL_EXPORT void fl_reset_spot(void);
 
 // boxtypes:
 FL_EXPORT void fl_frame(const char* s, int x, int y, int w, int h);

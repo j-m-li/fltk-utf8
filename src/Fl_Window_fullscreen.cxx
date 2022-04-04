@@ -1,9 +1,9 @@
 //
-// "$Id: Fl_Window_fullscreen.cxx,v 1.5.2.3.2.4 2002/01/03 08:08:21 matthiaswm Exp $"
+// "$Id: Fl_Window_fullscreen.cxx,v 1.5.2.3.2.5 2003/01/30 21:42:59 easysw Exp $"
 //
 // Fullscreen window support for the Fast Light Tool Kit (FLTK).
 //
-// Copyright 1998-2002 by Bill Spitzak and others.
+// Copyright 1998-2003 by Bill Spitzak and others.
 //
 // This library is free software; you can redistribute it and/or
 // modify it under the terms of the GNU Library General Public
@@ -47,7 +47,7 @@ void Fl_Window::border(int b) {
 #ifdef WIN32
   // not yet implemented, but it's possible
   // for full fullscreen we have to make the window topmost as well
-#elif defined(__APPLE__)
+#elif defined(__MACOS__)
   // \todo Mac : not yet implemeted
 #else
   if (shown()) Fl_X::i(this)->sendxjunk();
@@ -73,5 +73,5 @@ void Fl_Window::fullscreen_off(int X,int Y,int W,int H) {
 }
 
 //
-// End of "$Id: Fl_Window_fullscreen.cxx,v 1.5.2.3.2.4 2002/01/03 08:08:21 matthiaswm Exp $".
+// End of "$Id: Fl_Window_fullscreen.cxx,v 1.5.2.3.2.5 2003/01/30 21:42:59 easysw Exp $".
 //

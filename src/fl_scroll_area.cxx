@@ -1,9 +1,9 @@
 //
-// "$Id: fl_scroll_area.cxx,v 1.4.2.3.2.3 2002/01/01 15:11:32 easysw Exp $"
+// "$Id: fl_scroll_area.cxx,v 1.4.2.3.2.4 2003/01/30 21:44:12 easysw Exp $"
 //
 // Scrolling routines for the Fast Light Tool Kit (FLTK).
 //
-// Copyright 1998-2002 by Bill Spitzak and others.
+// Copyright 1998-2003 by Bill Spitzak and others.
 //
 // This library is free software; you can redistribute it and/or
 // modify it under the terms of the GNU Library General Public
@@ -71,13 +71,23 @@ void fl_scroll(int X, int Y, int W, int H, int dx, int dy,
   BitBlt(fl_gc, dest_x, dest_y, src_w, src_h, fl_gc, src_x, src_y,SRCCOPY);
   // NYI: need to redraw areas that the source of BitBlt was bad due to
   // overlapped windows, probably similar to X version:
-#elif defined(__APPLE__)
+#elif defined(__MACOS__)
   Rect src = { src_y, src_x, src_y+src_h, src_x+src_w };
   Rect dst = { dest_y, dest_x, dest_y+src_h, dest_x+src_w };
   static RGBColor bg = { 0xffff, 0xffff, 0xffff }; RGBBackColor( &bg );
   static RGBColor fg = { 0x0000, 0x0000, 0x0000 }; RGBForeColor( &fg );
   CopyBits( GetPortBitMapForCopyBits( GetWindowPort(fl_window) ),
             GetPortBitMapForCopyBits( GetWindowPort(fl_window) ), &src, &dst, srcCopy, 0L);
+#elif NANO_X
+  GrCopyArea(fl_window,fl_gc,dest_x,dest_y,src_w,src_h,fl_window,src_x,src_y,MWROP_SRCCOPY);
+  for (;;) {
+    draw_area(data, dest_x, dest_y, src_w, src_h);
+    break;
+  }
+
+#elif DJGPP
+// FIXME_DJGPP
+    draw_area(data, dest_x, dest_y, src_w, src_h);
 #else
   XCopyArea(fl_display, fl_window, fl_window, fl_gc,
 	    src_x, src_y, src_w, src_h, dest_x, dest_y);
@@ -96,5 +106,5 @@ void fl_scroll(int X, int Y, int W, int H, int dx, int dy,
 }
 
 //
-// End of "$Id: fl_scroll_area.cxx,v 1.4.2.3.2.3 2002/01/01 15:11:32 easysw Exp $".
+// End of "$Id: fl_scroll_area.cxx,v 1.4.2.3.2.4 2003/01/30 21:44:12 easysw Exp $".
 //

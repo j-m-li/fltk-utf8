@@ -44,6 +44,7 @@
 
 #include "../src/flstring.h"
 #include "alignment_panel.h"
+#include "function_panel.h"
 
 #if defined(WIN32) && !defined(__CYGWIN__)
 #  include <direct.h>
@@ -112,6 +113,32 @@ void leave_source_dir() {
   in_source_dir = 0;
 }
   
+char position_window(Fl_Window *w, const char *prefsName, int Visible, int X, int Y, int W=0, int H=0 ) {
+  Fl_Preferences pos(fluid_prefs, prefsName);
+  if (prevpos_button->value()) {
+    pos.get("x", X, X);
+    pos.get("y", Y, Y);
+    if ( W!=0 ) {
+      pos.get("w", W, W);
+      pos.get("h", H, H);
+      w->resize( X, Y, W, H );
+    }
+    else
+      w->position( X, Y );
+  }
+  pos.get("visible", Visible, Visible);
+  return Visible;
+}
+
+void save_position(Fl_Window *w, const char *prefsName) {
+  Fl_Preferences pos(fluid_prefs, prefsName);
+  pos.set("x", w->x());
+  pos.set("y", w->y());
+  pos.set("w", w->w());
+  pos.set("h", w->h());
+  pos.set("visible", w->shown() && w->visible() );
+}
+
 Fl_Window *main_window;
 
 void save_cb(Fl_Widget *, void *v) {
@@ -138,6 +165,12 @@ void exit_cb(Fl_Widget *,void *) {
 	  if (modflag) return;	// Didn't save!
     }
 
+  save_position(main_window,"main_window_pos");
+
+  if (widgetbin_panel) {
+    save_position(widgetbin_panel,"widgetbin_pos");
+    delete widgetbin_panel;
+  }
   if (about_panel)
     delete about_panel;
   if (help_dialog)
@@ -145,6 +178,30 @@ void exit_cb(Fl_Widget *,void *) {
 
   exit(0);
 }
+
+#ifdef __APPLE__
+#  include <FL/x.H>
+
+void
+apple_open_cb(const char *c) {
+  if (modflag && !fl_ask("Discard changes?")) return;
+  const char *oldfilename;
+  oldfilename = filename;
+  filename    = NULL;
+  set_filename(c);
+  if (!read_file(c, 0)) {
+    fl_message("Can't read %s: %s", c, strerror(errno));
+    free((void *)filename);
+    filename = oldfilename;
+    if (main_window) main_window->label(filename);
+    return;
+  }
+
+  // Loaded a file; free the old filename...
+  modflag = 0;
+  if (oldfilename) free((void *)oldfilename);
+}
+#endif // __APPLE__
 
 void open_cb(Fl_Widget *, void *v) {
   if (!v && modflag && !fl_ask("Discard changes?")) return;
@@ -331,7 +388,7 @@ void cut_cb(Fl_Widget *, void *) {
 extern int force_parent;
 
 void paste_cb(Fl_Widget*, void*) {
-  if (ipasteoffset) force_parent = 1;
+  //if (ipasteoffset) force_parent = 1;
   pasteoffset = ipasteoffset;
   if (gridx>1) pasteoffset = ((pasteoffset-1)/gridx+1)*gridx;
   if (gridy>1) pasteoffset = ((pasteoffset-1)/gridy+1)*gridy;
@@ -398,6 +455,17 @@ void manual_cb(Fl_Widget *, void *) {
   show_help("index.html");
 }
 
+void toggle_widgetbin_cb(Fl_Widget *, void *) {
+  if ( !widgetbin_panel ) {
+    make_widgetbin();
+    if (!position_window(widgetbin_panel,"widgetbin_pos", 1, 320, 30)) return;
+  }
+  if ( widgetbin_panel->visible() )
+    widgetbin_panel->hide();
+  else
+    widgetbin_panel->show();
+}
+
 ////////////////////////////////////////////////////////////////
 
 extern Fl_Menu_Item New_Menu[];
@@ -442,6 +510,7 @@ Fl_Menu_Item Main_Menu[] = {
 //{"Deactivate", 0, nyi},
 //{"Activate", 0, nyi, 0, FL_MENU_DIVIDER},
   {"O&verlays on/off",FL_CTRL+FL_SHIFT+'o',toggle_overlays},
+  {"Widget &Bin on/off",FL_ALT+'b',toggle_widgetbin_cb},
   {"Pro&ject Settings...",FL_CTRL+'p',show_project_cb},
   {"&GUI Settings...",FL_CTRL+FL_SHIFT+'p',show_settings_cb},
   {0},
@@ -582,9 +651,9 @@ void update_history(const char *flname) {
 }
 
 // Shell command support...
-#if !defined(WIN32) || defined(__CYGWIN__)
+#if (!defined(WIN32) || defined(__CYGWIN__)) && !defined(__MWERKS__)
 // Support the full piped shell command...
-static FILE *shell_pipe;
+static FILE *shell_pipe = 0;
 
 void
 shell_pipe_cb(int, void*) {
@@ -592,16 +661,18 @@ shell_pipe_cb(int, void*) {
 
   if (fgets(line, sizeof(line), shell_pipe) != NULL) {
     // Add the line to the output list...
-    shell_run_list->add(line);
-    shell_run_list->make_visible(shell_run_list->size());
+    shell_run_buffer->append(line);
   } else {
     // End of file; tell the parent...
     Fl::remove_fd(fileno(shell_pipe));
 
     pclose(shell_pipe);
     shell_pipe = NULL;
-    shell_run_list->add("... END SHELL COMMAND ...");
+    shell_run_buffer->append("... END SHELL COMMAND ...\n");
   }
+
+  shell_run_display->scroll(shell_run_display->count_lines(0,
+                            shell_run_buffer->length(), 1), 0);
 }
 
 void
@@ -610,6 +681,11 @@ do_shell_command(Fl_Return_Button*, void*) {
 
 
   shell_window->hide();
+
+  if (shell_pipe) {
+    fl_alert("Previous shell command still running!");
+    return;
+  }
 
   if ((command = shell_command_input->value()) == NULL || !*command) {
     fl_alert("No shell command entered!");
@@ -633,8 +709,9 @@ do_shell_command(Fl_Return_Button*, void*) {
   }
 
   // Show the output window and clear things...
-  shell_run_list->clear();
-  shell_run_list->add(command);
+  shell_run_buffer->text("");
+  shell_run_buffer->append(command);
+  shell_run_buffer->append("\n");
   shell_run_window->label("Shell Command Running...");
 
   if ((shell_pipe = popen(command, "r")) == NULL) {
@@ -643,7 +720,7 @@ do_shell_command(Fl_Return_Button*, void*) {
   }
 
   shell_run_button->deactivate();
-  shell_run_window->hotspot(shell_run_list);
+  shell_run_window->hotspot(shell_run_display);
   shell_run_window->show();
 
   Fl::add_fd(fileno(shell_pipe), shell_pipe_cb);
@@ -693,7 +770,7 @@ do_shell_command(Fl_Return_Button*, void*) {
     fl_message("Shell command completed successfully!");
   }
 }
-#endif // !WIN32 || __CYGWIN__
+#endif // (!WIN32 || __CYGWIN__) && !__MWERKS__
 
 
 void
@@ -766,14 +843,22 @@ int main(int argc,char **argv) {
 
   fl_register_images();
 
+  if (!compile_only) Fl::scheme(NULL);
+
   make_main_window();
+
+#ifdef __APPLE__
+  fl_open_callback(apple_open_cb);
+#endif // __APPLE__
 
   if (c) set_filename(c);
   if (!compile_only) {
     Fl::visual((Fl_Mode)(FL_DOUBLE|FL_INDEX));
     Fl_File_Icon::load_system_icons();
     main_window->callback(exit_cb);
+    position_window(main_window,"main_window_pos", 1, 10, 30, WINWIDTH, WINHEIGHT );
     main_window->show(argc,argv);
+    toggle_widgetbin_cb(0,0);
     if (!c && openlast_button->value() && absolute_history[0][0]) {
       // Open previous file when no file specified...
       open_history_cb(0, absolute_history[0]);

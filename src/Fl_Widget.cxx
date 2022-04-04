@@ -1,9 +1,9 @@
 //
-// "$Id: Fl_Widget.cxx,v 1.5.2.4.2.20 2002/10/04 15:59:29 easysw Exp $"
+// "$Id: Fl_Widget.cxx,v 1.5.2.4.2.22 2003/01/30 21:42:58 easysw Exp $"
 //
 // Base widget class for the Fast Light Tool Kit (FLTK).
 //
-// Copyright 1998-2002 by Bill Spitzak and others.
+// Copyright 1998-2003 by Bill Spitzak and others.
 //
 // This library is free software; you can redistribute it and/or
 // modify it under the terms of the GNU Library General Public
@@ -83,7 +83,7 @@ Fl_Widget::Fl_Widget(int X, int Y, int W, int H, const char* L) {
   label_.deimage = 0;
   label_.type	 = FL_NORMAL_LABEL;
   label_.font	 = FL_HELVETICA;
-  label_.size	 = FL_NORMAL_SIZE;
+  label_.size	 = (uchar)FL_NORMAL_SIZE;
   label_.color	 = FL_BLACK;
   tooltip_       = 0;
   callback_	 = default_callback;
@@ -150,7 +150,7 @@ Fl_Widget::draw_focus(Fl_Boxtype B, int X, int Y, int W, int H) const {
 
   fl_color(fl_contrast(FL_BLACK, color()));
 
-#if defined(WIN32) || defined(__APPLE__)
+#if defined(WIN32) || defined(__MACOS__)
   // Windows 95/98/ME do not implement the dotted line style, so draw
   // every other pixel around the focus area...
   //
@@ -245,5 +245,5 @@ int Fl_Widget::contains(const Fl_Widget *o) const {
 }
 
 //
-// End of "$Id: Fl_Widget.cxx,v 1.5.2.4.2.20 2002/10/04 15:59:29 easysw Exp $".
+// End of "$Id: Fl_Widget.cxx,v 1.5.2.4.2.22 2003/01/30 21:42:58 easysw Exp $".
 //

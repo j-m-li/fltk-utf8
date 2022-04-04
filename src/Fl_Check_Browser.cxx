@@ -1,9 +1,9 @@
 //
-// "$Id: Fl_Check_Browser.cxx,v 1.1.2.5 2002/08/09 01:09:48 easysw Exp $"
+// "$Id: Fl_Check_Browser.cxx,v 1.1.2.7 2003/01/30 21:41:33 easysw Exp $"
 //
 // Fl_Check_Browser header file for the Fast Light Tool Kit (FLTK).
 //
-// Copyright 1998-2002 by Bill Spitzak and others.
+// Copyright 1998-2003 by Bill Spitzak and others.
 //
 // This library is free software; you can redistribute it and/or
 // modify it under the terms of the GNU Library General Public
@@ -107,7 +107,7 @@ int Fl_Check_Browser::item_height(void *) const {
 	return textsize() + 2;
 }
 
-#define CHECK_SIZE 8
+#define CHECK_SIZE (textsize()-2)
 
 int Fl_Check_Browser::item_width(void *v) const {
 	fl_font(textfont(), textsize());
@@ -126,8 +126,15 @@ void Fl_Check_Browser::item_draw(void *v, int X, int Y, int, int) const {
 	fl_loop(X, cy, X, cy + CHECK_SIZE,
 	        X + CHECK_SIZE, cy + CHECK_SIZE, X + CHECK_SIZE, cy);
 	if (i->checked) {
-		fl_line(X, cy, X + CHECK_SIZE, cy + CHECK_SIZE);
-		fl_line(X, cy + CHECK_SIZE, X + CHECK_SIZE, cy);
+	  int tx = X + 3;
+	  int tw = CHECK_SIZE - 4;
+	  int d1 = tw/3;
+	  int d2 = tw-d1;
+	  int ty = cy + (CHECK_SIZE+d2)/2-d1-2;
+	  for (int n = 0; n < 3; n++, ty++) {
+	    fl_line(tx, ty, tx+d1, ty+d1);
+	    fl_line(tx+d1, ty+d1, tx+tw-1, ty+d1-d2+1);
+	  }
 	}
 	fl_font(textfont(), tsize);
 	if (i->selected) {
@@ -259,5 +266,5 @@ void Fl_Check_Browser::check_none() {
 
 
 //
-// End of "$Id: Fl_Check_Browser.cxx,v 1.1.2.5 2002/08/09 01:09:48 easysw Exp $".
+// End of "$Id: Fl_Check_Browser.cxx,v 1.1.2.7 2003/01/30 21:41:33 easysw Exp $".
 //

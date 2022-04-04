@@ -29,7 +29,10 @@
 #include <ctype.h>
 #include <FL/Fl.H>
 #include <FL/Fl_Text_Editor.H>
+#include <FL/fl_ask.H>
 
+extern void fl_reset_spot(void);
+extern void fl_set_spot(int font, int size, int x, int y, int w, int h);
 
 Fl_Text_Editor::Fl_Text_Editor(int X, int Y, int W, int H,  const char* l)
     : Fl_Text_Display(X, Y, W, H, l) {
@@ -51,7 +54,7 @@ static int ctrl_a(int, Fl_Text_Editor* e);
 // These are the default key bindings every widget should start with
 static struct {
   int key;
-  int state;
+  long state;
   Fl_Text_Editor::Key_Func func;
 } default_key_bindings[] = {
   { FL_Escape,    FL_TEXT_EDITOR_ANY_STATE, Fl_Text_Editor::kf_ignore     },
@@ -93,12 +96,25 @@ static struct {
   { FL_Page_Up,   FL_CTRL|FL_SHIFT,         Fl_Text_Editor::kf_c_s_move   },
   { FL_Page_Down, FL_CTRL|FL_SHIFT,         Fl_Text_Editor::kf_c_s_move   },
 //{ FL_Clear,	  0,                        Fl_Text_Editor::delete_to_eol },
-//{ 'z',          FL_CTRL,                  Fl_Text_Editor::undo	  },
-//{ '/',          FL_CTRL,                  Fl_Text_Editor::undo	  },
+  { 'z',          FL_CTRL,                  Fl_Text_Editor::kf_undo	  },
+  { '/',          FL_CTRL,                  Fl_Text_Editor::kf_undo	  },
   { 'x',          FL_CTRL,                  Fl_Text_Editor::kf_cut        },
+  { FL_Delete,    FL_SHIFT,                 Fl_Text_Editor::kf_cut        },
   { 'c',          FL_CTRL,                  Fl_Text_Editor::kf_copy       },
+  { FL_Insert,    FL_CTRL,                  Fl_Text_Editor::kf_copy       },
   { 'v',          FL_CTRL,                  Fl_Text_Editor::kf_paste      },
+  { FL_Insert,    FL_SHIFT,                 Fl_Text_Editor::kf_paste      },
   { 'a',          FL_CTRL,                  ctrl_a                        },
+
+#ifdef __MACOS__
+  // Define CMD+key accelerators...
+  { 'z',          FL_COMMAND,               Fl_Text_Editor::kf_undo       },
+  { 'x',          FL_COMMAND,               Fl_Text_Editor::kf_cut        },
+  { 'c',          FL_COMMAND,               Fl_Text_Editor::kf_copy       },
+  { 'v',          FL_COMMAND,               Fl_Text_Editor::kf_paste      },
+  { 'a',          FL_COMMAND,               ctrl_a                        },
+#endif // __MACOS__
+
   { 0,            0,                        0                             }
 };
 
@@ -194,6 +210,8 @@ int Fl_Text_Editor::kf_default(int c, Fl_Text_Editor* e) {
   if (e->insert_mode()) e->insert(s);
   else e->overstrike(s);
   e->show_insert_position();
+  if (e->when()&FL_WHEN_CHANGED) e->do_callback();
+  else e->set_changed();
   return 1;
 }
 
@@ -212,6 +230,7 @@ int Fl_Text_Editor::kf_backspace(int, Fl_Text_Editor* e) {
   }
   kill_selection(e);
   e->show_insert_position();
+  if (e->when()&FL_WHEN_CHANGED) e->do_callback(); else e->set_changed();
   return 1;
 }
 
@@ -219,6 +238,7 @@ int Fl_Text_Editor::kf_enter(int, Fl_Text_Editor* e) {
   kill_selection(e);
   e->insert("\n");
   e->show_insert_position();
+  if (e->when()&FL_WHEN_CHANGED) e->do_callback(); else e->set_changed();
   return 1;
 }
 
@@ -276,9 +296,11 @@ int Fl_Text_Editor::kf_ctrl_move(int c, Fl_Text_Editor* e) {
   switch (c) {
     case FL_Home:
       e->insert_position(0);
+      e->scroll(0, 0);
       break;
     case FL_End:
       e->insert_position(e->buffer()->length());
+      e->scroll(e->count_lines(0, e->buffer()->length(), 1), 0);
       break;
     case FL_Left:
       e->previous_word();
@@ -371,6 +393,7 @@ int Fl_Text_Editor::kf_delete(int, Fl_Text_Editor* e) {
   }
   kill_selection(e);
   e->show_insert_position();
+  if (e->when()&FL_WHEN_CHANGED) e->do_callback(); else e->set_changed();
   return 1;
 }
 
@@ -386,6 +409,7 @@ int Fl_Text_Editor::kf_copy(int, Fl_Text_Editor* e) {
 int Fl_Text_Editor::kf_cut(int c, Fl_Text_Editor* e) {
   kf_copy(c, e);
   kill_selection(e);
+  if (e->when()&FL_WHEN_CHANGED) e->do_callback(); else e->set_changed();
   return 1;
 }
 
@@ -393,6 +417,7 @@ int Fl_Text_Editor::kf_paste(int, Fl_Text_Editor* e) {
   kill_selection(e);
   Fl::paste(*e, 1);
   e->show_insert_position();
+  if (e->when()&FL_WHEN_CHANGED) e->do_callback(); else e->set_changed();
   return 1;
 }
 
@@ -401,9 +426,18 @@ int Fl_Text_Editor::kf_select_all(int, Fl_Text_Editor* e) {
   return 1;
 }
 
-int Fl_Text_Editor::handle_key() {
+int Fl_Text_Editor::kf_undo(int , Fl_Text_Editor* e) {
+  e->buffer()->unselect();
+  int crsr;
+  int ret = e->buffer()->undo(&crsr);
+  e->insert_position(crsr);
+  e->show_insert_position();
+  if (e->when()&FL_WHEN_CHANGED) e->do_callback(); else e->set_changed();
+  return ret;
+}
 
-  // Call fltk's rules to try to turn this into a printing character.
+int Fl_Text_Editor::handle_key() {
+  // Call FLTK's rules to try to turn this into a printing character.
   // This uses the right-hand ctrl key as a "compose prefix" and returns
   // the changes that should be made to the text, as a number of
   // bytes to delete and a string to insert:
@@ -416,6 +450,8 @@ int Fl_Text_Editor::handle_key() {
       else overstrike(Fl::event_text());
     }
     show_insert_position();
+    if (when()&FL_WHEN_CHANGED) do_callback();
+    else set_changed();
     return 1;
   }
 
@@ -424,10 +460,16 @@ int Fl_Text_Editor::handle_key() {
   Key_Func f;
   f = bound_key_function(key, state, global_key_bindings);
   if (!f) f = bound_key_function(key, state, key_bindings);
-
   if (f) return f(key, this);
   if (default_key_function_ && !state) return default_key_function_(c, this);
   return 0;
+}
+
+void Fl_Text_Editor::maybe_do_callback() {
+//  printf("Fl_Text_Editor::maybe_do_callback()\n");
+//  printf("changed()=%d, when()=%x\n", changed(), when());
+  if (changed() || (when()&FL_WHEN_NOT_CHANGED)) {
+    clear_changed(); do_callback();}
 }
 
 int Fl_Text_Editor::handle(int event) {
@@ -437,35 +479,48 @@ int Fl_Text_Editor::handle(int event) {
     dragType = -1;
     Fl::paste(*this, 0);
     Fl::focus(this);
+    if (when()&FL_WHEN_CHANGED) do_callback(); else set_changed();
     return 1;
   }
 
   switch (event) {
     case FL_FOCUS:
+      fl_set_spot(textfont(), textsize(), x(), y(), w(), h());
       show_cursor(mCursorOn); // redraws the cursor
+      if (buffer()->primary_selection()->start() !=
+          buffer()->primary_selection()->end()) redraw(); // Redraw selections...
       Fl::focus(this);
       return 1;
 
     case FL_UNFOCUS:
+      fl_reset_spot();
       show_cursor(mCursorOn); // redraws the cursor
+      if (buffer()->primary_selection()->start() !=
+          buffer()->primary_selection()->end()) redraw(); // Redraw selections...
+    case FL_HIDE:
+      if (when() & FL_WHEN_RELEASE) maybe_do_callback();
       return 1;
 
     case FL_KEYBOARD:
       return handle_key();
 
     case FL_PASTE:
+      if (!Fl::event_text()) {
+        fl_beep();
+	return 1;
+      }
       buffer()->remove_selection();
       if (insert_mode()) insert(Fl::event_text());
       else overstrike(Fl::event_text());
       show_insert_position();
+      if (when()&FL_WHEN_CHANGED) do_callback(); else set_changed();
+      return 1;
+    case FL_ENTER:
+// MRS: WIN32 only?  Need to test!
+//    case FL_MOVE:
+      show_cursor(mCursorOn);
       return 1;
 
-// CET - FIXME - this will clobber the window's current cursor state!
-//    case FL_ENTER:
-//    case FL_MOVE:
-//    case FL_LEAVE:
-//      if (Fl::event_inside(text_area)) fl_cursor(FL_CURSOR_INSERT);
-//      else fl_cursor(FL_CURSOR_DEFAULT);
   }
 
   return Fl_Text_Display::handle(event);

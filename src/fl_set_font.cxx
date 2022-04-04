@@ -32,11 +32,11 @@
 #include "Fl_Font.H"
 #include <stdlib.h>
 
-static int table_size;
+static unsigned int table_size = 0;
 
 void Fl::set_font(Fl_Font fnum, const char* name) {
-  while (fnum >= table_size) {
-    int i = table_size;
+  while ((unsigned int)fnum >= table_size) {
+    unsigned int i = table_size;
     if (!i) {	// don't realloc the built-in table
       table_size = 2*FL_FREE_FONT;
       i = FL_FREE_FONT;
@@ -50,17 +50,17 @@ void Fl::set_font(Fl_Font fnum, const char* name) {
     for (; i < table_size; i++) {
       fl_fonts[i].fontname[0] = 0;
       fl_fonts[i].name = 0;
-#if !defined(WIN32) && !defined(__APPLE__)
+#if !defined(WIN32) && !defined(__MACOS__)
       fl_fonts[i].xlist = 0;
       fl_fonts[i].n = 0;
-#endif // !WIN32 && !__APPLE__
+#endif // !WIN32 && !__MACOS__
     }
 
   }
   Fl_Fontdesc* s = fl_fonts+fnum;
   if (s->name) {
     if (!strcmp(s->name, name)) {s->name = name; return;}
-#if !defined(WIN32) && !defined(__APPLE__)
+#if !defined(WIN32) && !defined(__MACOS__) && !NANO_X && !DJGPP
     if (s->xlist && s->n >= 0) XFreeFontNames(s->xlist);
 #endif
     for (Fl_FontSize* f = s->first; f;) {
@@ -69,7 +69,7 @@ void Fl::set_font(Fl_Font fnum, const char* name) {
     s->first = 0;
   }
   s->name = name;
-#if !defined(WIN32) && !defined(__APPLE__)
+#if !defined(WIN32) && !defined(__MACOS__)
   s->xlist = 0;
 #endif
   s->first = 0;

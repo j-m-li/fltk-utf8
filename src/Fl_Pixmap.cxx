@@ -90,14 +90,14 @@ void Fl_Pixmap::draw(int XP, int YP, int WP, int HP, int cx, int cy) {
 
   if (!id) {
     id = fl_create_offscreen(w(), h());
-    fl_begin_offscreen(id);
+    fl_begin_offscreen((Fl_Offscreen)id);
     uchar *bitmap = 0;
     fl_mask_bitmap = &bitmap;
-    fl_draw_pixmap(data(), 0, 0, FL_BLACK);
+    fl_draw_pixmap(data(), 0, 0, fl_color());
     fl_mask_bitmap = 0;
     if (bitmap) {
       mask = fl_create_bitmask(w(), h(), bitmap);
-      delete[] bitmap;
+      array = bitmap;
     }
 
     fl_end_offscreen();
@@ -115,7 +115,7 @@ void Fl_Pixmap::draw(int XP, int YP, int WP, int HP, int cx, int cy) {
 		} else {
 			HDC new_gc = CreateCompatibleDC(fl_gc);
 			SelectObject(new_gc, id);	
-			StretchBlt(fl->gc, XP*fl->s+fl->L, YP*fl->s+fl->T, WP*fl->s, HP*fl->s, new_gc, 0, 0, WP, HP, SRCCOPY);
+			StretchBlt(fl->gc, (int)(XP*fl->s+fl->L), (int)(YP*fl->s+fl->T), (int)(WP*fl->s), (int)(HP*fl->s), new_gc, 0, 0, WP, HP, SRCCOPY);
 			DeleteDC(new_gc);
 		}
 		return;
@@ -128,9 +128,9 @@ void Fl_Pixmap::draw(int XP, int YP, int WP, int HP, int cx, int cy) {
     BitBlt(fl_gc, X, Y, W, H, new_gc, cx, cy, SRCPAINT);
     DeleteDC(new_gc);
   } else {
-    fl_copy_offscreen(X, Y, W, H, id, cx, cy);
+    fl_copy_offscreen(X, Y, W, H, (Fl_Offscreen)id, cx, cy);
   }
-#elif defined(__APPLE__)
+#elif defined(__MACOS__)
   if (mask) {
     Rect src, dst;
     src.left = cx; src.right = cx+W;
@@ -147,8 +147,12 @@ void Fl_Pixmap::draw(int XP, int YP, int WP, int HP, int cx, int cy) {
 	     GetPortBitMapForCopyBits(GetWindowPort(fl_window)),
              &src, &src, &dst);
   } else {
-    fl_copy_offscreen(X, Y, W, H, id, cx, cy);
+    fl_copy_offscreen(X, Y, W, H, (Fl_Offscreen)id, cx, cy);
   }
+#else
+#ifndef NANO_X 
+#if DJGPP
+
 #else
   if (mask) {
     // I can't figure out how to combine a mask with existing region,
@@ -162,12 +166,37 @@ void Fl_Pixmap::draw(int XP, int YP, int WP, int HP, int cx, int cy) {
     int oy = Y-cy; if (oy < 0) oy += h();
     XSetClipOrigin(fl_display, fl_gc, X-cx, Y-cy);
   }
+#endif
+#else
+  GR_GC_ID oldgc;
+#define DOIT 1
+  if (mask && DOIT) 
+  {
+    oldgc = fl_gc;
+    fl_gc = GrNewGC();
+    GrSetGCRegion(fl_gc,(unsigned long)mask);
+    GrOffsetRegion((unsigned long)mask,X,Y);
+  }
+#endif //tanghao
   fl_copy_offscreen(X, Y, W, H, id, cx, cy);
+#ifndef NANO_X //tanghao
+#if DJGPP
+
+#else
   if (mask) {
     // put the old clip region back
     XSetClipOrigin(fl_display, fl_gc, 0, 0);
     fl_restore_clip();
   }
+#endif
+#else
+  if (mask && DOIT)
+  {
+    GrOffsetRegion((unsigned long)mask,-X,-Y);
+    GrDestroyGC(fl_gc);
+    fl_gc = oldgc;
+  }
+#endif //tanghao
 #endif
 }
 
@@ -178,12 +207,12 @@ Fl_Pixmap::~Fl_Pixmap() {
 
 void Fl_Pixmap::uncache() {
   if (id) {
-    fl_delete_offscreen(id);
+    fl_delete_offscreen((Fl_Offscreen)id);
     id = 0;
   }
 
   if (mask) {
-    fl_delete_bitmask(mask);
+    fl_delete_bitmask((Fl_Bitmask)mask);
     mask = 0;
   }
 }
@@ -247,8 +276,8 @@ void Fl_Pixmap::copy_data() {
 }
 
 Fl_Image *Fl_Pixmap::copy(int W, int H) {
-  // Optimize the simple copy where the width and height are the same...
-  if (W == w() && H == h()) return new Fl_Pixmap(data());
+  // Don't Optimize the simple copy where the width and height are the same...
+  //if (W == w() && H == h()) return new Fl_Pixmap(data());
   if (W <= 0 || H <= 0) return 0;
 
   // OK, need to resize the image data; allocate memory and 
@@ -305,11 +334,11 @@ Fl_Image *Fl_Pixmap::copy(int W, int H) {
   }
 
   // Scale the image using a nearest-neighbor algorithm...
-  for (dy = H, sy = 0, yerr = H / 2; dy > 0; dy --, new_row ++) {
+  for (dy = H, sy = 0, yerr = H; dy > 0; dy --, new_row ++) {
     *new_row = new char[chars_per_line];
     new_ptr  = *new_row;
 
-    for (dx = W, xerr = W / 2, old_ptr = data()[sy + ncolors + 1];
+    for (dx = W, xerr = W, old_ptr = data()[sy + ncolors + 1];
 	 dx > 0;
 	 dx --) {
       for (c = 0; c < chars_per_pixel; c ++) *new_ptr++ = old_ptr[c];
@@ -416,6 +445,7 @@ void Fl_Pixmap::delete_data() {
     for (int i = 0; i < count(); i ++) delete[] (char *)data()[i];
     delete[] (char **)data();
   }
+  if (array) delete[] (unsigned char *)array;
 }
 
 void Fl_Pixmap::set_data(const char * const * p) {
@@ -451,7 +481,7 @@ void Fl_Pixmap::desaturate() {
     ncolors = -ncolors;
     uchar *cmap = (uchar *)(data()[1]);
     for (i = 0; i < ncolors; i ++, cmap += 4) {
-      g = (cmap[1] * 31 + cmap[2] * 61 + cmap[3] * 8) / 100;
+      g = (uchar)((cmap[1] * 31 + cmap[2] * 61 + cmap[3] * 8) / 100);
       cmap[1] = cmap[2] = cmap[3] = g;
     }
   } else {
@@ -472,7 +502,7 @@ void Fl_Pixmap::desaturate() {
       }
 
       if (fl_parse_color(p, r, g, b)) {
-        g = (r * 31 + g * 61 + b * 8) / 100;
+        g = (uchar)((r * 31 + g * 61 + b * 8) / 100);
 
         if (chars_per_pixel > 1) sprintf(line, "%c%c c #%02X%02X%02X", data()[i + 1][0],
 	                                 data()[i + 1][1], g, g, g);

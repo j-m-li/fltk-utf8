@@ -30,6 +30,7 @@
 
 #include <FL/Fl.H>
 #include <FL/Fl_Input_.H>
+#include <FL/Fl_Window.H>
 #include <FL/fl_draw.H>
 #include <FL/fl_ask.H>
 #include <math.h>
@@ -40,6 +41,9 @@
 #include <FL/fl_utf8.H>
 
 #define MAXBUF 1024
+
+extern void fl_set_spot(int font, int size, int x, int y, int w, int h);
+extern void fl_reset_spot(void);
 
 ////////////////////////////////////////////////////////////////
 
@@ -56,7 +60,10 @@ const char* Fl_Input_::expand(const char* p, char* buf) const {
   int word_wrap;
 
   if (input_type()==FL_SECRET_INPUT) {
-    while (o<e && p < value_+size_) {*o++ = '*'; p++;}
+    while (o<e && p < value_+size_) {
+      if (fl_utflen((unsigned char*)p, value_+size_-p) >= 0) *o++ = '*'; 
+      p++;
+    }
   } else while (o<e) {
     if (wrap() && (p >= value_+size_ || isspace(*p))) {
       word_wrap = w() - Fl::box_dw(box()) - 2;
@@ -80,15 +87,6 @@ const char* Fl_Input_::expand(const char* p, char* buf) const {
 	*o++ = '^';
 	*o++ = c ^ 0x40;
       }
-    } else if (c >= 128) {
-      unsigned int ucs;
-      fl_utf2ucs((unsigned char*) (p - 1), 2, &ucs);
-      if (ucs == 0xA0) {
-        *o++ = ' ';
-	p++;
-      } else {
-	*o++ = c;
-      }
     } else {
       *o++ = c;
     }
@@ -105,21 +103,17 @@ double Fl_Input_::expandpos(
   int* returnn		// return offset into buf here
 ) const {
   int n = 0;
-  /*if (input_type()==FL_SECRET_INPUT) n = e-p;
-  else */while (p<e) {
+  if (input_type()==FL_SECRET_INPUT) {
+    while (p<e) {
+      if (fl_utflen((unsigned char*)p, value_+size_-p) >= 0) n++; 
+      p++;
+    }
+  
+  } else while (p<e) {
     int c = *p++ & 255;
     if (c < ' ' || c == 127) {
       if (c == '\t' && input_type()==FL_MULTILINE_INPUT) n += 8-(n%8);
       else n += 2;
-    } else if (c >= 128) {
-      unsigned int ucs;
-      fl_utf2ucs((unsigned char*) (p - 1), 2, &ucs);
-      if (ucs >= 128 && ucs < 0xA0) {
-      	n += 4;
-      	p++;
-      } else {
-        n++;
-      }
     } else {
       n++;
     }
@@ -334,6 +328,10 @@ void Fl_Input_::drawtext(int X, int Y, int W, int H) {
   }
 
   fl_pop_clip();
+  if (Fl::focus() == this) {
+	fl_set_spot(textfont(), textsize(), 
+		xpos+curx, Y+ypos-fl_descent(), W, H);
+  }
 }
 
 static int isword(char c) {
@@ -413,7 +411,7 @@ void Fl_Input_::handle_mouse(int X, int Y, int /*W*/, int /*H*/, int drag) {
   const char *l, *r, *t; double f0 = Fl::event_x()-X+xscroll_;
   for (l = p, r = e; l<r; ) {
     double f;
-    int cw = fl_utflen((unsigned char*)l, size()-(l-value()));
+    int cw = fl_utflen((unsigned char*)l, e-l);
     if (cw < 1) cw = 1;
     t = l+cw;
     f = X-xscroll_+expandpos(p, t, buf, 0);
@@ -423,7 +421,7 @@ void Fl_Input_::handle_mouse(int X, int Y, int /*W*/, int /*H*/, int drag) {
 
   if (l < e) { // see if closer to character on right:
     double f1;
-    int cw = fl_utflen((unsigned char*)l, size()-(l-value()));
+    int cw = fl_utflen((unsigned char*)l, e-l);
     if (cw > 0) {
       f1 = X-xscroll_+expandpos(p, l + cw, buf, 0) - Fl::event_x();
       if (f1 < f0) l = l+cw;
@@ -468,29 +466,31 @@ void Fl_Input_::handle_mouse(int X, int Y, int /*W*/, int /*H*/, int drag) {
 }
 
 int Fl_Input_::position(int p, int m) {
+  int is_same = 0;
   was_up_down = 0;
   if (p<0) p = 0;
   if (p>size()) p = size();
   if (m<0) m = 0;
   if (m>size()) m = size();
   if (p == position_ && m == mark_) return 0;
+  if (p == m) is_same = 1;
 
   while (p < position_ && p > 0 && (size() - p) > 0 && 
 	(fl_utflen((unsigned char *)value() + p, size() - p) < 1)) { p--; }
   int ul = fl_utflen((unsigned char *)value() + p, size() - p);
-  while (p < size() && p > position_ && ul < 0) { 
-	ul = fl_utflen((unsigned char *)value() + p - 1, size() - p + 1); 
-	p--; if (ul > 1)  p += ul;
+  while (p < size() && p > position_ && ul < 0) {
+	p++; 
+	ul = fl_utflen((unsigned char *)value() + p, size() - p); 
   }
 
   while (m < mark_ && m > 0 && (size() - m) > 0 && 
 	(fl_utflen((unsigned char *)value() + m, size() - m) < 1)) { m--; }
   ul = fl_utflen((unsigned char *)value() + m, size() - m);
-  while (m < size() && m > mark_ && ul < 0) { 
-	ul = fl_utflen((unsigned char *)value() + m - 1, size() - m + 1); 
-	m--; if (ul > 1) m += ul;
+  while (m < size() && m > mark_ && ul < 0) {
+	m++; 
+	ul = fl_utflen((unsigned char *)value() + m, size() - m); 
   }
-
+  if (is_same) m = p;
   if (p == position_ && m == mark_) return 0;
 
   //if (Fl::selection_owner() == this) Fl::selection_owner(0);
@@ -582,9 +582,9 @@ int Fl_Input_::replace(int b, int e, const char* text, int ilen) {
   while (b != e && b > 0 && (size_ - b) > 0 && 
 	(fl_utflen((unsigned char *)value_ + b, size_ - b) < 1)) { b--; }
   ul = fl_utflen((unsigned char *)value_ + e, size_ - e);
-  while (e < size_ && e > 0 && ul < 1) { 
-	ul = fl_utflen((unsigned char *)value_ + e - 1, size_ - e + 1); 
-	e--; if (ul > 1)  e += ul;
+  while (e < size_ && e > 0 && ul < 0) { 
+	e++;
+	ul = fl_utflen((unsigned char *)value_ + e, size_ - e ); 
   }
 
   if (text && !ilen) ilen = strlen(text);
@@ -708,14 +708,15 @@ int Fl_Input_::handletext(int event, int X, int Y, int W, int H) {
   switch (event) {
 
   case FL_ENTER:
-    if (active_r()) fl_cursor(FL_CURSOR_INSERT);
+    if (active_r()) window()->cursor(FL_CURSOR_INSERT);
     return 1;
 
   case FL_LEAVE:
-    if (active_r()) fl_cursor(FL_CURSOR_DEFAULT);
+    if (active_r()) window()->cursor(FL_CURSOR_DEFAULT);
     return 1;
 
   case FL_FOCUS:
+    fl_set_spot(textfont(), textsize(), x(), y(), w(), h());
     if (mark_ == position_) {
       minimal_update(size()+1);
     } else //if (Fl::selection_owner() != this)
@@ -723,6 +724,7 @@ int Fl_Input_::handletext(int event, int X, int Y, int W, int H) {
     return 1;
 
   case FL_UNFOCUS:
+    fl_reset_spot();
     if (mark_ == position_) {
       if (!(damage()&FL_DAMAGE_EXPOSE)) {minimal_update(position_); erase_cursor_only = 1;}
     } else //if (Fl::selection_owner() != this)
@@ -744,7 +746,7 @@ int Fl_Input_::handletext(int event, int X, int Y, int W, int H) {
     return 1;
 
   case FL_RELEASE:
-    copy(0);
+    if (Fl::event_button() == 1) copy(0);
     return 1;
 
   case FL_PASTE: {
@@ -810,7 +812,7 @@ Fl_Input_::Fl_Input_(int X, int Y, int W, int H, const char* l)
   box(FL_DOWN_BOX);
   color(FL_BACKGROUND2_COLOR, FL_SELECTION_COLOR);
   align(FL_ALIGN_LEFT);
-  textsize_ = FL_NORMAL_SIZE;
+  textsize_ = (uchar)FL_NORMAL_SIZE;
   textfont_ = FL_HELVETICA;
   textcolor_ = FL_FOREGROUND_COLOR;
   cursor_color_ = FL_FOREGROUND_COLOR; // was FL_BLUE

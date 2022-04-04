@@ -1,9 +1,9 @@
 //
-// "$Id: fl_symbols.cxx,v 1.8.2.3.2.3 2002/04/11 11:52:43 easysw Exp $"
+// "$Id: fl_symbols.cxx,v 1.8.2.3.2.7 2003/05/21 16:58:13 easysw Exp $"
 //
 // Symbol drawing code for the Fast Light Tool Kit (FLTK).
 //
-// Copyright 1998-2002 by Bill Spitzak and others.
+// Copyright 1998-2003 by Bill Spitzak and others.
 //
 // This library is free software; you can redistribute it and/or
 // modify it under the terms of the GNU Library General Public
@@ -92,8 +92,9 @@ int fl_add_symbol(const char *name, void (*drawit)(Fl_Color), int scalable)
 int fl_return_arrow(int x,int y,int w,int h);
 
 // provided for back compatability:
-int fl_draw_symbol(const char *label,int x,int y,int w,int h,Fl_Color col) {  
+int fl_draw_symbol(const char *label,int x,int y,int w,int h,Fl_Color col) { 
   const char *p = label;
+  
   if (*p++ != '@') return 0;
   fl_init_symbols();
   int equalscale = 0;
@@ -129,6 +130,7 @@ int fl_draw_symbol(const char *label,int x,int y,int w,int h,Fl_Color col) {
   }
   int pos = find(p);
   if (!symbols[pos].notempty) return 0;
+
   if (symbols[pos].scalable == 3) { // kludge to detect return arrow
     fl_return_arrow(x,y,w,h);
     return 1;
@@ -159,7 +161,7 @@ int fl_draw_symbol(const char *label,int x,int y,int w,int h,Fl_Color col) {
 
 //for the outline color
 static void set_outline_color(Fl_Color c) {
-  fl_color(fl_color_average(c, FL_BLACK, .5));
+  fl_color(fl_darker(c));
 }
 
 static void rectangle(double x,double y,double x2,double y2,Fl_Color col) {
@@ -179,6 +181,7 @@ static void draw_arrow1(Fl_Color col)
   set_outline_color(col);
   BC; vv(-0.8,-0.4); vv(-0.8,0.4); vv(0.0,0.4); vv(0.0,0.8); vv(0.8,0.0);
       vv(0.0,-0.8); vv(0.0,-0.4); EC;
+
 }
 
 static void draw_arrow1bar(Fl_Color col)
@@ -326,8 +329,9 @@ static void draw_menu(Fl_Color col)
 }
 
 static void fl_init_symbols(void) {
-  static char beenhere;
+  static char beenhere = 0;
   if (beenhere) return;
+
   beenhere = 1;
   symbnumb = 0;
 
@@ -361,5 +365,5 @@ static void fl_init_symbols(void) {
 }
 
 //
-// End of "$Id: fl_symbols.cxx,v 1.8.2.3.2.3 2002/04/11 11:52:43 easysw Exp $".
+// End of "$Id: fl_symbols.cxx,v 1.8.2.3.2.7 2003/05/21 16:58:13 easysw Exp $".
 //

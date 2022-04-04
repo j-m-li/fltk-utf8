@@ -70,7 +70,9 @@
 
 #define MAX_COLUMNS	200
 
-
+#if MSDOS
+#define strcasecmp stricmp
+#endif
 //
 // Typedef the C API sort function type the only way I know how...
 //
@@ -530,11 +532,11 @@ Fl_Help_View::draw()
             if (tolower(buf[0]) == 'h')
 	    {
 	      font  = FL_HELVETICA_BOLD;
-	      fsize = textsize_ + '7' - buf[1];
+	      fsize = (uchar)(textsize_ + '7' - buf[1]);
 	    }
 	    else if (strcasecmp(buf, "DT") == 0)
 	    {
-	      font  = textfont_ | FL_ITALIC;
+	      font  = (uchar)(textfont_ | FL_ITALIC);
 	      fsize = textsize_;
 	    }
 	    else if (strcasecmp(buf, "PRE") == 0)
@@ -546,8 +548,11 @@ Fl_Help_View::draw()
 
             if (strcasecmp(buf, "LI") == 0)
 	    {
-	      fl_font(FL_SYMBOL, fsize);
-	      fl_draw("\267", xx - fsize + x() - leftline_, yy + y());
+	      char buf[8];
+	      xchar b[] = {0x2022, 0x0};
+	      buf[fl_unicode2utf(b, 1, buf)] = 0;
+	      //fl_font(FL_SYMBOL, fsize);
+	      fl_draw(buf, xx - fsize + x() - leftline_, yy + y());
 	    }
 
 	    pushfont(font, fsize);
@@ -769,6 +774,76 @@ Fl_Help_View::draw()
   fl_pop_clip();
 }
 
+const char* fl_untitled =  "Untitled";
+const char* fl_no_uri ="<HTML><HEAD><TITLE>Error</TITLE></HEAD>"
+             "<BODY><H1>Error</H1>"
+             "<P>Unable to follow the link \"%s\" - "
+             "no handler exists for this URI scheme.</P></BODY>";
+const char* fl_unable_to_follow =  "<HTML><HEAD><TITLE>Error</TITLE></HEAD>"
+               "<BODY><H1>Error</H1>"
+               "<P>Unable to follow the link \"%s\" - "
+               "%s.</P></BODY>";
+//
+// 'Fl_Help_View::find()' - Find the specified string...
+//
+
+int						// O - Matching position or -1 if not found
+Fl_Help_View::find(const char *s,		// I - String to find
+                   int        p)		// I - Starting position
+{
+  int		i,				// Looping var
+		c;				// Current character
+  Fl_Help_Block	*b;				// Current block
+  const char	*bp,				// Block matching pointer
+		*bs,				// Start of current comparison
+		*sp;				// Search string pointer
+
+
+  // Range check input...
+  if (!s) return -1;
+
+  if (p < 0 || p >= (int)strlen(value_)) p = 0;
+  else if (p > 0) p ++;
+
+  // Look for the string...
+  for (i = nblocks_, b = blocks_; i > 0; i --, b ++) {
+    if (b->end < (value_ + p))
+      continue;
+
+    if (b->start < (value_ + p)) bp = value_ + p;
+    else bp = b->start;
+
+    for (sp = s, bs = bp; *sp && *bp && bp < b->end; bp ++) {
+      if (*bp == '<') {
+        // skip to end of element...
+	while (*bp && bp < b->end && *bp != '>') bp ++;
+	continue;
+      } else if (*bp == '&') {
+        // decode HTML entity...
+	if ((c = quote_char(bp + 1)) < 0) c = '&';
+	else bp = strchr(bp + 1, ';') + 1;
+      } else c = *bp;
+
+      if (tolower(*sp) == tolower(c)) sp ++;
+      else {
+        // No match, so reset to start of search...
+	sp = s;
+	bs ++;
+	bp = bs;
+      }
+    }
+
+    if (!*sp) {
+      // Found a match!
+      topline(b->y - b->h);
+      return (b->end - value_);
+    }
+  }
+
+  // No match!
+  return (-1);
+}
+
 
 //
 // 'Fl_Help_View::format()' - Format the help text.
@@ -830,7 +905,7 @@ Fl_Help_View::format()
 
     tc = rc = bgcolor_;
 
-    strcpy(title_, "Untitled");
+    strcpy(title_, fl_untitled);
 
     if (!value_)
       return;
@@ -838,22 +913,23 @@ Fl_Help_View::format()
     // Setup for formatting...
     initfont(font, fsize);
 
-    line        = 0;
-    links       = 0;
-    xx          = 4;
-    yy          = fsize + 2;
-    ww          = 0;
-    column      = 0;
-    border      = 0;
-    hh          = 0;
-    block       = add_block(value_, xx, yy, hsize_, 0);
-    row         = 0;
-    head        = 0;
-    pre         = 0;
-    talign      = LEFT;
-    newalign    = LEFT;
-    needspace   = 0;
-    linkdest[0] = '\0';
+    line         = 0;
+    links        = 0;
+    xx           = 4;
+    yy           = fsize + 2;
+    ww           = 0;
+    column       = 0;
+    border       = 0;
+    hh           = 0;
+    block        = add_block(value_, xx, yy, hsize_, 0);
+    row          = 0;
+    head         = 0;
+    pre          = 0;
+    talign       = LEFT;
+    newalign     = LEFT;
+    needspace    = 0;
+    linkdest[0]  = '\0';
+    table_offset = 0;
 
     for (ptr = value_, s = buf; *ptr;)
     {
@@ -1056,7 +1132,7 @@ Fl_Help_View::format()
           else if (strcasecmp(buf, "TABLE") == 0)
 	  {
 	    if (get_attr(attrs, "BORDER", attr, sizeof(attr)))
-	      border = atoi(attr);
+	      border = (uchar)atoi(attr);
 	    else
 	      border = 0;
 
@@ -1093,11 +1169,11 @@ Fl_Help_View::format()
           if (tolower(buf[0]) == 'h' && isdigit(buf[1]))
 	  {
 	    font  = FL_HELVETICA_BOLD;
-	    fsize = textsize_ + '7' - buf[1];
+	    fsize = (uchar)(textsize_ + '7' - buf[1]);
 	  }
 	  else if (strcasecmp(buf, "DT") == 0)
 	  {
-	    font  = textfont_ | FL_ITALIC;
+	    font  = (uchar)(textfont_ | FL_ITALIC);
 	    fsize = textsize_;
 	  }
 	  else if (strcasecmp(buf, "PRE") == 0)
@@ -1278,7 +1354,7 @@ Fl_Help_View::format()
 	  block->h   += hh;
 
           if (strcasecmp(buf, "TH") == 0)
-	    font = textfont_ | FL_BOLD;
+	    font = (uchar)(textfont_ | FL_BOLD);
 	  else
 	    font = textfont_;
 
@@ -1637,11 +1713,11 @@ Fl_Help_View::format_table(int        *table_width,	// O - Total table width
         if (tolower(buf[0]) == 'h' && isdigit(buf[1]))
 	{
 	  font  = FL_HELVETICA_BOLD;
-	  fsize = textsize_ + '7' - buf[1];
+	  fsize = (uchar)(textsize_ + '7' - buf[1]);
 	}
 	else if (strcasecmp(buf, "DT") == 0)
 	{
-	  font  = textfont_ | FL_ITALIC;
+	  font  = (uchar)(textfont_ | FL_ITALIC);
 	  fsize = textsize_;
 	}
 	else if (strcasecmp(buf, "PRE") == 0)
@@ -1751,7 +1827,7 @@ Fl_Help_View::format_table(int        *table_width,	// O - Total table width
 	incell    = 1;
 
         if (strcasecmp(buf, "TH") == 0)
-	  font = textfont_ | FL_BOLD;
+	  font = (uchar)(textfont_ | FL_BOLD);
 	else
 	  font = textfont_;
 
@@ -2072,7 +2148,7 @@ Fl_Help_View::get_color(const char *n,	// I - Color name
     g = (rgb >> 8) & 255;
     b = rgb & 255;
 
-    return (fl_rgb_color(r, g, b));
+    return (fl_rgb_color((uchar)r, (uchar)g, (uchar)b));
   }
   else if (strcasecmp(n, "black") == 0)
     return (FL_BLACK);
@@ -2431,12 +2507,7 @@ Fl_Help_View::load(const char *f)// I - Filename to load (may also have target)
       strncmp(localname, "news:", 5) == 0)
   {
     // Remote link wasn't resolved...
-    snprintf(error, sizeof(error),
-             "<HTML><HEAD><TITLE>Error</TITLE></HEAD>"
-             "<BODY><H1>Error</H1>"
-	     "<P>Unable to follow the link \"%s\" - "
-	     "no handler exists for this URI scheme.</P></BODY>",
-	     localname);
+    snprintf(error, sizeof(error), fl_no_uri, localname);
     value_ = strdup(error);
   }
   else
@@ -2456,11 +2527,7 @@ Fl_Help_View::load(const char *f)// I - Filename to load (may also have target)
     }
     else
     {
-      snprintf(error, sizeof(error),
-               "<HTML><HEAD><TITLE>Error</TITLE></HEAD>"
-               "<BODY><H1>Error</H1>"
-	       "<P>Unable to follow the link \"%s\" - "
-	       "%s.</P></BODY>",
+      snprintf(error, sizeof(error), fl_unable_to_follow, 
 	       localname, strerror(errno));
       value_ = strdup(error);
     }
@@ -2707,9 +2774,14 @@ quote_char(const char *p) {	// I - Quoted string
     { "yuml;",   5, 255 }
   };
 
-
-  if (isdigit(*p)) return atoi(p);
-
+  if (!strchr(p, ';')) return -1;
+  if (*p == '#') {
+    if (*(p+1) == 'x' || *(p+1) == 'X') {
+      return strtol(p+2, NULL, 16);
+    } else {
+      return atoi(p+1);
+    }
+  }
   for (i = (int)(sizeof(names) / sizeof(names[0])), nameptr = names; i > 0; i --, nameptr ++)
     if (strncmp(p, nameptr->name, nameptr->namelen) == 0)
       return nameptr->code;

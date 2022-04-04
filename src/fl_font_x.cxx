@@ -1,9 +1,9 @@
 //
-// "$Id: fl_font_x.cxx,v 1.10.2.3 2002/06/08 13:07:19 easysw Exp $"
+// "$Id: fl_font_x.cxx,v 1.10.2.4 2003/01/30 21:43:52 easysw Exp $"
 //
 // Standard X11 font selection code for the Fast Light Tool Kit (FLTK).
 //
-// Copyright 1998-2002 by Bill Spitzak and others.
+// Copyright 1998-2003 by Bill Spitzak and others.
 //
 // This library is free software; you can redistribute it and/or
 // modify it under the terms of the GNU Library General Public
@@ -24,21 +24,14 @@
 //
 
 Fl_FontSize::Fl_FontSize(const char* name) {
-#  if HAVE_XUTF8
   font = XCreateUtf8FontStruct(fl_display, name);
-#  else
-  font = XLoadQueryFont(fl_display, name);
-#  endif
   if (!font) {
-    Fl::warning("bad font: %s", name);
-#  if HAVE_XUTF8
+//    Fl::warning("bad font: %s", name);
     font = XCreateUtf8FontStruct(fl_display, "fixed");
-#  else
-    font = XLoadQueryFont(fl_display, "fixed"); // if fixed fails we crash
-#  endif
   }
 #  if HAVE_GL
   listbase = 0;
+  for (int u = 0; u < 64; u++) glok[u] = 0;
 #  endif
 }
 
@@ -57,11 +50,7 @@ Fl_FontSize::~Fl_FontSize() {
 // }
 #  endif
   if (this == fl_fontsize) fl_fontsize = 0;
-#  if HAVE_XUTF8
   XFreeUtf8FontStruct(fl_display, font);
-#  else
-  XFreeFont(fl_display, font);
-#  endif
 }
 
 ////////////////////////////////////////////////////////////////
@@ -165,19 +154,11 @@ static char *find_best_font(const char *fname, int size) {
                thissize < ptsize && ptsize > size || // current font too big
                thissize > ptsize && thissize <= size // current too small
       ) {
-/*
-      if (size > 24) {
-        int l = c-thisname;
-        memcpy(namebuffer,thisname,l);
-       l += sprintf(namebuffer+l,"%d",size);
-        while (*c != '-') c++;
-        strcpy(namebuffer+l,c);
-        name = namebuffer;
-        ptsize = size;
-      } else {
-*/
-        name = thisname; ptsize = thissize;
-//      }
+    //  int l = c-thisname;
+     // memcpy(namebuffer,thisname,l);
+      //l += sprintf(namebuffer+l,"%d-*%s",size, fl_font_word(thisname, 13));
+      name = thisname;
+      ptsize = thissize;
       matchedlength = thislength;
     }
   }
@@ -223,6 +204,13 @@ static char *put_font_size(const char *n, int size)
 }
 
 
+char *fl_get_font_xfld(int fnum, int size) {
+  Fl_Fontdesc* s = fl_fonts+fnum;
+  if (!s->name) s = fl_fonts; // use font 0 if still undefined
+  fl_open_display();
+  return put_font_size(s->name, size);
+}
+
 // locate or create an Fl_FontSize for a given Fl_Fontdesc and size:
 static Fl_FontSize* find(int fnum, int size) {
   char *name;
@@ -243,16 +231,13 @@ static Fl_FontSize* find(int fnum, int size) {
   return f;
 }
 
+
 ////////////////////////////////////////////////////////////////
 // Public interface:
 
 int fl_font_ = 0;
 int fl_size_ = 0;
-#if HAVE_XUTF8
 XUtf8FontStruct* fl_xfont;
-#else
-XFontStruct* fl_xfont = 0;
-#endif
 static GC font_gc;
 
 void Fl_Fltk::font(int fnum, int size) {
@@ -275,54 +260,29 @@ int Fl_Fltk::descent() {
 }
 
 double Fl_Fltk::width(const char* c, int n) {
-#if HAVE_XUTF8
   return (double) XUtf8TextWidth(fl_xfont, c, n);
-#else
-  n = to_iso(c, n);
-  return (double) XTextWidth(fl_xfont, utf_str, n);
-#endif
 }
 
 double Fl_Fltk::width(unsigned int c) {
-#if HAVE_XUTF8
   return (double) XUtf8UcsWidth(fl_xfont, c);
-#else
-  return Fl_Fltk::width(&((uchar)c), 1);
-#endif
 }
 
 void Fl_Fltk::draw(const char* c, int n, int x, int y) {
   if (font_gc != fl_gc) {
 	  if (!fl_xfont) Fl_Fltk::font(FL_HELVETICA, 12);
     font_gc = fl_gc;
-#if !HAVE_XUTF8
-    XSetFont(fl_display, fl_gc, fl_xfont->fid);
-#endif
   }
-#if HAVE_XUTF8
   XUtf8DrawString(fl_display, fl_window, fl_xfont, fl_gc, x, y, c, n);
-#else
-  n = to_iso(c, n);
-  XDrawString(fl_display, fl_window, fl_gc, x, y, utf_str, n);
-#endif
 }
 
 void Fl_Fltk::rtl_draw(const char* c, int n, int x, int y) {
   if (font_gc != fl_gc) {
 	  if (!fl_xfont) Fl_Fltk::font(FL_HELVETICA, 12);
     font_gc = fl_gc;
-#if !HAVE_XUTF8
-    XSetFont(fl_display, fl_gc, fl_xfont->fid);
-#endif
   }
-#if HAVE_XUTF8
   XUtf8DrawRtlString(fl_display, fl_window, fl_xfont, fl_gc, x, y, c, n);
-#else
-  n = to_iso(c, n);
-  XDrawString(fl_display, fl_window, fl_gc, x, y, utf_str, n);
-#endif
 }
 
 //
-// End of "$Id: fl_font_x.cxx,v 1.10.2.3 2002/06/08 13:07:19 easysw Exp $".
+// End of "$Id: fl_font_x.cxx,v 1.10.2.4 2003/01/30 21:43:52 easysw Exp $".
 //

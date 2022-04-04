@@ -1,9 +1,9 @@
 //
-// "$Id: Fl_Menu_.cxx,v 1.7.2.8.2.4 2002/08/09 01:09:49 easysw Exp $"
+// "$Id: Fl_Menu_.cxx,v 1.7.2.8.2.6 2003/01/30 21:42:11 easysw Exp $"
 //
 // Common menu code for the Fast Light Tool Kit (FLTK).
 //
-// Copyright 1998-2002 by Bill Spitzak and others.
+// Copyright 1998-2003 by Bill Spitzak and others.
 //
 // This library is free software; you can redistribute it and/or
 // modify it under the terms of the GNU Library General Public
@@ -97,7 +97,7 @@ Fl_Menu_::Fl_Menu_(int X,int Y,int W,int H,const char* l)
   alloc = 0;
   selection_color(FL_SELECTION_COLOR);
   textfont(FL_HELVETICA);
-  textsize(FL_NORMAL_SIZE);
+  textsize((uchar)FL_NORMAL_SIZE);
   textcolor(FL_BLACK);
   down_box(FL_NO_BOX);
 }
@@ -150,5 +150,5 @@ void Fl_Menu_::clear() {
 }
 
 //
-// End of "$Id: Fl_Menu_.cxx,v 1.7.2.8.2.4 2002/08/09 01:09:49 easysw Exp $".
+// End of "$Id: Fl_Menu_.cxx,v 1.7.2.8.2.6 2003/01/30 21:42:11 easysw Exp $".
 //

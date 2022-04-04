@@ -1,9 +1,9 @@
 //
-// "$Id: fl_draw_image_win32.cxx,v 1.4.2.3.2.2 2002/01/01 15:11:32 easysw Exp $"
+// "$Id: fl_draw_image_win32.cxx,v 1.4.2.3.2.5 2003/01/30 21:43:43 easysw Exp $"
 //
 // WIN32 image drawing code for the Fast Light Tool Kit (FLTK).
 //
-// Copyright 1998-2002 by Bill Spitzak and others.
+// Copyright 1998-2003 by Bill Spitzak and others.
 //
 // This library is free software; you can redistribute it and/or
 // modify it under the terms of the GNU Library General Public
@@ -141,17 +141,17 @@ static void innards(const uchar *buf, int X, int Y, int W, int H,
   }
 #if USE_COLORMAP
   if (indexed) {
-    for (int i=0; i<256; i++) {
+    for (short i=0; i<256; i++) {
       *((short*)(bmi.bmiColors)+i) = i;
     }
   } else
 #endif
   if (mono) {
     for (int i=0; i<256; i++) {
-      bmi.bmiColors[i].rgbBlue = i;
-      bmi.bmiColors[i].rgbGreen = i;
-      bmi.bmiColors[i].rgbRed = i;
-      bmi.bmiColors[i].rgbReserved = i;
+      bmi.bmiColors[i].rgbBlue = (uchar)i;
+      bmi.bmiColors[i].rgbGreen = (uchar)i;
+      bmi.bmiColors[i].rgbRed = (uchar)i;
+      bmi.bmiColors[i].rgbReserved = (uchar)i;
     }
   }
   bmi.bmiHeader.biWidth = w;
@@ -262,5 +262,5 @@ void Fl_Fltk::rectf(int x, int y, int w, int h, uchar r, uchar g, uchar b) {
 }
 
 //
-// End of "$Id: fl_draw_image_win32.cxx,v 1.4.2.3.2.2 2002/01/01 15:11:32 easysw Exp $".
+// End of "$Id: fl_draw_image_win32.cxx,v 1.4.2.3.2.5 2003/01/30 21:43:43 easysw Exp $".
 //

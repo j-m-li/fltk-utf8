@@ -1,9 +1,9 @@
 //
-// "$Id: Fl_visual.cxx,v 1.7.2.4.2.4 2002/01/03 08:08:21 matthiaswm Exp $"
+// "$Id: Fl_visual.cxx,v 1.7.2.4.2.5 2003/01/30 21:43:10 easysw Exp $"
 //
 // Visual support for the Fast Light Tool Kit (FLTK).
 //
-// Copyright 1998-2002 by Bill Spitzak and others.
+// Copyright 1998-2003 by Bill Spitzak and others.
 //
 // This library is free software; you can redistribute it and/or
 // modify it under the terms of the GNU Library General Public
@@ -38,12 +38,21 @@ int Fl::visual(int flags) {
   if ((flags & FL_RGB8) && GetDeviceCaps(fl_gc,BITSPIXEL)<24) return 0;
   return 1;
 }
-#elif defined(__APPLE__)
+#elif defined(__MACOS__)
 
 // \todo Mac : need to implement Visual flags
 int Fl::visual(int flags) {
   (void)flags;
   return 1;
+}
+#elif defined(NANO_X)
+int Fl::visual(int flags) {
+	printf("Now sopport FL::visula ,now!! in file(Fl_visul.cxx)\n");
+	return 0;
+}
+#elif defined(DJGPP)
+int Fl::visual(int flags) {
+	return 0;
 }
 
 #else
@@ -115,5 +124,5 @@ int Fl::visual(int flags) {
 #endif
 
 //
-// End of "$Id: Fl_visual.cxx,v 1.7.2.4.2.4 2002/01/03 08:08:21 matthiaswm Exp $".
+// End of "$Id: Fl_visual.cxx,v 1.7.2.4.2.5 2003/01/30 21:43:10 easysw Exp $".
 //

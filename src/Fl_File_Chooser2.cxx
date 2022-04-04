@@ -1,9 +1,9 @@
 //
-// "$Id: Fl_File_Chooser2.cxx,v 1.1.2.23 2002/08/09 01:09:48 easysw Exp $"
+// "$Id: Fl_File_Chooser2.cxx,v 1.1.2.32 2003/09/03 19:38:01 easysw Exp $"
 //
 // More Fl_File_Chooser routines.
 //
-// Copyright 1999-2002 by Michael Sweet.
+// Copyright 1999-2003 by Michael Sweet.
 //
 // This library is free software; you can redistribute it and/or
 // modify it under the terms of the GNU Library General Public
@@ -48,14 +48,16 @@
 #include <FL/fl_ask.H>
 #include <FL/x.H>
 #include <FL/Fl_Shared_Image.H>
-#include <FL/fl_utf8.H>
+
 
 #include <stdio.h>
 #include <stdlib.h>
 #include "flstring.h"
 #include <errno.h>
-#include <sys/types.h>
 #include <sys/stat.h>
+#if !__MACOS__
+#include <sys/types.h>
+#endif
 
 #if defined(WIN32) && ! defined (__CYGWIN__)
 #  include <direct.h>
@@ -65,11 +67,19 @@
 #  ifdef DIRECTORY
 #    undef DIRECTORY
 #  endif // DIRECTORY
+#elif __MACOS__
+#  include <unistd.h>
 #else
 #  include <unistd.h>
-#  include <pwd.h>
+#  if !MSDOS
+#    include <pwd.h>
+#  else
+#    define strcasecmp stricmp
+#  endif
+
 #endif /* WIN32 */
 
+#include <FL/fl_utf8.H>
 
 //
 // File chooser label strings and sort function...
@@ -113,14 +123,16 @@ Fl_File_Chooser::count()
   int		i;		// Looping var
   int		fcount;		// Number of selected files
   const char	*filename;	// Filename in input field or list
-  char		pathname[1024];	// Full path to file
 
 
   if (!(type_ & MULTI))
   {
     // Check to see if the file name input field is blank...
     filename = fileName->value();
-    if (filename == NULL || filename[0] == '\0')
+
+//    printf("Fl_File_Chooser::count(): filename=\"%s\"\n", filename);
+
+    if (!filename || !filename[0])
       return (0);
 
     // Is the file name just the current directory?
@@ -132,12 +144,8 @@ Fl_File_Chooser::count()
     {
       // See if this file is a directory...
       filename = (char *)fileList->text(i);
-      if (directory_[0] != '\0')
-	snprintf(pathname, sizeof(pathname), "%s/%s", directory_, filename);
-      else
-	strlcpy(pathname, filename, sizeof(pathname));
 
-      if (!fl_filename_isdir(pathname))
+      if (filename[strlen(filename) - 1] != '/')
 	fcount ++;
     }
 
@@ -384,7 +392,11 @@ Fl_File_Chooser::fileListCB()
     return;
 
   if (!directory_[0]) {
+#if __MACOS__
+    snprintf(pathname, sizeof(pathname), "/%s", filename);
+#else
     strlcpy(pathname, filename, sizeof(pathname));
+#endif
   } else if (strcmp(directory_, "/") == 0) {
     snprintf(pathname, sizeof(pathname), "/%s", filename);
   } else {
@@ -401,6 +413,12 @@ Fl_File_Chooser::fileListCB()
     {
       // Change directories...
       directory(pathname);
+
+      // Reset the click count so that a click in the same spot won't
+      // be treated as a triple-click.  We use a value of -1 because
+      // the next click will increment click count to 0, which is what
+      // we really want...
+      Fl::event_clicks(-1);
     }
     else
     {
@@ -414,6 +432,7 @@ Fl_File_Chooser::fileListCB()
     filename = pathname + strlen(pathname) - 1;
     if (*filename == '/') *filename = '\0';
 
+//    puts("Setting fileName from fileListCB...");
     fileName->value(pathname);
 
     // Update the preview box...
@@ -449,10 +468,12 @@ Fl_File_Chooser::fileNameCB()
   const char	*file;		// File from directory
 
 
+//  puts("fileNameCB()");
+
   // Get the filename from the text field...
   filename = (char *)fileName->value();
 
-  if (filename == NULL || filename[0] == '\0') {
+  if (!filename || !filename[0]) {
     okButton->deactivate();
     return;
   }
@@ -480,7 +501,6 @@ Fl_File_Chooser::fileNameCB()
   }
 
   filename = pathname;
-
   // Now process things according to the key pressed...
   if (Fl::event_key() == FL_Enter)
   {
@@ -523,17 +543,15 @@ Fl_File_Chooser::fileNameCB()
     if (slash != NULL)
     {
       // Yes, change directories if necessary...
-      if (slash > pathname)		// Special case for "/"
-        *slash++ = '\0';
-      else
-        slash++;
-
+      *slash++ = '\0';
       filename = slash;
 
 #if defined(WIN32) || defined(__EMX__)
-      if (strcasecmp(pathname, directory_)) {
+      if (strcasecmp(pathname, directory_) &&
+          (pathname[0] || strcasecmp("/", directory_))) {
 #else
-      if (strcmp(pathname, directory_)) {
+      if (strcmp(pathname, directory_) &&
+          (pathname[0] || strcasecmp("/", directory_))) {
 #endif // WIN32 || __EMX__
         int p = fileName->position();
 	int m = fileName->mark();
@@ -629,6 +647,11 @@ Fl_File_Chooser::fileNameCB()
       fileList->redraw();
     }
 
+    if (!fileName->value() || fileName->value()[0] == 0) {
+      fileName->value("/", 1);
+      fileName->position(1,1);
+    }
+
     // See if we need to enable the OK button...
     if ((type_ & CREATE || fl_access(fileName->value(), 0) == 0) &&
         (!fl_filename_isdir(fileName->value()) || type_ & DIRECTORY))
@@ -718,11 +741,13 @@ Fl_File_Chooser::newdir()
     strlcpy(pathname, dir, sizeof(pathname));
 
   // Create the directory; ignore EEXIST errors...
-	fl_mkdir(pathname, 0777);
+    fl_mkdir(pathname, 0777);
     if (errno != EEXIST)
     {
-      fl_alert("%s", strerror(errno));
-      return;
+      if (fl_access(pathname, 0)) {
+        fl_alert("%s", strerror(errno));
+        return;
+      }
     }
 
   // Show the new directory...
@@ -778,13 +803,19 @@ Fl_File_Chooser::rescan()
 {
   char	pathname[1024];		// New pathname for filename field
 
+
   // Clear the current filename
   strlcpy(pathname, directory_, sizeof(pathname));
   if (pathname[0] && pathname[strlen(pathname) - 1] != '/') {
     strlcat(pathname, "/", sizeof(pathname));
   }
+//  puts("Setting fileName in rescan()");
   fileName->value(pathname);
-  okButton->deactivate();
+
+  if (type_ & DIRECTORY)
+    okButton->activate();
+  else
+    okButton->deactivate();
 
   // Build the file list...
   fileList->load(directory_, sort);
@@ -943,7 +974,7 @@ Fl_File_Chooser::update_preview()
       previewBox->label(preview_text_);
       previewBox->align((Fl_Align)(FL_ALIGN_CLIP | FL_ALIGN_INSIDE |
                                    FL_ALIGN_LEFT | FL_ALIGN_TOP));
-      previewBox->labelsize(size);
+      previewBox->labelsize((uchar)size);
       previewBox->labelfont(FL_COURIER);
     }
   } else {
@@ -991,7 +1022,7 @@ Fl_File_Chooser::value(int f)	// I - File number
 
   if (!(type_ & MULTI)) {
     name = fileName->value();
-    if (name[0] == '\0') return NULL;
+    if (!name || !name[0]) return NULL;
     else if (fl_filename_isdir(name)) {
       if (type_ & DIRECTORY) {
         // Strip trailing slash, if any...
@@ -1008,16 +1039,19 @@ Fl_File_Chooser::value(int f)	// I - File number
       // See if this file is a directory...
       name = fileList->text(i);
 
-      if (directory_[0]) {
-	snprintf(pathname, sizeof(pathname), "%s/%s", directory_, name);
-      } else {
-	strlcpy(pathname, name, sizeof(pathname));
-      }
-
-      if (!fl_filename_isdir(pathname)) {
-        // Nope, see if this this is "the one"...
+      if (name[strlen(name) - 1] != '/') {
+        // Not a directory, see if this this is "the one"...
 	fcount ++;
-	if (fcount == f) return (pathname);
+
+	if (fcount == f) {
+	  if (directory_[0]) {
+	    snprintf(pathname, sizeof(pathname), "%s/%s", directory_, name);
+	  } else {
+	    strlcpy(pathname, name, sizeof(pathname));
+	  }
+
+	  return (pathname);
+	}
       }
     }
 
@@ -1109,10 +1143,16 @@ quote_pathname(char       *dst,		// O - Destination string
   dstsize --;
 
   while (*src && dstsize > 1) {
-    if (*src == '/')
+    if (*src == '\\') {
+      // Convert backslash to forward slash...
       *dst++ = '\\';
+      *dst++ = '/';
+      src ++;
+    } else {
+      if (*src == '/') *dst++ = '\\';
 
-    *dst++ = *src++;
+      *dst++ = *src++;
+    }
   }
 
   *dst = '\0';
@@ -1140,5 +1180,5 @@ unquote_pathname(char       *dst,	// O - Destination string
 
 
 //
-// End of "$Id: Fl_File_Chooser2.cxx,v 1.1.2.23 2002/08/09 01:09:48 easysw Exp $".
+// End of "$Id: Fl_File_Chooser2.cxx,v 1.1.2.32 2003/09/03 19:38:01 easysw Exp $".
 //

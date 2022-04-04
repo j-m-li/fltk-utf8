@@ -1,9 +1,9 @@
 //
-// "$Id: fl_vertex.cxx,v 1.5.2.3.2.5 2002/01/01 15:11:32 easysw Exp $"
+// "$Id: fl_vertex.cxx,v 1.5.2.3.2.7 2003/01/30 21:44:26 easysw Exp $"
 //
 // Portable drawing routines for the Fast Light Tool Kit (FLTK).
 //
-// Copyright 1998-2002 by Bill Spitzak and others.
+// Copyright 1998-2003 by Bill Spitzak and others.
 //
 // This library is free software; you can redistribute it and/or
 // modify it under the terms of the GNU Library General Public
@@ -28,7 +28,7 @@
 
 #include <FL/fl_draw.H>
 #include <FL/x.H>
-#include <FL/math.h>
+#include <FL/fl_math.h>
 #include <stdlib.h>
 #include <stdio.h>
 
@@ -36,10 +36,17 @@ struct matrix {double a, b, c, d, x, y;};
 
 static matrix m = {1, 0, 0, 1, 0, 0};
 
-static matrix stack[10];
+static matrix *stack = NULL;
 static int sptr = 0;
+static int smalloc = 0;
 
-void fl_push_matrix() {stack[sptr++] = m;}
+void fl_push_matrix() {
+  if (smalloc <= sptr) {
+    smalloc = smalloc ? (smalloc * 2) : 16;
+    stack = (matrix*) realloc(stack, sizeof(matrix) *smalloc);
+  }
+  stack[sptr++] = m;
+}
 
 void fl_pop_matrix() {m = stack[--sptr];}
 
@@ -74,7 +81,7 @@ void fl_rotate(double d) {
 
 static XPoint *p = (XPoint *)0;
 // typedef what the x,y fields in a point are:
-#ifdef WIN32
+#if defined(WIN32) || DJGPP
 typedef int COORD_T;
 #else
 typedef short COORD_T;
@@ -136,22 +143,38 @@ void Fl_Fltk::vertex(double x,double y) {
 void Fl_Fltk::end_points() {
 #ifdef WIN32
   for (int i=0; i<n; i++) SetPixel(fl_gc, p[i].x, p[i].y, fl_RGB());
-#elif defined(__APPLE__)
+#elif defined(__MACOS__)
   for (int i=0; i<n; i++) { MoveTo(p[i].x, p[i].y); Line(0, 0); } 
+#elif NANO_X
+  if (n>1) GrPoly(fl_window,fl_gc, n, p);
+			//(GR_DRAW_ID id, GR_GC_ID gc, GR_COUNT count,
+			//GR_POINT *pointtable);
+#elif DJGPP
+  for (int i=0; i<n; i++) GrPlot(p[i].x, p[i].y, fl_gc->lno_color);
 #else
   if (n>1) XDrawPoints(fl_display, fl_window, fl_gc, p, n, 0);
 #endif
 }
 
 void Fl_Fltk::end_line() {
+  if (n < 2) {
+    fl_end_points();
+    return;
+  }
+
 #ifdef WIN32
   if (n>1) {
     Polyline(fl_gc, p, n);
   }
-#elif defined(__APPLE__)
+#elif defined(__MACOS__)
   if (n<=1) return;
   MoveTo(p[0].x, p[0].y);
   for (int i=1; i<n; i++) LineTo(p[i].x, p[i].y);
+#elif NANO_X
+  if (n>1) GrPoly(fl_window,fl_gc,n,p);
+#elif DJGPP
+  for (int i=1; i<n; i++) GrLine(p[i-1].x, p[i-1].y,p[i].x, p[i].y,
+	fl_gc->lno_color);
 #else
   if (n>1) XDrawLines(fl_display, fl_window, fl_gc, p, n, 0);
 #endif
@@ -163,18 +186,30 @@ static void fixloop() {  // remove equal points from closed path
 
 void Fl_Fltk::end_loop() {
   fixloop();
-  if (n>2) fl_trans_vertex((COORD_T)p[0].x, (COORD_T)p[0].y);
+  if (n>2) {
+	  int g = 0;
+	  if (fl->type == FL_GDI_DEVICE) {
+	    g = 1;
+		fl->type = FL_FLTK_DEVICE;
+	  }
+	  fl_trans_vertex((COORD_T)p[0].x, (COORD_T)p[0].y);
+	  if (g) fl->type = FL_GDI_DEVICE;
+  }
   Fl_Fltk::end_line();
 }
 
 void Fl_Fltk::end_polygon() {
   fixloop();
+  if (n < 3) {
+    fl_end_line();
+    return;
+  }
 #ifdef WIN32
   if (n>2) {
     SelectObject(fl_gc, fl_brush());
     Polygon(fl_gc, p, n);
   }
-#elif defined(__APPLE__)
+#elif defined(__MACOS__)
   if (n<=1) return;
   PolyHandle ph = OpenPoly();
   MoveTo(p[0].x, p[0].y);
@@ -182,6 +217,22 @@ void Fl_Fltk::end_polygon() {
   ClosePoly();
   PaintPoly(ph);
   KillPoly(ph);
+#elif NANO_X
+  if (n>2) GrFillPoly(fl_window,fl_gc,n,p);
+#elif DJGPP
+  if (n < 3) return;
+  int **pt = (int**) malloc(sizeof(int*) *n);
+  int *pot = (int*) malloc(sizeof(int) *n * 2);
+  int i = n;
+  while (i > 0) {
+    i--;
+    pt[i] = pot + i;
+    pt[i][0] = p[i].x;
+    pt[i][1] = p[i].y;
+  }
+  GrFilledPolygon(n, (int(*)[2])pt, fl_gc->lno_color);
+  free(pt);
+  free(pot);
 #else
   if (n>2) XFillPolygon(fl_display, fl_window, fl_gc, p, n, Convex, 0);
 #endif
@@ -204,7 +255,13 @@ void Fl_Fltk::begin_complex_polygon() {
 void Fl_Fltk::gap() {
   while (n>garp+2 && p[n-1].x == p[garp].x && p[n-1].y == p[garp].y) n--;
   if (n > garp+2) {
+	int g = 0;
+	if (fl->type == FL_GDI_DEVICE) {
+	  g = 1;
+      fl->type = FL_FLTK_DEVICE;
+	}
     fl_trans_vertex((COORD_T)p[garp].x, (COORD_T)p[garp].y);
+    if (g) fl->type = FL_GDI_DEVICE; 
 #ifdef WIN32
     counts[numcount++] = n-garp;
 #endif
@@ -216,12 +273,17 @@ void Fl_Fltk::gap() {
 
 void Fl_Fltk::end_complex_polygon() {
   Fl_Fltk::gap();
+  if (n < 3) {
+    fl_end_line();
+    return;
+  }
+
 #ifdef WIN32
   if (n>2) {
     SelectObject(fl_gc, fl_brush());
     PolyPolygon(fl_gc, p, counts, numcount);
   }
-#elif defined(__APPLE__)
+#elif defined(__MACOS__)
   if (n<=1) return;
   PolyHandle ph = OpenPoly();
   MoveTo(p[0].x, p[0].y);
@@ -229,6 +291,22 @@ void Fl_Fltk::end_complex_polygon() {
   ClosePoly();
   PaintPoly(ph);
   KillPoly(ph);
+#elif NANO_X
+  if (n>2) GrFillPoly(fl_window,fl_gc,n,p);
+#elif DJGPP
+  if (n < 3) return;
+  int **pt = (int**) malloc(sizeof(int*) *n);
+  int *pot = (int*) malloc(sizeof(int) *n * 2);
+  int i = n;
+  while (i > 0) {
+    i--;
+    pt[i] = pot + i;
+    pt[i][0] = p[i].x;
+    pt[i][1] = p[i].y;
+  }
+  GrFilledPolygon(n, (int(*)[2])pt, fl_gc->lno_color);
+  free(pt);
+  free(pot);
 #else
   if (n>2) XFillPolygon(fl_display, fl_window, fl_gc, p, n, 0, 0);
 #endif
@@ -259,9 +337,19 @@ void Fl_Fltk::circle(double x, double y,double r) {
     Pie(fl_gc, llx, lly, llx+w, lly+h, 0,0, 0,0); 
   } else
     Arc(fl_gc, llx, lly, llx+w, lly+h, 0,0, 0,0); 
-#elif defined(__APPLE__)
+#elif defined(__MACOS__)
   Rect rt; rt.left=llx; rt.right=llx+w; rt.top=lly; rt.bottom=lly+h;
   (what == POLYGON ? PaintOval : FrameOval)(&rt);
+#elif NANO_X
+  if (what == POLYGON)
+    GrFillEllipse(fl_window,fl_gc,llx+w/2,lly+h/2,w/2,h/2);
+  else
+    GrEllipse(fl_window,fl_gc,llx+w/2,lly+h/2,w/2,h/2);
+#elif DJGPP
+  if (what == POLYGON)
+    GrFilledEllipse(llx+w/2,lly+h/2,llx+w/2,lly+h/2, fl_gc->lno_color);
+  else
+    GrEllipse(llx+w/2,lly+h/2,llx+w/2,lly+h/2, fl_gc->lno_color);
 #else
   (what == POLYGON ? XFillArc : XDrawArc)
     (fl_display, fl_window, fl_gc, llx, lly, w, h, 0, 360*64);
@@ -269,5 +357,5 @@ void Fl_Fltk::circle(double x, double y,double r) {
 }
 
 //
-// End of "$Id: fl_vertex.cxx,v 1.5.2.3.2.5 2002/01/01 15:11:32 easysw Exp $".
+// End of "$Id: fl_vertex.cxx,v 1.5.2.3.2.7 2003/01/30 21:44:26 easysw Exp $".
 //

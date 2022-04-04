@@ -3,6 +3,255 @@ Microsoft Developer Studio Workspace File, Format Version 6.00
 
 ###############################################################################
 
+Project: "1_make_dist_clean"=".\1_make_dist_clean.dsp" - Package Owner=<4>
+
+Package=<5>
+{{{
+}}}
+
+Package=<4>
+{{{
+    Begin Project Dependency
+    Project_Dep_Name adjuster
+    End Project Dependency
+    Begin Project Dependency
+    Project_Dep_Name arc
+    End Project Dependency
+    Begin Project Dependency
+    Project_Dep_Name ask
+    End Project Dependency
+    Begin Project Dependency
+    Project_Dep_Name bitmap
+    End Project Dependency
+    Begin Project Dependency
+    Project_Dep_Name boxtype
+    End Project Dependency
+    Begin Project Dependency
+    Project_Dep_Name browser
+    End Project Dependency
+    Begin Project Dependency
+    Project_Dep_Name button
+    End Project Dependency
+    Begin Project Dependency
+    Project_Dep_Name buttons
+    End Project Dependency
+    Begin Project Dependency
+    Project_Dep_Name checkers
+    End Project Dependency
+    Begin Project Dependency
+    Project_Dep_Name clock
+    End Project Dependency
+    Begin Project Dependency
+    Project_Dep_Name colbrowser
+    End Project Dependency
+    Begin Project Dependency
+    Project_Dep_Name color_chooser
+    End Project Dependency
+    Begin Project Dependency
+    Project_Dep_Name cube
+    End Project Dependency
+    Begin Project Dependency
+    Project_Dep_Name CubeView
+    End Project Dependency
+    Begin Project Dependency
+    Project_Dep_Name cursor
+    End Project Dependency
+    Begin Project Dependency
+    Project_Dep_Name curve
+    End Project Dependency
+    Begin Project Dependency
+    Project_Dep_Name demo
+    End Project Dependency
+    Begin Project Dependency
+    Project_Dep_Name dnd
+    End Project Dependency
+    Begin Project Dependency
+    Project_Dep_Name doublebuffer
+    End Project Dependency
+    Begin Project Dependency
+    Project_Dep_Name editor
+    End Project Dependency
+    Begin Project Dependency
+    Project_Dep_Name fast_slow
+    End Project Dependency
+    Begin Project Dependency
+    Project_Dep_Name file_chooser
+    End Project Dependency
+    Begin Project Dependency
+    Project_Dep_Name fltk
+    End Project Dependency
+    Begin Project Dependency
+    Project_Dep_Name fltkdll
+    End Project Dependency
+    Begin Project Dependency
+    Project_Dep_Name fltkforms
+    End Project Dependency
+    Begin Project Dependency
+    Project_Dep_Name fltkgl
+    End Project Dependency
+    Begin Project Dependency
+    Project_Dep_Name fltkimages
+    End Project Dependency
+    Begin Project Dependency
+    Project_Dep_Name fluid
+    End Project Dependency
+    Begin Project Dependency
+    Project_Dep_Name fonts
+    End Project Dependency
+    Begin Project Dependency
+    Project_Dep_Name forms
+    End Project Dependency
+    Begin Project Dependency
+    Project_Dep_Name fractals
+    End Project Dependency
+    Begin Project Dependency
+    Project_Dep_Name fullscreen
+    End Project Dependency
+    Begin Project Dependency
+    Project_Dep_Name gl_overlay
+    End Project Dependency
+    Begin Project Dependency
+    Project_Dep_Name glpuzzle
+    End Project Dependency
+    Begin Project Dependency
+    Project_Dep_Name hello
+    End Project Dependency
+    Begin Project Dependency
+    Project_Dep_Name help
+    End Project Dependency
+    Begin Project Dependency
+    Project_Dep_Name iconize
+    End Project Dependency
+    Begin Project Dependency
+    Project_Dep_Name image
+    End Project Dependency
+    Begin Project Dependency
+    Project_Dep_Name inactive
+    End Project Dependency
+    Begin Project Dependency
+    Project_Dep_Name input
+    End Project Dependency
+    Begin Project Dependency
+    Project_Dep_Name keyboard
+    End Project Dependency
+    Begin Project Dependency
+    Project_Dep_Name label
+    End Project Dependency
+    Begin Project Dependency
+    Project_Dep_Name libjpegdll
+    End Project Dependency
+    Begin Project Dependency
+    Project_Dep_Name libjpg
+    End Project Dependency
+    Begin Project Dependency
+    Project_Dep_Name libpng
+    End Project Dependency
+    Begin Project Dependency
+    Project_Dep_Name libpngdll
+    End Project Dependency
+    Begin Project Dependency
+    Project_Dep_Name line_style
+    End Project Dependency
+    Begin Project Dependency
+    Project_Dep_Name mandelbrot
+    End Project Dependency
+    Begin Project Dependency
+    Project_Dep_Name menubar
+    End Project Dependency
+    Begin Project Dependency
+    Project_Dep_Name message
+    End Project Dependency
+    Begin Project Dependency
+    Project_Dep_Name minimum
+    End Project Dependency
+    Begin Project Dependency
+    Project_Dep_Name navigation
+    End Project Dependency
+    Begin Project Dependency
+    Project_Dep_Name output
+    End Project Dependency
+    Begin Project Dependency
+    Project_Dep_Name overlay
+    End Project Dependency
+    Begin Project Dependency
+    Project_Dep_Name pack
+    End Project Dependency
+    Begin Project Dependency
+    Project_Dep_Name pixmap
+    End Project Dependency
+    Begin Project Dependency
+    Project_Dep_Name pixmap_browser
+    End Project Dependency
+    Begin Project Dependency
+    Project_Dep_Name preferences
+    End Project Dependency
+    Begin Project Dependency
+    Project_Dep_Name radio
+    End Project Dependency
+    Begin Project Dependency
+    Project_Dep_Name resize
+    End Project Dependency
+    Begin Project Dependency
+    Project_Dep_Name resizebox
+    End Project Dependency
+    Begin Project Dependency
+    Project_Dep_Name scroll
+    End Project Dependency
+    Begin Project Dependency
+    Project_Dep_Name shape
+    End Project Dependency
+    Begin Project Dependency
+    Project_Dep_Name shiny
+    End Project Dependency
+    Begin Project Dependency
+    Project_Dep_Name subwindow
+    End Project Dependency
+    Begin Project Dependency
+    Project_Dep_Name symbols
+    End Project Dependency
+    Begin Project Dependency
+    Project_Dep_Name tabs
+    End Project Dependency
+    Begin Project Dependency
+    Project_Dep_Name threads
+    End Project Dependency
+    Begin Project Dependency
+    Project_Dep_Name tile
+    End Project Dependency
+    Begin Project Dependency
+    Project_Dep_Name tiled_image
+    End Project Dependency
+    Begin Project Dependency
+    Project_Dep_Name utf8
+    End Project Dependency
+    Begin Project Dependency
+    Project_Dep_Name valuators
+    End Project Dependency
+    Begin Project Dependency
+    Project_Dep_Name zlib
+    End Project Dependency
+    Begin Project Dependency
+    Project_Dep_Name zlibdll
+    End Project Dependency
+    Begin Project Dependency
+    Project_Dep_Name make_libs
+    End Project Dependency
+    Begin Project Dependency
+    Project_Dep_Name tree
+    End Project Dependency
+    Begin Project Dependency
+    Project_Dep_Name scribble
+    End Project Dependency
+    Begin Project Dependency
+    Project_Dep_Name table
+    End Project Dependency
+    Begin Project Dependency
+    Project_Dep_Name tablerow
+    End Project Dependency
+}}}
+
+###############################################################################
+
 Project: "CubeView"=".\CubeView.dsp" - Package Owner=<4>
 
 Package=<5>
@@ -531,7 +780,28 @@ Package=<5>
 Package=<4>
 {{{
     Begin Project Dependency
-    Project_Dep_Name fltk
+    Project_Dep_Name libjpg
+    End Project Dependency
+    Begin Project Dependency
+    Project_Dep_Name libpng
+    End Project Dependency
+    Begin Project Dependency
+    Project_Dep_Name zilb
+    End Project Dependency
+    Begin Project Dependency
+    Project_Dep_Name zlib
+    End Project Dependency
+    Begin Project Dependency
+    Project_Dep_Name fltkdll
+    End Project Dependency
+    Begin Project Dependency
+    Project_Dep_Name libjpegdll
+    End Project Dependency
+    Begin Project Dependency
+    Project_Dep_Name libpngdll
+    End Project Dependency
+    Begin Project Dependency
+    Project_Dep_Name zlibdll
     End Project Dependency
 }}}
 
@@ -557,6 +827,15 @@ Package=<5>
 
 Package=<4>
 {{{
+    Begin Project Dependency
+    Project_Dep_Name libjpegdll
+    End Project Dependency
+    Begin Project Dependency
+    Project_Dep_Name libpngdll
+    End Project Dependency
+    Begin Project Dependency
+    Project_Dep_Name zlibdll
+    End Project Dependency
 }}}
 
 ###############################################################################
@@ -613,21 +892,6 @@ Package=<4>
     End Project Dependency
     Begin Project Dependency
     Project_Dep_Name fltkimages
-    End Project Dependency
-}}}
-
-###############################################################################
-
-Project: "flv_table"=".\flv_table.dsp" - Package Owner=<4>
-
-Package=<5>
-{{{
-}}}
-
-Package=<4>
-{{{
-    Begin Project Dependency
-    Project_Dep_Name fltk
     End Project Dependency
 }}}
 
@@ -870,6 +1134,60 @@ Package=<4>
 
 ###############################################################################
 
+Project: "libjpegdll"=".\libjpgdll.dsp" - Package Owner=<4>
+
+Package=<5>
+{{{
+}}}
+
+Package=<4>
+{{{
+}}}
+
+###############################################################################
+
+Project: "libjpg"=".\libjpg.dsp" - Package Owner=<4>
+
+Package=<5>
+{{{
+}}}
+
+Package=<4>
+{{{
+}}}
+
+###############################################################################
+
+Project: "libpng"=".\libpng.dsp" - Package Owner=<4>
+
+Package=<5>
+{{{
+}}}
+
+Package=<4>
+{{{
+    Begin Project Dependency
+    Project_Dep_Name zlib
+    End Project Dependency
+}}}
+
+###############################################################################
+
+Project: "libpngdll"=".\libpngdll.dsp" - Package Owner=<4>
+
+Package=<5>
+{{{
+}}}
+
+Package=<4>
+{{{
+    Begin Project Dependency
+    Project_Dep_Name zlibdll
+    End Project Dependency
+}}}
+
+###############################################################################
+
 Project: "line_style"=".\line_style.dsp" - Package Owner=<4>
 
 Package=<5>
@@ -878,6 +1196,51 @@ Package=<5>
 
 Package=<4>
 {{{
+}}}
+
+###############################################################################
+
+Project: "make_libs"=".\2_make_libs.dsp" - Package Owner=<4>
+
+Package=<5>
+{{{
+}}}
+
+Package=<4>
+{{{
+    Begin Project Dependency
+    Project_Dep_Name fltk
+    End Project Dependency
+    Begin Project Dependency
+    Project_Dep_Name fltkdll
+    End Project Dependency
+    Begin Project Dependency
+    Project_Dep_Name fltkforms
+    End Project Dependency
+    Begin Project Dependency
+    Project_Dep_Name fltkgl
+    End Project Dependency
+    Begin Project Dependency
+    Project_Dep_Name fltkimages
+    End Project Dependency
+    Begin Project Dependency
+    Project_Dep_Name libjpegdll
+    End Project Dependency
+    Begin Project Dependency
+    Project_Dep_Name libjpg
+    End Project Dependency
+    Begin Project Dependency
+    Project_Dep_Name libpng
+    End Project Dependency
+    Begin Project Dependency
+    Project_Dep_Name libpngdll
+    End Project Dependency
+    Begin Project Dependency
+    Project_Dep_Name zlib
+    End Project Dependency
+    Begin Project Dependency
+    Project_Dep_Name zlibdll
+    End Project Dependency
 }}}
 
 ###############################################################################
@@ -1110,6 +1473,18 @@ Package=<4>
 
 ###############################################################################
 
+Project: "scribble"=".\scribble.dsp" - Package Owner=<4>
+
+Package=<5>
+{{{
+}}}
+
+Package=<4>
+{{{
+}}}
+
+###############################################################################
+
 Project: "scroll"=".\scroll.dsp" - Package Owner=<4>
 
 Package=<5>
@@ -1194,6 +1569,36 @@ Package=<4>
 
 ###############################################################################
 
+Project: "table"=".\table.dsp" - Package Owner=<4>
+
+Package=<5>
+{{{
+}}}
+
+Package=<4>
+{{{
+    Begin Project Dependency
+    Project_Dep_Name fltk
+    End Project Dependency
+}}}
+
+###############################################################################
+
+Project: "tablerow"=".\tablerow.dsp" - Package Owner=<4>
+
+Package=<5>
+{{{
+}}}
+
+Package=<4>
+{{{
+    Begin Project Dependency
+    Project_Dep_Name fltk
+    End Project Dependency
+}}}
+
+###############################################################################
+
 Project: "tabs"=".\tabs.dsp" - Package Owner=<4>
 
 Package=<5>
@@ -1257,6 +1662,21 @@ Package=<4>
 
 ###############################################################################
 
+Project: "tree"=".\tree.dsp" - Package Owner=<4>
+
+Package=<5>
+{{{
+}}}
+
+Package=<4>
+{{{
+    Begin Project Dependency
+    Project_Dep_Name fltk
+    End Project Dependency
+}}}
+
+###############################################################################
+
 Project: "utf8"=".\utf8.dsp" - Package Owner=<4>
 
 Package=<5>
@@ -1267,6 +1687,15 @@ Package=<4>
 {{{
     Begin Project Dependency
     Project_Dep_Name fltk
+    End Project Dependency
+    Begin Project Dependency
+    Project_Dep_Name fltkforms
+    End Project Dependency
+    Begin Project Dependency
+    Project_Dep_Name fltkgl
+    End Project Dependency
+    Begin Project Dependency
+    Project_Dep_Name fltkimages
     End Project Dependency
 }}}
 
@@ -1286,6 +1715,30 @@ Package=<4>
     Begin Project Dependency
     Project_Dep_Name fluid
     End Project Dependency
+}}}
+
+###############################################################################
+
+Project: "zlib"=".\zlib.dsp" - Package Owner=<4>
+
+Package=<5>
+{{{
+}}}
+
+Package=<4>
+{{{
+}}}
+
+###############################################################################
+
+Project: "zlibdll"=".\zlibdll.dsp" - Package Owner=<4>
+
+Package=<5>
+{{{
+}}}
+
+Package=<4>
+{{{
 }}}
 
 ###############################################################################

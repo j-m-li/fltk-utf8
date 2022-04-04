@@ -41,8 +41,7 @@ RSC=rc.exe
 # PROP Intermediate_Dir "Release"
 # PROP Target_Dir ""
 # ADD BASE CPP /nologo /W3 /GX /O2 /D "WIN32" /D "NDEBUG" /D "_WINDOWS" /YX /FD /c
-# ADD CPP /nologo /MD /GX /Ot /Op /Ob2 /I "../visualc" /I ".." /D "FL_STATIC" /D "WIN32" /D "NDEBUG" /D "_WINDOWS" /D "WIN32_LEAN_AND_MEAN" /D "VC_EXTRA_LEAN" /D "WIN32_EXTRA_LEAN" /YX /FD /c
-# SUBTRACT CPP /Os
+# ADD CPP /nologo /MT /GX /Ot /Op /Ob2 /I "../visualc" /I ".." /D "FL_STATIC" /D "WIN32" /D "NDEBUG" /D "_WINDOWS" /D "WIN32_LEAN_AND_MEAN" /D "VC_EXTRA_LEAN" /D "WIN32_EXTRA_LEAN" /U "_DLL" /YX /FD /c
 # ADD BASE RSC /l 0x409
 # ADD RSC /l 0x409
 BSC32=bscmake.exe
@@ -50,7 +49,7 @@ BSC32=bscmake.exe
 # ADD BSC32 /nologo
 LIB32=link.exe -lib
 # ADD BASE LIB32 /nologo
-# ADD LIB32 /nologo /out:"..\lib\fltk.lib"
+# ADD LIB32 /nologo /out:"..\lib\fltkutf8.lib"
 
 !ELSEIF  "$(CFG)" == "fltk - Win32 Debug"
 
@@ -65,7 +64,7 @@ LIB32=link.exe -lib
 # PROP Intermediate_Dir "Debug"
 # PROP Target_Dir ""
 # ADD BASE CPP /nologo /W3 /GX /Z7 /Od /D "WIN32" /D "_DEBUG" /D "_WINDOWS" /YX /FD /c
-# ADD CPP /nologo /MDd /GX /Z7 /Od /I "../visualc" /I ".." /D "FL_STATIC" /D "WIN32" /D "_DEBUG" /D "_WINDOWS" /D "WIN32_LEAN_AND_MEAN" /D "VC_EXTRA_LEAN" /D "WIN32_EXTRA_LEAN" /FR /YX /FD /c
+# ADD CPP /nologo /MTd /W3 /GX /Zi /Od /I "../visualc" /I ".." /D "FL_STATIC" /D "WIN32" /D "_DEBUG" /D "_WINDOWS" /D "WIN32_LEAN_AND_MEAN" /D "VC_EXTRA_LEAN" /D "WIN32_EXTRA_LEAN" /FR /YX /FD /c
 # ADD BASE RSC /l 0x409
 # ADD RSC /l 0x409
 BSC32=bscmake.exe
@@ -73,7 +72,7 @@ BSC32=bscmake.exe
 # ADD BSC32 /nologo
 LIB32=link.exe -lib
 # ADD BASE LIB32 /nologo
-# ADD LIB32 /nologo /out:"..\lib\fltkd.lib"
+# ADD LIB32 /nologo /out:"..\lib\fltkutf8d.lib"
 
 !ENDIF 
 
@@ -283,10 +282,6 @@ SOURCE=..\src\fl_font.cxx
 # End Source File
 # Begin Source File
 
-SOURCE=..\src\Fl_Gdi.cxx
-# End Source File
-# Begin Source File
-
 SOURCE=..\src\Fl_get_key.cxx
 # End Source File
 # Begin Source File
@@ -491,6 +486,14 @@ SOURCE=..\src\fl_symbols.cxx
 # End Source File
 # Begin Source File
 
+SOURCE=..\src\Fl_Table.cxx
+# End Source File
+# Begin Source File
+
+SOURCE=..\src\Fl_Table_Row.cxx
+# End Source File
+# Begin Source File
+
 SOURCE=..\src\Fl_Tabs.cxx
 # End Source File
 # Begin Source File
@@ -516,6 +519,10 @@ SOURCE=..\src\Fl_Tiled_Image.cxx
 # Begin Source File
 
 SOURCE=..\src\Fl_Tooltip.cxx
+# End Source File
+# Begin Source File
+
+SOURCE=..\src\Fl_Tree.cxx
 # End Source File
 # Begin Source File
 
@@ -584,38 +591,6 @@ SOURCE=..\src\Fl_XPM_Image.cxx
 # Begin Source File
 
 SOURCE=..\src\flstring.c
-# End Source File
-# Begin Source File
-
-SOURCE=..\src\Flv_CStyle.cxx
-# End Source File
-# Begin Source File
-
-SOURCE=..\src\Flv_Data_Source.cxx
-# End Source File
-# Begin Source File
-
-SOURCE=..\src\Flv_List.cxx
-# End Source File
-# Begin Source File
-
-SOURCE=..\src\Flv_Style.cxx
-# End Source File
-# Begin Source File
-
-SOURCE=..\src\Flv_Table.cxx
-# End Source File
-# Begin Source File
-
-SOURCE=..\src\Flve_Check_Button.cxx
-# End Source File
-# Begin Source File
-
-SOURCE=..\src\Flve_Combo.cxx
-# End Source File
-# Begin Source File
-
-SOURCE=..\src\Flve_Input.cxx
 # End Source File
 # Begin Source File
 

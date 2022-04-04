@@ -1,9 +1,9 @@
 //
-// "$Id: curve.cxx,v 1.4.2.3.2.1 2002/01/01 15:11:32 easysw Exp $"
+// "$Id: curve.cxx,v 1.4.2.3.2.2 2003/01/30 21:45:20 easysw Exp $"
 //
 // Curve test program for the Fast Light Tool Kit (FLTK).
 //
-// Copyright 1998-2002 by Bill Spitzak and others.
+// Copyright 1998-2003 by Bill Spitzak and others.
 //
 // This library is free software; you can redistribute it and/or
 // modify it under the terms of the GNU Library General Public
@@ -38,6 +38,7 @@ int points;
 
 class Drawing : public Fl_Widget {
   void draw() {
+    fl_line_style(FL_SOLID, 5);
     fl_clip(x(),y(),w(),h());
     fl_color(FL_DARK3);
     fl_rectf(x(),y(),w(),h());
@@ -49,11 +50,12 @@ class Drawing : public Fl_Widget {
     }
     fl_translate(x(),y());
     if (!points) {
-    fl_color(FL_WHITE);
-    fl_begin_complex_polygon();
-   fl_curve(args[0],args[1],args[2],args[3],args[4],args[5],args[6],args[7]);
-    fl_end_complex_polygon();
+      fl_color(FL_WHITE);
+      fl_begin_complex_polygon();
+      fl_curve(args[0],args[1],args[2],args[3],args[4],args[5],args[6],args[7]);
+      fl_end_complex_polygon();
     }
+    
     fl_color(FL_BLACK);
     fl_begin_line();
     fl_vertex(args[0],args[1]);
@@ -63,6 +65,7 @@ class Drawing : public Fl_Widget {
     fl_end_line();
     fl_color(points ? FL_WHITE : FL_RED);
     points ? fl_begin_points() : fl_begin_line();
+     fl_line_style(FL_SOLID, 1);
    fl_curve(args[0],args[1],args[2],args[3],args[4],args[5],args[6],args[7]);
     points ? fl_end_points() : fl_end_line();
     fl_pop_matrix();
@@ -91,7 +94,7 @@ int main(int argc, char** argv) {
   d = &drawing;
 
   int y = 300;
-  for (int n = 0; n<9; n++) {
+  for (long n = 0; n<9; n++) {
     Fl_Slider* s = new Fl_Hor_Value_Slider(50,y,240,25,name[n]); y += 25;
     s->minimum(0); s->maximum(280);
     if (n == 8) s->maximum(360);
@@ -109,5 +112,5 @@ int main(int argc, char** argv) {
 }
 
 //
-// End of "$Id: curve.cxx,v 1.4.2.3.2.1 2002/01/01 15:11:32 easysw Exp $".
+// End of "$Id: curve.cxx,v 1.4.2.3.2.2 2003/01/30 21:45:20 easysw Exp $".
 //

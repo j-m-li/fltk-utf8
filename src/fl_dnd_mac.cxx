@@ -1,9 +1,9 @@
 //
-// "$Id: fl_dnd_mac.cxx,v 1.1.2.3 2002/06/07 16:56:15 easysw Exp $"
+// "$Id: fl_dnd_mac.cxx,v 1.1.2.4 2003/01/30 21:43:36 easysw Exp $"
 //
 // Drag & Drop code for the Fast Light Tool Kit (FLTK).
 //
-// Copyright 1998-2002 by Bill Spitzak and others.
+// Copyright 1998-2003 by Bill Spitzak and others.
 //
 // This library is free software; you can redistribute it and/or
 // modify it under the terms of the GNU Library General Public
@@ -48,6 +48,7 @@ int Fl::dnd()
   result = NewDrag( &dragRef );
   if ( result != noErr ) return false;
   
+  //                                      'utxt'
   result = AddDragItemFlavor( dragRef, 1, 'TEXT', fl_selection_buffer, fl_selection_length, 0 );
   if ( result != noErr ) { DisposeDrag( dragRef ); return false; }
   
@@ -81,5 +82,5 @@ int Fl::dnd()
   
 
 //
-// End of "$Id: fl_dnd_mac.cxx,v 1.1.2.3 2002/06/07 16:56:15 easysw Exp $".
+// End of "$Id: fl_dnd_mac.cxx,v 1.1.2.4 2003/01/30 21:43:36 easysw Exp $".
 //

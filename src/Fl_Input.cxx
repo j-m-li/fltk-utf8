@@ -29,6 +29,7 @@
 // In theory you can replace this code with another subclass to change
 // the keybindings.
 
+#include <stdio.h>
 #include <FL/Fl.H>
 #include <FL/Fl_Input.H>
 #include <FL/fl_draw.H>
@@ -57,14 +58,23 @@ int Fl_Input::shift_up_down_position(int p) {
 // define it as 1 to prevent cursor movement from going to next field:
 #define NORMAL_INPUT_MOVE 0
 
-#define ctrl(x) (x^0x40)
+#define ctrl(x) ((x)^0x40)
 
 int Fl_Input::handle_key() {
 
   char ascii = Fl::event_text()[0];
 
+  if (Fl::minimal_shortcuts()) {
+    switch (ascii) {
+    case ctrl('C'):
+    case ctrl('V'):
+    case ctrl('X'):
+      break;
+    default:
+      if (ascii < 32) ascii = 0;
+    }
+  }
   int repeat_num=1;
-
   int del;
   if (Fl::compose(del)) {
 
@@ -145,6 +155,20 @@ int Fl_Input::handle_key() {
   case FL_Tab:
     if (Fl::event_state(FL_CTRL|FL_SHIFT) || input_type()!=FL_MULTILINE_INPUT || readonly()) return 0;
     return replace(position(), mark(), &ascii, 1);
+#ifdef __MACOS__
+  case 'c' :
+  case 'v' :
+  case 'x' :
+  case 'z' :
+//    printf("'%c' (0x%02x) pressed with%s%s%s%s\n", ascii, ascii,
+//           Fl::event_state(FL_SHIFT) ? " FL_SHIFT" : "",
+//           Fl::event_state(FL_CTRL) ? " FL_CTRL" : "",
+//           Fl::event_state(FL_ALT) ? " FL_ALT" : "",
+//           Fl::event_state(FL_META) ? " FL_META" : "");
+    if (Fl::event_state(FL_META)) ascii -= 0x60;
+//    printf("using '%c' (0x%02x)...\n", ascii, ascii);
+    break;
+#endif // __MACOS__
   }
 
   int i;
@@ -336,6 +360,9 @@ int Fl_Input::handle(int event) {
       // user clicked in the field and wants to reset the cursor position...
       position(drag_start, drag_start);
       drag_start = -1;
+    } else if (Fl::event_clicks()) {
+      // user double or triple clicked to select word or whole text
+      copy(0);
     }
     // For output widgets, do the callback so the app knows the user
     // did something with the mouse...

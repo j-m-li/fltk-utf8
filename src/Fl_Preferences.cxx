@@ -38,8 +38,7 @@
 #if defined(WIN32) && !defined(__CYGWIN__)
 #  include <direct.h>
 #  include <io.h>
-#elif defined (__APPLE__)
-#  include <Carbon/Carbon.H>
+#elif defined (__MACOS__)
 #  include <unistd.h>
 #else
 #  include <unistd.h>
@@ -61,7 +60,9 @@ char Fl_Preferences::nameBuffer[128];
  */
 Fl_Preferences::Fl_Preferences( Root root, const char *vendor, const char *application )
 {
+free(malloc(1)); // FIXME
   node = new Node( "." );
+  free(malloc(1)); // FIXME
   rootNode = new RootNode( this, root, vendor, application );
 }
 
@@ -382,13 +383,13 @@ static void *decodeHex( const char *src, int &size )
 
   for ( i=size; i>0; i-- )
   {
-    unsigned char v = 0;
+    int v;
     char x = tolower(*s++);
     if ( x >= 'a' ) v = x-'a'+10; else v = x-'0';
     v = v<<4;
     x = tolower(*s++);
     if ( x >= 'a' ) v += x-'a'+10; else v += x-'0';
-    *d++ = v;
+    *d++ = (uchar)v;
   }
 
   return (void*)data;
@@ -555,40 +556,14 @@ Fl_Preferences::Name::~Name()
 
 int Fl_Preferences::Node::lastEntrySet = -1;
 
-// recursively create a path in the file system
-static char makePath( const char *path ) {
-  if (fl_access(path, 0)) {
-    const char *s = strrchr( path, '/' );
-    if ( !s ) return 0;
-    int len = s-path;
-    char *p = (char*)malloc( len+1 );
-    memcpy( p, path, len );
-    p[len] = 0;
-    makePath( p );
-    free( p );
-    fl_mkdir(path, 0777);
-  }
-  return 1;
-}
 
-// strip the filename and create a path
-static void makePathForFile( const char *path )
-{
-  const char *s = strrchr( path, '/' );
-  if ( !s ) return;
-  int len = s-path;
-  char *p = (char*)malloc( len+1 );
-  memcpy( p, path, len );
-  p[len] = 0;
-  makePath( p );
-  free( p );
-}
 
 // create the root node
 // - construct the name of the file that will hold our preferences
 Fl_Preferences::RootNode::RootNode( Fl_Preferences *prefs, Root root, const char *vendor, const char *application )
 {
   char filename[ FL_PATH_MAX * 2]; filename[0] = 0;
+
 #ifdef WIN32
 #  define FLPREFS_RESOURCE	"Software\\Microsoft\\Windows\\CurrentVersion\\Explorer\\Shell Folders"
 #  define FLPREFS_RESOURCEW	L"Software\\Microsoft\\Windows\\CurrentVersion\\Explorer\\Shell Folders"
@@ -640,11 +615,11 @@ Fl_Preferences::RootNode::RootNode( Fl_Preferences *prefs, Root root, const char
 
   if (fl_is_nt4()) {
 	if (!filename[1] && !filename[0]) {
-      strcpy(filename, "C:\\xd640");
+		strcpy(filename, "C:\\xd640");
 	} else {
-       unsigned short*b = _wcsdup((wchar_t*)filename);
-	   filename[fl_unicode2utf(b, wcslen(b), filename)] = 0;
-	   free(b);
+		xchar*b = (xchar*)_wcsdup((xchar*)filename);
+		filename[fl_unicode2utf(b, wcslen((xchar*)b), filename)] = 0;
+		free(b);
     }
   } else if (!filename[0]) {
     strcpy(filename, "C:\\xd640");
@@ -653,7 +628,7 @@ Fl_Preferences::RootNode::RootNode( Fl_Preferences *prefs, Root root, const char
   snprintf(filename + strlen(filename), sizeof(filename) - strlen(filename),
            "/%s/%s.prefs", vendor, application);
   for (char *s = filename; *s; s++) if (*s == '\\') *s = '/';
-#elif defined ( __APPLE__ )
+#elif defined ( __MACOS__ )
   FSSpec spec = { 0 };
   FSRef ref;
   OSErr err = fnfErr;
@@ -694,8 +669,8 @@ Fl_Preferences::RootNode::RootNode( Fl_Preferences *prefs, Root root, const char
   snprintf(filename + strlen(filename), sizeof(filename) - strlen(filename),
            "%s/%s.prefs", vendor, application);
 #endif
-
-  makePathForFile(filename);
+ 
+  fl_make_path_for_file(filename);
 
   prefs_       = prefs;
   filename_    = strdup(filename);
@@ -713,7 +688,7 @@ Fl_Preferences::RootNode::RootNode( Fl_Preferences *prefs, const char *path, con
 
   snprintf(filename, sizeof(filename), "%s/%s.prefs", path, application);
 
-  makePathForFile(filename);
+  fl_make_path_for_file(filename);
 
   prefs_       = prefs;
   filename_    = strdup(filename);
@@ -802,7 +777,7 @@ char Fl_Preferences::RootNode::getPath( char *path, int pathlen )
   s = strrchr( path, '.' );
   if ( !s ) return 0;
   *s = 0;
-  char ret = makePath( path );
+  char ret = fl_make_path( path );
   strcpy( s, "/" );
   return ret;
 }
@@ -1121,7 +1096,7 @@ char Fl_Preferences::Node::remove()
   if ( parent_ )
   {
     nd = parent_->child_; np = 0L;
-    for ( ; nd; nd = nd->next_ )
+    for ( ; nd; np = nd, nd = nd->next_ )
     {
       if ( nd == this )
       {

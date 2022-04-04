@@ -1,9 +1,9 @@
 //
-// "$Id: Fl_Menu_add.cxx,v 1.9.2.13.2.5 2002/10/01 18:37:27 easysw Exp $"
+// "$Id: Fl_Menu_add.cxx,v 1.9.2.13.2.7 2003/01/30 21:42:21 easysw Exp $"
 //
 // Menu utilities for the Fast Light Tool Kit (FLTK).
 //
-// Copyright 1998-2002 by Bill Spitzak and others.
+// Copyright 1998-2003 by Bill Spitzak and others.
 //
 // This library is free software; you can redistribute it and/or
 // modify it under the terms of the GNU Library General Public
@@ -37,6 +37,7 @@
 #include "flstring.h"
 #include <stdio.h>
 #include <stdlib.h>
+#include <FL/fl_utf8.H>
 
 // If the array is this, we will double-reallocate as necessary:
 static Fl_Menu_Item* local_array = 0;
@@ -219,12 +220,12 @@ int Fl_Menu_::add(const char *t, int s, Fl_Callback *c,void *v,int f) {
 // adds many menu items, with '|' seperating the menu items, and tab
 // seperating the menu item names from an optional shortcut string.
 int Fl_Menu_::add(const char *str) {
-  char buf[128];
+  char buf[1024];
   int r = 0;
   while (*str) {
     int sc = 0;
     char *c;
-    for (c = buf; *str && *str != '|'; str++) {
+    for (c = buf; c < (buf + sizeof(buf) - 2) && *str && *str != '|'; str++) {
       if (*str == '\t') {*c++ = 0; sc = fl_old_shortcut(str);}
       else *c++ = *str;
     }
@@ -262,5 +263,5 @@ void Fl_Menu_::remove(int i) {
 }
 
 //
-// End of "$Id: Fl_Menu_add.cxx,v 1.9.2.13.2.5 2002/10/01 18:37:27 easysw Exp $".
+// End of "$Id: Fl_Menu_add.cxx,v 1.9.2.13.2.7 2003/01/30 21:42:21 easysw Exp $".
 //

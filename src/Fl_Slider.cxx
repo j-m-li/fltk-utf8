@@ -1,9 +1,9 @@
 //
-// "$Id: Fl_Slider.cxx,v 1.8.2.10.2.10 2002/08/13 15:42:44 easysw Exp $"
+// "$Id: Fl_Slider.cxx,v 1.8.2.10.2.13 2003/01/30 21:42:44 easysw Exp $"
 //
 // Slider widget for the Fast Light Tool Kit (FLTK).
 //
-// Copyright 1998-2002 by Bill Spitzak and others.
+// Copyright 1998-2003 by Bill Spitzak and others.
 //
 // This library is free software; you can redistribute it and/or
 // modify it under the terms of the GNU Library General Public
@@ -171,7 +171,6 @@ int Fl_Slider::handle(int event, int X, int Y, int W, int H) {
   switch (event) {
   case FL_PUSH:
     if (!Fl::event_inside(X, Y, W, H)) return 0;
-    if (Fl::visible_focus()) Fl::focus(this);
     handle_push();
   case FL_DRAG: {
 
@@ -245,18 +244,22 @@ int Fl_Slider::handle(int event, int X, int Y, int W, int H) {
       case FL_Up:
         if (horizontal()) return 0;
 	handle_drag(clamp(increment(value(),-1)));
+	handle_release();
 	return 1;
       case FL_Down:
         if (horizontal()) return 0;
 	handle_drag(clamp(increment(value(),1)));
+	handle_release();
 	return 1;
       case FL_Left:
         if (!horizontal()) return 0;
 	handle_drag(clamp(increment(value(),-1)));
+	handle_release();
 	return 1;
       case FL_Right:
         if (!horizontal()) return 0;
 	handle_drag(clamp(increment(value(),1)));
+	handle_release();
 	return 1;
       default:
         return 0;
@@ -277,6 +280,8 @@ int Fl_Slider::handle(int event, int X, int Y, int W, int H) {
 }
 
 int Fl_Slider::handle(int event) {
+  if (event == FL_PUSH && Fl::visible_focus()) Fl::focus(this);
+
   return handle(event,
 		x()+Fl::box_dx(box()),
 		y()+Fl::box_dy(box()),
@@ -285,5 +290,5 @@ int Fl_Slider::handle(int event) {
 }
 
 //
-// End of "$Id: Fl_Slider.cxx,v 1.8.2.10.2.10 2002/08/13 15:42:44 easysw Exp $".
+// End of "$Id: Fl_Slider.cxx,v 1.8.2.10.2.13 2003/01/30 21:42:44 easysw Exp $".
 //

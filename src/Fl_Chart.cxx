@@ -23,7 +23,7 @@
 // Please report all bugs and problems to "fltk-bugs@fltk.org".
 //
 
-#include <FL/math.h>
+#include <FL/fl_math.h>
 #include <FL/Fl.H>
 #include <FL/Fl_Chart.H>
 #include <FL/fl_draw.H>

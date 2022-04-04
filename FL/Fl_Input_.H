@@ -1,9 +1,9 @@
 //
-// "$Id: Fl_Input_.H,v 1.6.2.4.2.6 2002/08/14 16:49:38 easysw Exp $"
+// "$Id: Fl_Input_.H,v 1.6.2.4.2.9 2003/06/15 04:47:28 easysw Exp $"
 //
 // Input base class header file for the Fast Light Tool Kit (FLTK).
 //
-// Copyright 1998-2002 by Bill Spitzak and others.
+// Copyright 1998-2003 by Bill Spitzak and others.
 //
 // This library is free software; you can redistribute it and/or
 // modify it under the terms of the GNU Library General Public
@@ -99,6 +99,7 @@ public:
   const char* value() const {return value_;}
   char index(int i) const {return value_[i];}
   int size() const {return size_;}
+  void size(int W, int H) { Fl_Widget::size(W, H); }
   int maximum_size() const {return maximum_size_;}
   void maximum_size(int m) {maximum_size_ = m;}
 
@@ -126,17 +127,17 @@ public:
   void cursor_color(unsigned n) {cursor_color_ = n;}
 
   int input_type() const {return type() & FL_INPUT_TYPE; }
-  void input_type(int t) { type(t | readonly()); }
+  void input_type(int t) { type((uchar)(t | readonly())); }
   int readonly() const { return type() & FL_INPUT_READONLY; }
-  void readonly(int b) { if (b) type(type() | FL_INPUT_READONLY);
-                         else type(type() & ~FL_INPUT_READONLY); }
+  void readonly(int b) { if (b) type((uchar)(type() | FL_INPUT_READONLY));
+                         else type((uchar)(type() & ~FL_INPUT_READONLY)); }
   int wrap() const { return type() & FL_INPUT_WRAP; }
-  void wrap(int b) { if (b) type(type() | FL_INPUT_WRAP);
-                         else type(type() & ~FL_INPUT_WRAP); }
+  void wrap(int b) { if (b) type((uchar)(type() | FL_INPUT_WRAP));
+                         else type((uchar)(type() & ~FL_INPUT_WRAP)); }
 };
 
 #endif 
 
 //
-// End of "$Id: Fl_Input_.H,v 1.6.2.4.2.6 2002/08/14 16:49:38 easysw Exp $".
+// End of "$Id: Fl_Input_.H,v 1.6.2.4.2.9 2003/06/15 04:47:28 easysw Exp $".
 //

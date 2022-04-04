@@ -32,6 +32,7 @@
 #include <FL/fl_utf8.H>
 #include <FL/Fl_Fltk.H>
 #include <FL/Fl_Window.H>
+#include <FL/fl_draw.H>
 #include <shellapi.h>
 #include "flstring.h"
 #include <stdio.h>
@@ -142,6 +143,18 @@ static struct FD {
   void* arg;
 } *fd = 0;
 
+void fl_reset_spot()
+{
+}
+
+void fl_set_spot(int font, int size, int x, int y, int w, int h)
+{
+}
+
+void fl_set_status(int x, int y, int w, int h)
+{
+}
+
 void Fl::add_fd(int n, int events, void (*cb)(int, void*), void *v) {
   remove_fd(n,events);
   int i = nfds++;
@@ -150,7 +163,7 @@ void Fl::add_fd(int n, int events, void (*cb)(int, void*), void *v) {
     fd = (FD*)realloc(fd, fd_array_size*sizeof(FD));
   }
   fd[i].fd = n;
-  fd[i].events = events;
+  fd[i].events = (short)events;
   fd[i].cb = cb;
   fd[i].arg = v;
 
@@ -161,9 +174,9 @@ void Fl::add_fd(int n, int events, void (*cb)(int, void*), void *v) {
   if (events & POLLERR) mask |= FD_CLOSE;
   WSAAsyncSelect(n, fl_window, WM_FLSELECT, mask);
 #else
-  if (events & POLLIN) FD_SET(n, &fdsets[0]);
-  if (events & POLLOUT) FD_SET(n, &fdsets[1]);
-  if (events & POLLERR) FD_SET(n, &fdsets[2]);
+  if (events & POLLIN) FD_SET((unsigned)n, &fdsets[0]);
+  if (events & POLLOUT) FD_SET((unsigned)n, &fdsets[1]);
+  if (events & POLLERR) FD_SET((unsigned)n, &fdsets[2]);
   if (n > maxfd) maxfd = n;
 #endif // USE_ASYNC_SELECT
 }
@@ -176,7 +189,7 @@ void Fl::remove_fd(int n, int events) {
   int i,j;
   for (i=j=0; i<nfds; i++) {
     if (fd[i].fd == n) {
-      int e = fd[i].events & ~events;
+      short e = fd[i].events & ~events;
       if (!e) continue; // if no events left, delete this fd
       fd[i].events = e;
     }
@@ -403,9 +416,9 @@ char *fl_utf82locale(const char *s, UINT codepage = 0)
 		wbuf = (unsigned short*) realloc(wbuf, buf_len * sizeof(short));
 	}
 	if (codepage < 1) codepage = fl_codepage;
-	l = fl_utf2unicode((const unsigned char *)s, len, wbuf);
+	l = fl_utf2unicode((const unsigned char *)s, len, (xchar*) wbuf);
 	buf[l] = 0;
-	l = WideCharToMultiByte(codepage, 0, wbuf, l, buf, 
+	l = WideCharToMultiByte(codepage, 0, (WCHAR*)wbuf, l, buf, 
 		buf_len, NULL, NULL);
 	if (l < 0) l = 0;
 	buf[l] = 0;
@@ -425,10 +438,10 @@ char *fl_locale2utf8(const char *s, UINT codepage = 0)
 	if (codepage < 1) codepage = fl_codepage;
 	buf[l] = 0;
 	
-	l = MultiByteToWideChar(codepage, 0, s, len, wbuf, buf_len);
+	l = MultiByteToWideChar(codepage, 0, s, len, (WCHAR*)wbuf, buf_len);
 	if (l < 0) l = 0;
 	wbuf[l] = 0;
-	l = fl_unicode2utf(wbuf, l, buf);
+	l = fl_unicode2utf((xchar*)wbuf, l, buf);
 	buf[l] = 0;
 	return buf;	
 }
@@ -475,6 +488,8 @@ void Fl::paste(Fl_Widget &receiver, int clipboard) {
     // called in response to FL_PASTE!
     Fl::e_text = fl_selection_buffer[clipboard];
     Fl::e_length = fl_selection_length[clipboard];
+
+    if (!Fl::e_text) Fl::e_text = (char *)"";
     receiver.handle(FL_PASTE);
   } else {
     if (!OpenClipboard(NULL)) return;
@@ -495,9 +510,9 @@ void Fl::paste(Fl_Widget &receiver, int clipboard) {
 	return;
       }	
       if (fl_is_nt4()) {
-        int l = wcslen((unsigned short*)g);
+        int l = wcslen((wchar_t*)g);
 	Fl::e_text = (char*) malloc(l * 5 + 1);
-	Fl::e_text[fl_unicode2utf((unsigned short *)g, l, Fl::e_text)] = 0;
+	Fl::e_text[fl_unicode2utf((xchar*)g, l, Fl::e_text)] = 0;
       } else {	  
         Fl::e_text = fl_locale2utf8((char *)g, fl_get_lcid_codepage(id));
       }
@@ -526,12 +541,12 @@ void fl_get_codepage()
 {
 	HKL hkl = GetKeyboardLayout(0);
 	TCHAR ld[8];
-	CHARSETINFO cs;
+	
 	GetLocaleInfo (LOWORD(hkl), 
 		LOCALE_IDEFAULTANSICODEPAGE, ld, 6);
 	DWORD ccp = atol(ld);
 	fl_is_ime = 0;
-	//TranslateCharsetInfo((unsigned long *) ccp, &cs, TCI_SRCCODEPAGE);
+	
 	fl_codepage = ccp;
 	if (fl_aimm) {
 		  fl_aimm->GetCodePageA(GetKeyboardLayout(0), &fl_codepage);
@@ -708,22 +723,37 @@ static LRESULT CALLBACK WndProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lPar
     break;
 
   case WM_PAINT: {
+    Fl_Region R;
     Fl_X *i = Fl_X::i(window);
     i->wait_for_expose = 0;
-    if (!i->region) i->region = CreateRectRgn(0,0,0,0);
-    else InvalidateRgn(hWnd, i->region, FALSE);
-	GetUpdateRgn(hWnd,i->region,0);
-    ValidateRgn(hWnd,i->region);
-	ValidateRgn(hWnd, NULL);
-    window->clear_damage(window->damage()|FL_DAMAGE_EXPOSE);
+    if (!i->region && window->damage()) {
+      // Redraw the whole window...
+      i->region = CreateRectRgn(0, 0, window->w(), window->h());
+    } else {
+      // We need to merge WIN32's damage into FLTK's damage.
+      R = CreateRectRgn(0,0,0,0);
+      GetUpdateRgn(hWnd,R,0);
+
+      if (i->region) {
+        // Also tell WIN32 that we are drawing someplace else as well...
+        InvalidateRgn(hWnd, i->region, FALSE);
+        CombineRgn(i->region, i->region, R, RGN_OR);
+        XDestroyRegion(R);
+      } else {
+        i->region = R;
+      }
+    }
+    window->clear_damage((uchar)(window->damage()|FL_DAMAGE_EXPOSE));
     // These next two statements should not be here, so that all update
-    // is deferred until Fl::flush() is called during idle.  However Win32
+    // is deferred until Fl::flush() is called during idle.  However WIN32
     // apparently is very unhappy if we don't obey it and draw right now.
     // Very annoying!
     fl_GetDC(hWnd); // Make sure we have a DC for this window...
     fl_save_pen();
     i->flush();
     fl_restore_pen();
+    if (window->type() == FL_DOUBLE_WINDOW) ValidateRgn(hWnd,0);
+    else ValidateRgn(hWnd,i->region);
     window->clear_damage();
     } return 0;
 
@@ -810,8 +840,10 @@ static LRESULT CALLBACK WndProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lPar
     // save the keysym until we figure out the characters:
     Fl::e_keysym = ms2fltk(wParam,lParam&(1<<24));
     // See if TranslateMessage turned it into a WM_*CHAR message:
-    if ((fl_is_nt4() && PeekMessageW(&fl_msg, hWnd, WM_CHAR, WM_SYSDEADCHAR, 1)) ||
-      (!fl_is_nt4() && PeekMessage(&fl_msg, hWnd, WM_CHAR, WM_SYSDEADCHAR, 1))) 
+    if ((fl_is_nt4() && 
+	PeekMessageW(&fl_msg, hWnd, WM_CHAR, WM_SYSDEADCHAR, PM_REMOVE)) ||
+      (!fl_is_nt4() && 
+	PeekMessage(&fl_msg, hWnd, WM_CHAR, WM_SYSDEADCHAR, PM_REMOVE))) 
     {
       uMsg = fl_msg.message;
       wParam = fl_msg.wParam;
@@ -860,7 +892,7 @@ static LRESULT CALLBACK WndProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lPar
       int len;
       int l = 1;
       if (fl_is_nt4()) {
-	unsigned short u = (unsigned short) wParam;
+	xchar u = (xchar) wParam;
 	Fl::e_length = fl_unicode2utf(&u, 1, buffer);
 	buffer[Fl::e_length] = 0;
       } else if (!fl_is_ime) {
@@ -871,7 +903,7 @@ static LRESULT CALLBACK WndProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lPar
      		lead[0] = (unsigned char) wParam;
       	}
       	len = MultiByteToWideChar(fl_codepage, MB_PRECOMPOSED, 
-		(char*)lead, l, ucs, 10);
+		(char*)lead, l, (wchar_t*)ucs, 10);
       	len = 1;
       	lead[0] = 0;
       	lead[1] = 0;
@@ -884,8 +916,7 @@ static LRESULT CALLBACK WndProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lPar
       	Fl::e_length = ulen;
       } else {
 		int l;
-		HIMC himc = ImmGetContext(hWnd);
-		l = fl_unicode2utf(wbuf, wlen, buffer);
+		l = fl_unicode2utf((xchar*)wbuf, wlen, buffer);
 		if (l < 0) l = 0;
 		buffer[l] = 0;
       		Fl::e_length = l;
@@ -979,7 +1010,8 @@ static LRESULT CALLBACK WndProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lPar
 	h = GlobalAlloc(GHND, (l+1) * sizeof(short));
         if (h) {
           unsigned short *g = (unsigned short*) GlobalLock(h);
-	  fl_utf2unicode((unsigned char *)fl_selection_buffer[1], fl_selection_length[1], g);
+	  fl_utf2unicode((unsigned char *)fl_selection_buffer[1], 
+		fl_selection_length[1], (xchar*)g);
           g[l] = 0; 
           GlobalUnlock(h);
           SetClipboardData(CF_UNICODETEXT, h);
@@ -1075,7 +1107,7 @@ int Fl_X::fake_X_wm(const Fl_Window* w,int &X,int &Y, int &bt,int &bx, int &by) 
 ////////////////////////////////////////////////////////////////
 
 void Fl_Window::resize(int X,int Y,int W,int H) {
-  UINT flags = SWP_NOSENDCHANGING | SWP_NOZORDER;
+  UINT flags = SWP_NOSENDCHANGING | SWP_NOZORDER; 
   int is_a_resize = (W != w() || H != h());
   int resize_from_program = (this != resize_bug_fix);
   if (!resize_from_program) resize_bug_fix = 0;
@@ -1086,8 +1118,17 @@ void Fl_Window::resize(int X,int Y,int W,int H) {
     flags |= SWP_NOMOVE;
   }
   if (is_a_resize) {
+    static int is_wm = 0;
+    if (!parent()) {
+      is_wm = 0;
+      if (shown() && !resize_from_program) is_wm = 1;
+    }
     Fl_Group::resize(X,Y,W,H);
-    if (shown()) {redraw(); i->wait_for_expose = 1;}
+    if (shown()) {
+      redraw(); 
+      i->wait_for_expose = 1; 
+      if (is_wm) wm_resize = 1;
+    }
   } else {
     x(X); y(Y);
     flags |= SWP_NOSIZE;
@@ -1125,8 +1166,8 @@ Fl_X* Fl_X::make(Fl_Window* w) {
   if (!class_name) class_name =*/ "FLTK"; // create a "FLTK" WNDCLASS
 
   const char* message_name = "FLTK::ThreadWakeup";
-  const unsigned short* class_namew = L"FLTK";
-  const unsigned short* message_namew = L"FLTK::ThreadWakeup";
+  const wchar_t* class_namew = L"FLTK";
+  const wchar_t* message_namew = L"FLTK::ThreadWakeup";
 
   WNDCLASSEX wc;
   WNDCLASSEXW wcw;
@@ -1246,11 +1287,11 @@ Fl_X* Fl_X::make(Fl_Window* w) {
   if (!fl_codepage) fl_get_codepage();
 
   if (fl_is_nt4()) {
-    unsigned short *lab = NULL;
+    WCHAR *lab = NULL;
     if (w->label()) {
-      int l = fl_utf_nb_char((unsigned char*)w->label(), strlen(w->label()));
-      lab = (unsigned short*) malloc((l + 1) * sizeof(short));
-      fl_utf2unicode((unsigned char*)w->label(), l, lab);
+      int l = strlen(w->label());
+      lab = (WCHAR*) malloc((l + 1) * sizeof(short));
+      l = fl_utf2unicode((unsigned char*)w->label(), l, (xchar*)lab);
       lab[l] = 0; 
     }
     x->xid = CreateWindowExW(
@@ -1365,17 +1406,18 @@ const char *fl_filename_name(const char *name) {
 void Fl_Window::label(const char *name,const char *iname) {
   Fl_Widget::label(name);
   iconlabel_ = iname;
+
   if (shown() && !parent()) {
     if (!name) name = "";
     if (fl_is_nt4()) {
-      int l = fl_utf_nb_char((unsigned char*)name, strlen(name));
-      unsigned short *lab = (unsigned short*) malloc((l + 1) * sizeof(short));
-      fl_utf2unicode((unsigned char*)name, l, lab);
+      int l = strlen(name);
+      WCHAR *lab = (WCHAR*) malloc((l + 1) * sizeof(short));
+      l = fl_utf2unicode((unsigned char*)name, l, (xchar*)lab);
       lab[l] = 0;
       SetWindowTextW(i->xid, lab);
       free(lab);
     } else {
-      SetWindowText(i->xid, fl_utf82locale(name));
+      SetWindowTextA(i->xid, fl_utf82locale(name));
       // if (!iname) iname = fl_filename_name(name);
       // should do something with iname here...
     }
@@ -1417,10 +1459,10 @@ void Fl_Window::show() {
 
 Fl_Window *Fl_Window::current_;
 // the current context
-HDC fl_gc = 0;
+FL_EXPORT HDC fl_gc = 0;
 // the current window handle, initially set to -1 so we can correctly
 // allocate fl_GetDC(0)
-HWND fl_window = (HWND)-1;
+FL_EXPORT HWND fl_window = (HWND)-1;
 
 // Here we ensure only one GetDC is ever in place.
 HDC fl_GetDC(HWND w) {

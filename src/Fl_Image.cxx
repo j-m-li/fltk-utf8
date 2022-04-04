@@ -126,12 +126,12 @@ Fl_RGB_Image::~Fl_RGB_Image() {
 
 void Fl_RGB_Image::uncache() {
   if (id) {
-    fl_delete_offscreen(id);
+    fl_delete_offscreen((Fl_Offscreen)id);
     id = 0;
   }
 
   if (mask) {
-    fl_delete_bitmask(mask);
+    fl_delete_bitmask((Fl_Bitmask)mask);
     mask = 0;
   }
 }
@@ -139,7 +139,7 @@ void Fl_RGB_Image::uncache() {
 Fl_Image *Fl_RGB_Image::copy(int W, int H) {
   // Optimize the simple copy where the width and height are the same,
   // or when we are copying an empty image...
-  if ((W == w() && H == h()) ||
+  if (/*(W == w() && H == h()) ||*/
       !w() || !h() || !d() || !array) {
     return new Fl_RGB_Image(array, w(), h(), d(), ld());
   }
@@ -170,8 +170,8 @@ Fl_Image *Fl_RGB_Image::copy(int W, int H) {
   new_image->alloc_array = 1;
 
   // Scale the image using a nearest-neighbor algorithm...
-  for (dy = H, sy = 0, yerr = H / 2, new_ptr = new_array; dy > 0; dy --) {
-    for (dx = W, xerr = W / 2, old_ptr = array + sy * (w() * d() + ld());
+  for (dy = H, sy = 0, yerr = H, new_ptr = new_array; dy > 0; dy --) {
+    for (dx = W, xerr = W, old_ptr = array + sy * (w() * d() + ld());
 	 dx > 0;
 	 dx --) {
       for (c = 0; c < d(); c ++) *new_ptr++ = old_ptr[c];
@@ -278,7 +278,7 @@ void Fl_RGB_Image::desaturate() {
 
   for (new_ptr = new_array, old_ptr = array, y = 0; y < h(); y ++, old_ptr += ld())
     for (x = 0; x < w(); x ++, old_ptr += d()) {
-      *new_ptr++ = (31 * old_ptr[0] + 61 * old_ptr[1] + 8 * old_ptr[2]) / 100;
+      *new_ptr++ = (uchar)((31 * old_ptr[0] + 61 * old_ptr[1] + 8 * old_ptr[2]) / 100);
       if (d() > 3) *new_ptr++ = old_ptr[3];
     }
 
@@ -309,13 +309,10 @@ void Fl_RGB_Image::draw(int XP, int YP, int WP, int HP, int cx, int cy) {
   if (cy < 0) {H += cy; Y -= cy; cy = 0;}
   if (cy+H > h()) H = h()-cy;
   if (H <= 0) return;
-  if (fl->type == FL_GDI_DEVICE) {
-	fl_draw_image(array, XP, YP, w(), h(), d(), ld());
-	return;
-  }
+
   if (!id) {
     id = fl_create_offscreen(w(), h());
-    fl_begin_offscreen(id);
+    fl_begin_offscreen((Fl_Offscreen)id);
     fl_draw_image(array, 0, 0, w(), h(), d(), ld());
     fl_end_offscreen();
 
@@ -323,7 +320,27 @@ void Fl_RGB_Image::draw(int XP, int YP, int WP, int HP, int cx, int cy) {
       mask = fl_create_alphamask(w(), h(), d(), ld(), array);
     }
   }
+  if (fl->type == FL_PS_DEVICE) {
+    fl_draw_image(array, XP, YP, w(), h(), d(), ld());
+    return;
+  }
 #ifdef WIN32
+  if (fl->type == FL_GDI_DEVICE) {
+		if (mask) {
+		    HDC new_gc = CreateCompatibleDC(fl_gc);
+			SelectObject(new_gc, (void*)mask);
+			StretchBlt(fl->gc, (int)(XP*fl->s+fl->L), (int)(YP*fl->s+fl->T), (int)(w()*fl->s), (int)(h()*fl->s), new_gc, 0, 0, WP, HP, SRCAND);
+			SelectObject(new_gc, (void*)id);
+			StretchBlt(fl->gc, (int)(XP*fl->s+fl->L), (int)(YP*fl->s+fl->T), (int)(w()*fl->s), (int)(h()*fl->s), new_gc, 0, 0, WP, HP, SRCPAINT);
+			DeleteDC(new_gc);
+		} else {
+			HDC new_gc = CreateCompatibleDC(fl_gc);
+			SelectObject(new_gc, id);	
+			StretchBlt(fl->gc, (int)(XP*fl->s+fl->L), (int)(YP*fl->s+fl->T), (int)(WP*fl->s), (int)(HP*fl->s), new_gc, 0, 0, WP, HP, SRCCOPY);
+			DeleteDC(new_gc);
+		}
+		return;
+  } 
   if (mask) {
     HDC new_gc = CreateCompatibleDC(fl_gc);
     SelectObject(new_gc, (void*)mask);
@@ -332,22 +349,27 @@ void Fl_RGB_Image::draw(int XP, int YP, int WP, int HP, int cx, int cy) {
     BitBlt(fl_gc, X, Y, W, H, new_gc, cx, cy, SRCPAINT);
     DeleteDC(new_gc);
   } else {
-    fl_copy_offscreen(X, Y, W, H, id, cx, cy);
+    fl_copy_offscreen(X, Y, W, H, (Fl_Offscreen)id, cx, cy);
   }
-#elif defined(__APPLE__)
+#elif defined(__MACOS__)
   if (mask) {
     Rect src, dst;
-    src.left = 0; src.right = w();
-    src.top = 0; src.bottom = h();
-    dst.left = X; dst.right = X+w();
-    dst.top = Y; dst.bottom = Y+h();
+    // MRS: STR #114 says we should be using cx, cy, W, and H...
+//    src.left = 0; src.right = w();
+//    src.top = 0; src.bottom = h();
+//    dst.left = X; dst.right = X+w();
+//    dst.top = Y; dst.bottom = Y+h();
+    src.left = cx; src.right = cx+W;
+    src.top = cy; src.bottom = cy+H;
+    dst.left = X; dst.right = X+W;
+    dst.top = Y; dst.bottom = Y+H;
     RGBColor rgb;
     rgb.red = 0xffff; rgb.green = 0xffff; rgb.blue = 0xffff;
     RGBBackColor(&rgb);
     rgb.red = 0x0000; rgb.green = 0x0000; rgb.blue = 0x0000;
     RGBForeColor(&rgb);
 
-#if 0
+#  if 0
     // MRS: This *should* work, but doesn't on my system (iBook); change to
     //      "#if 1" and restore the corresponding code in Fl_Bitmap.cxx
     //      to test the real alpha channel support.
@@ -355,34 +377,61 @@ void Fl_RGB_Image::draw(int XP, int YP, int WP, int HP, int cx, int cy) {
 	         GetPortBitMapForCopyBits((GrafPtr)mask), 
 	         GetPortBitMapForCopyBits(GetWindowPort(fl_window)),
                  &src, &src, &dst, blend, NULL);
-#else // Fallback to screen-door transparency...
+#  else // Fallback to screen-door transparency...
     CopyMask(GetPortBitMapForCopyBits((GrafPtr)id),
 	     GetPortBitMapForCopyBits((GrafPtr)mask), 
 	     GetPortBitMapForCopyBits(GetWindowPort(fl_window)),
              &src, &src, &dst);
-#endif // 0
+#  endif // 0
   } else {
-    fl_copy_offscreen(X, Y, W, H, id, cx, cy);
+    fl_copy_offscreen(X, Y, W, H, (Fl_Offscreen)id, cx, cy);
   }
 #else
+#if NANO_X
+  GR_GC_ID oldgc;
+#endif
   if (mask) {
     // I can't figure out how to combine a mask with existing region,
     // so cut the image down to a clipped rectangle:
     int nx, ny; fl_clip_box(X,Y,W,H,nx,ny,W,H);
     cx += nx-X; X = nx;
     cy += ny-Y; Y = ny;
+#if NANO_X
+  GR_GC_ID oldgc;
+  if (mask) 
+  {
+    oldgc = fl_gc;
+    fl_gc = GrNewGC();
+    GrSetGCRegion(fl_gc,(unsigned long)mask);
+    GrOffsetRegion((unsigned long)mask,X,Y);
+  }
+#elif DJGPP
+	//FIXME_DJGPP
+#else
     // make X use the bitmap as a mask:
     XSetClipMask(fl_display, fl_gc, mask);
     int ox = X-cx; if (ox < 0) ox += w();
     int oy = Y-cy; if (oy < 0) oy += h();
     XSetClipOrigin(fl_display, fl_gc, X-cx, Y-cy);
+#endif
   }
   fl_copy_offscreen(X, Y, W, H, id, cx, cy);
+#if NANO_X
+ if (mask)
+  {
+    GrOffsetRegion((unsigned long)mask,-X,-Y);
+    GrDestroyGC(fl_gc);
+    fl_gc = oldgc;
+  }
+#elif DJGPP
+	//FIXME_DJGPP
+#else
   if (mask) {
     // put the old clip region back
     XSetClipOrigin(fl_display, fl_gc, 0, 0);
     fl_restore_clip();
   }
+#endif
 #endif
 }
 

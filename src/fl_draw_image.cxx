@@ -1,9 +1,9 @@
 //
-// "$Id: fl_draw_image.cxx,v 1.5.2.6.2.5 2002/08/09 03:17:30 easysw Exp $"
+// "$Id: fl_draw_image.cxx,v 1.5.2.6.2.6 2003/01/30 21:43:41 easysw Exp $"
 //
 // Image drawing routines for the Fast Light Tool Kit (FLTK).
 //
-// Copyright 1998-2002 by Bill Spitzak and others.
+// Copyright 1998-2003 by Bill Spitzak and others.
 //
 // This library is free software; you can redistribute it and/or
 // modify it under the terms of the GNU Library General Public
@@ -33,10 +33,20 @@
 // the "delta" and "linedelta", making them negative, though this may
 // defeat some of the shortcuts in translating the image for X.
 
+const char* fl_cannot_do_scanline = "Can't do scanline_pad of %d";
+const char* fl_cannot_bits_per_pixel= "Can't do %d bits_per_pixel colormap";
+const char* fl_cannot_24bit = "Can't do arbitrary 24bit color";
+const char* fl_cannot_do_bits_per_pixel = "Can't do %d bits_per_pixel";
+const char* fl_cannot_do_delta = "Can't do a delta value of %d";
+
 #ifdef WIN32
 #  include "fl_draw_image_win32.cxx"
-#elif defined(__APPLE__)
+#elif defined(__MACOS__)
 #  include "fl_draw_image_mac.cxx"
+#elif defined(NANO_X)
+#  include "fl_draw_image_nx.cxx"
+#elif defined(DJGPP)
+#  include "fl_draw_image_dj2.cxx"
 #else
 
 // A list of assumptions made about the X display:
@@ -371,7 +381,7 @@ static void figure_out_visual() {
 
   unsigned int n = pfv->scanline_pad/8;
   if (pfv->scanline_pad & 7 || (n&(n-1)))
-    Fl::fatal("Can't do scanline_pad of %d",pfv->scanline_pad);
+    Fl::fatal(fl_cannot_do_scanline,pfv->scanline_pad);
   if (n < sizeof(STORETYPE)) n = sizeof(STORETYPE);
   scanline_add = n-1;
   scanline_mask = -n;
@@ -383,7 +393,7 @@ static void figure_out_visual() {
     return;
   }
   if (!fl_visual->red_mask)
-    Fl::fatal("Can't do %d bits_per_pixel colormap",xi.bits_per_pixel);
+    Fl::fatal(fl_cannot_bits_per_pixel,xi.bits_per_pixel);
 #  endif
 
   // otherwise it is a TrueColor visual:
@@ -420,7 +430,7 @@ static void figure_out_visual() {
       converter = bgr_converter;
       mono_converter = rrr_converter;
     } else {
-      Fl::fatal("Can't do arbitrary 24bit color");
+      Fl::fatal(fl_cannot_24bit);
     }
     break;
 
@@ -452,7 +462,7 @@ static void figure_out_visual() {
 
 }
 
-#  define MAXBUFFER 0x40000 // 256k
+#  define MAXBUFFER 0xFFFF // 64k - 1
 
 static void innards(const uchar *buf, int X, int Y, int W, int H,
 		    int delta, int linedelta, int mono,
@@ -570,5 +580,5 @@ void Fl_Fltk::rectf(int x, int y, int w, int h, uchar r, uchar g, uchar b) {
 #endif
 
 //
-// End of "$Id: fl_draw_image.cxx,v 1.5.2.6.2.5 2002/08/09 03:17:30 easysw Exp $".
+// End of "$Id: fl_draw_image.cxx,v 1.5.2.6.2.6 2003/01/30 21:43:41 easysw Exp $".
 //

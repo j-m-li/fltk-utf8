@@ -1,9 +1,9 @@
 //
-// "$Id: fonts.cxx,v 1.5.2.3.2.2 2002/01/01 15:11:33 easysw Exp $"
+// "$Id: fonts.cxx,v 1.5.2.3.2.3 2003/01/30 21:45:29 easysw Exp $"
 //
 // Font demo program for the Fast Light Tool Kit (FLTK).
 //
-// Copyright 1998-2002 by Bill Spitzak and others.
+// Copyright 1998-2003 by Bill Spitzak and others.
 //
 // This library is free software; you can redistribute it and/or
 // modify it under the terms of the GNU Library General Public
@@ -100,17 +100,19 @@ void size_cb(Fl_Widget *, long) {
   textobj->redraw();
 }
 
-char label[400];
+char label[0x1000];
 
 void create_the_forms() {
+  int n = 0;
   form = new Fl_Window(550,370);
 
   strcpy(label, "Hello, world!\n");
   int i = strlen(label);
-  uchar c;
+  ulong c;
   for (c = ' '+1; c < 127; c++) {if (!(c&0x1f)) label[i++]='\n'; label[i++]=c;}
   label[i++] = '\n';
-  for (c = 0xA1; c; c++) {if (!(c&0x1f)) label[i++]='\n'; label[i++]=c;}
+  for (c = 0xA1; c < 0x600; c += 9) {if (!(++n&(0x1f))) label[i++]='\n'; 
+                          i += fl_ucs2utf((unsigned int)c, label + i);}
   label[i] = 0;
 
   textobj = new FontDisplay(FL_FRAME_BOX,10,10,530,170,label);
@@ -134,7 +136,7 @@ int main(int argc, char **argv) {
   Fl::scheme(NULL);
   create_the_forms();
   int i = fl_choice("Which fonts:","-*","iso8859","All");
-  int k = Fl::set_fonts(i ? (i>1 ? "*" : 0) : "-*");
+  int k = (int)Fl::set_fonts(i ? (i>1 ? "*" : 0) : "-*");
   for (i = 0; i < k; i++) {
     int t; const char *name = Fl::get_font_name((Fl_Font)i,&t);
     char buffer[128];
@@ -150,6 +152,7 @@ int main(int argc, char **argv) {
     sprintf(buffer, "@F%d@.%s", i, name);
     name = buffer;
 #endif
+    free(malloc(5));
     fontobj->add(name);
     int *s; int n = Fl::get_font_sizes((Fl_Font)i, s);
     numsizes[i] = n;
@@ -165,5 +168,5 @@ int main(int argc, char **argv) {
 }
 
 //
-// End of "$Id: fonts.cxx,v 1.5.2.3.2.2 2002/01/01 15:11:33 easysw Exp $".
+// End of "$Id: fonts.cxx,v 1.5.2.3.2.3 2003/01/30 21:45:29 easysw Exp $".
 //

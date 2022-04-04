@@ -34,6 +34,7 @@
 #include <FL/Fl_Menu_.H>
 #include <FL/fl_draw.H>
 #include <stdio.h>
+#include <stdlib.h>
 
 int Fl_Menu_Item::size() const {
   const Fl_Menu_Item* m = this;
@@ -113,8 +114,8 @@ int Fl_Menu_Item::measure(int* hp, const Fl_Menu_* m) const {
   l.image   = 0;
   l.deimage = 0;
   l.type    = labeltype_;
-  l.font    = labelsize_ ? labelfont_ : uchar(m ? m->textfont() : FL_HELVETICA);
-  l.size    = labelsize_ ? labelsize_ : m ? m->textsize() : FL_NORMAL_SIZE;
+  l.font    = labelsize_ || labelfont_ ? labelfont_ : uchar(m ? m->textfont() : FL_HELVETICA);
+  l.size    = labelsize_ ? labelsize_ : m ? m->textsize() : (uchar)FL_NORMAL_SIZE;
   l.color   = FL_BLACK; // this makes no difference?
   fl_draw_shortcut = 1;
   int w = 0; int h = 0; l.measure(w, hp ? *hp : h);
@@ -130,8 +131,8 @@ void Fl_Menu_Item::draw(int x, int y, int w, int h, const Fl_Menu_* m,
   l.image   = 0;
   l.deimage = 0;
   l.type    = labeltype_;
-  l.font    = labelsize_ ? labelfont_ : uchar(m ? m->textfont() : FL_HELVETICA);
-  l.size    = labelsize_ ? labelsize_ : m ? m->textsize() : FL_NORMAL_SIZE;
+  l.font    = labelsize_ || labelfont_ ? labelfont_ : uchar(m ? m->textfont() : FL_HELVETICA);
+  l.size    = labelsize_ ? labelsize_ : m ? m->textsize() : (uchar)FL_NORMAL_SIZE;
   l.color   = labelcolor_ ? labelcolor_ : m ? m->textcolor() : int(FL_BLACK);
   if (!active()) l.color = fl_inactive((Fl_Color)l.color);
   Fl_Color color = m ? m->color() : FL_GRAY;
@@ -225,7 +226,7 @@ menutitle::menutitle(int X, int Y, int W, int H, const Fl_Menu_Item* L) :
   set_modal();
   clear_border();
   menu = L;
-  if (L->labelcolor_ || Fl::scheme()) clear_overlay();
+  if (L->labelcolor_ || Fl::scheme() || L->labeltype_ > FL_NO_LABEL) clear_overlay();
 }
 
 menuwindow::menuwindow(const Fl_Menu_Item* m, int X, int Y, int Wp, int Hp,
@@ -280,7 +281,7 @@ menuwindow::menuwindow(const Fl_Menu_Item* m, int X, int Y, int Wp, int Hp,
       w1 = int(fl_width(fl_shortcut_label(m->shortcut_))) + 8;
       if (w1 > hotKeysw) hotKeysw = w1;
     }
-    if (m->labelcolor_ || Fl::scheme()) clear_overlay();
+    if (m->labelcolor_ || Fl::scheme() || m->labeltype_ > FL_NO_LABEL) clear_overlay();
   }
   if (selected >= 0 && !Wp) X -= W/2;
   int BW = Fl::box_dx(box());
@@ -341,8 +342,14 @@ void menuwindow::drawentry(const Fl_Menu_Item* m, int n, int eraseit) {
   int hh = itemheight - LEADING;
 
   if (eraseit && n != selected) {
-    fl_color(button && !Fl::scheme() ? button->color() : FL_GRAY);
-    fl_rectf(xx+1, yy-(LEADING-2)/2, ww-2, hh+(LEADING-2));
+    if (Fl::scheme()) {
+      fl_push_clip(xx+1, yy-(LEADING-2)/2, ww-2, hh+(LEADING-2));
+      draw_box(box(), 0, 0, w(), h(), color());
+      fl_pop_clip();
+    } else {
+      fl_color(button ? button->color() : FL_GRAY);
+      fl_rectf(xx+1, yy-(LEADING-2)/2, ww-2, hh+(LEADING-2));
+    }
   }
 
   m->draw(xx, yy, ww, hh, button, n==selected);
@@ -354,8 +361,10 @@ void menuwindow::drawentry(const Fl_Menu_Item* m, int n, int eraseit) {
     int x1 = xx+ww-sz-3;
     fl_polygon(x1, y1, x1, y1+sz, x1+sz, y1+sz/2);
   } else if (m->shortcut_) {
-    Fl_Font f = button ? button->textfont() : FL_HELVETICA;
-    fl_font(f, button ? button->textsize() : FL_NORMAL_SIZE);
+    Fl_Font f = m->labelsize_ || m->labelfont_ ? (Fl_Font)m->labelfont_ :
+                    button ? button->textfont() : FL_HELVETICA;
+    fl_font(f, m->labelsize_ ? m->labelsize_ :
+                   button ? button->textsize() : FL_NORMAL_SIZE);
     fl_draw(fl_shortcut_label(m->shortcut_), xx, yy, ww-3, hh, FL_ALIGN_RIGHT);
   }
 
@@ -496,18 +505,22 @@ int menuwindow::handle(int e) {
   switch (e) {
   case FL_KEYBOARD:
     switch (Fl::event_key()) {
-    case FL_Tab:
-      if (Fl::event_shift()&FL_SHIFT) goto BACKTAB;
     case FL_BackSpace:
     case 0xFE20: // backtab
     BACKTAB:
       if (!backward(pp.menu_number)) {pp.item_number = -1;backward(pp.menu_number);}
       return 1;
     case FL_Up:
-      if (pp.menubar && pp.menu_number == 0) ;
-      else if (backward(pp.menu_number));
-      else if (pp.menubar && pp.menu_number==1) setitem(0, pp.p[0]->selected);
+      if (pp.menubar && pp.menu_number == 0) {
+        // Do nothing...
+      } else if (backward(pp.menu_number)) {
+        // Do nothing...
+      } else if (pp.menubar && pp.menu_number==1) {
+        setitem(0, pp.p[0]->selected);
+      }
       return 1;
+    case FL_Tab:
+      if (Fl::event_shift()) goto BACKTAB;
     case FL_Down:
       if (pp.menu_number || !pp.menubar) forward(pp.menu_number);
       else if (pp.menu_number < pp.nummenus-1) forward(pp.menu_number+1);
@@ -554,7 +567,8 @@ int menuwindow::handle(int e) {
       if (item >= 0) break;
       if (mymenu <= 0) break;
     }
-    setitem(mymenu, item);
+    if (my == 0 && item > 0) setitem(mymenu, item - 1);
+    else setitem(mymenu, item);
     if (e == FL_PUSH) {
       if (pp.current_item && pp.current_item->submenu() // this is a menu title
 	  && item != pp.p[mymenu]->selected // and it is not already on

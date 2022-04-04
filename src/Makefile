@@ -1,9 +1,9 @@
 #
-# "$Id: Makefile,v 1.18.2.14.2.48 2002/09/16 01:35:34 easysw Exp $"
+# "$Id: Makefile,v 1.18.2.14.2.54 2003/08/24 13:09:06 easysw Exp $"
 #
 # Library makefile for the Fast Light Tool Kit (FLTK).
 #
-# Copyright 1998-2002 by Bill Spitzak and others.
+# Copyright 1998-2003 by Bill Spitzak and others.
 #
 # This library is free software; you can redistribute it and/or
 # modify it under the terms of the GNU Library General Public
@@ -73,6 +73,7 @@ CPPFILES = \
 	Fl_Round_Button.cxx \
 	Fl_Scroll.cxx \
 	Fl_Scrollbar.cxx \
+	Fl_Shaped_Window.cxx \
 	Fl_Shared_Image.cxx \
 	Fl_Single_Window.cxx \
 	Fl_Slider.cxx \
@@ -83,6 +84,7 @@ CPPFILES = \
 	Fl_Tile.cxx \
 	Fl_Tiled_Image.cxx \
 	Fl_Tooltip.cxx \
+	Fl_Tree.cxx \
 	Fl_Valuator.cxx \
 	Fl_Value_Input.cxx \
 	Fl_Value_Output.cxx \
@@ -147,14 +149,6 @@ CPPFILES = \
 	fl_show_colormap.cxx \
 	fl_symbols.cxx \
 	fl_vertex.cxx \
-	Flv_List.cxx \
-	Flv_Table.cxx \
-	Flve_Input.cxx \
-	Flv_CStyle.cxx \
-	Flv_Style.cxx \
-	Flve_Check_Button.cxx \
-	Flv_Data_Source.cxx \
-	Flve_Combo.cxx \
 	fl_utf8.cxx 
 
 FLCPPFILES = \
@@ -186,7 +180,7 @@ IMGCPPFILES = \
 
 CFILES = fl_call_main.c flstring.c scandir.c numericsort.c vsnprintf.c
 
-CLEAN =	core* cmap
+CLEAN =	core* cmap *.obj *.lib
 
 ################################################################
 
@@ -210,19 +204,23 @@ $(LIBNAME): $(OBJECTS)
 
 libfltk-utf8.so.1.1: $(OBJECTS)
 	echo $(DSOCOMMAND) $@ ...
-	$(DSOCOMMAND) $@ $(OBJECTS) $(IMAGELIBS)
+	$(DSOCOMMAND) $@ $(OBJECTS) 
 	-$(RM) libfltk-utf8.so
 	$(LN) libfltk-utf8.so.1.1 libfltk-utf8.so
 
 libfltk-utf8.sl.1.1: $(OBJECTS)
 	echo $(DSOCOMMAND) $@ ...
-	$(DSOCOMMAND) $@ $(OBJECTS) $(IMAGELIBS)
+	$(DSOCOMMAND) $@ $(OBJECTS) 
 	-$(RM) libfltk-utf8.sl
 	$(LN) libfltk-utf8.sl.1.1 libfltk-utf8.sl
 
 libfltk-utf8.1.1.dylib: $(OBJECTS)
 	echo $(DSOCOMMAND) $@ ...
-	$(DSOCOMMAND) $@ $(OBJECTS) $(IMAGELIBS)
+	$(DSOCOMMAND) $@ \
+		-install_name $(libdir)/$@ \
+		-current_version 1.1.4 \
+		-compatibility_version 1.1.0 \
+		$(OBJECTS) $(LDLIBS)
 	-$(RM) libfltk-utf8.dylib
 	$(LN) libfltk-utf8.1.1.dylib libfltk-utf8.dylib
 
@@ -240,21 +238,25 @@ $(FLLIBNAME): $(FLOBJECTS)
 	$(LIBCOMMAND) $@ $(FLOBJECTS)
 	$(RANLIB) $@
 
-libfltk-utf8_forms.so.1.1: $(FLOBJECTS)
+libfltk-utf8_forms.so.1.1: $(FLOBJECTS) libfltk-utf8.so.1.1
 	echo $(DSOCOMMAND) $@ ...
-	$(DSOCOMMAND) $@ $(FLOBJECTS)
+	$(DSOCOMMAND) $@ $(FLOBJECTS) -L. -lfltk-utf8
 	-$(RM) libfltk-utf8_forms.so
 	$(LN) libfltk-utf8_forms.so.1.1 libfltk-utf8_forms.so
 
-libfltk-utf8_forms.sl.1.1: $(FLOBJECTS)
+libfltk-utf8_forms.sl.1.1: $(FLOBJECTS) libfltk-utf8.sl.1.1
 	echo $(DSOCOMMAND) $@ ...
-	$(DSOCOMMAND) $@ $(FLOBJECTS)
+	$(DSOCOMMAND) $@ $(FLOBJECTS) -L. -lfltk-utf8
 	-$(RM) libfltk-utf8_forms.sl
 	$(LN) libfltk-utf8_forms.sl.1.1 libfltk-utf8_forms.sl
 
-libfltk-utf8_forms.1.1.dylib: $(FLOBJECTS)
+libfltk-utf8_forms.1.1.dylib: $(FLOBJECTS) libfltk-utf8.1.1.dylib
 	echo $(DSOCOMMAND) $@ ...
-	$(DSOCOMMAND) $@ $(FLOBJECTS)
+	$(DSOCOMMAND) $@ \
+		-install_name $(libdir)/$@ \
+		-current_version 1.1.4 \
+		-compatibility_version 1.1.0 \
+		$(FLOBJECTS) $(LDLIBS) -L. -lfltk-utf8
 	-$(RM) libfltk-utf8_forms.dylib
 	$(LN) libfltk-utf8_forms.1.1.dylib libfltk-utf8_forms.dylib
 
@@ -272,21 +274,25 @@ $(GLLIBNAME): $(GLOBJECTS)
 	$(LIBCOMMAND) $@ $(GLOBJECTS)
 	$(RANLIB) $@
 
-libfltk-utf8_gl.so.1.1: $(GLOBJECTS)
+libfltk-utf8_gl.so.1.1: $(GLOBJECTS) libfltk-utf8.so.1.1
 	echo $(DSOCOMMAND) $@ ...
-	$(DSOCOMMAND) $@ $(GLOBJECTS)
+	$(DSOCOMMAND) $@ $(GLOBJECTS) -L. -lfltk-utf8
 	-$(RM) libfltk-utf8_gl.so
 	$(LN) libfltk-utf8_gl.so.1.1 libfltk-utf8_gl.so
 
-libfltk-utf8_gl.sl.1.1: $(GLOBJECTS)
+libfltk-utf8_gl.sl.1.1: $(GLOBJECTS) libfltk-utf8.sl.1.1
 	echo $(DSOCOMMAND) $@ ...
-	$(DSOCOMMAND) $@ $(GLOBJECTS)
+	$(DSOCOMMAND) $@ $(GLOBJECTS) -L. -lfltk-utf8
 	-$(RM) libfltk-utf8_gl.sl
 	$(LN) libfltk-utf8_gl.sl.1.1 libfltk-utf8_gl.sl
 
-libfltk-utf8_gl.1.1.dylib: $(GLOBJECTS)
+libfltk-utf8_gl.1.1.dylib: $(GLOBJECTS) libfltk-utf8.1.1.dylib
 	echo $(DSOCOMMAND) $@ ...
-	$(DSOCOMMAND) $@ $(GLOBJECTS)
+	$(DSOCOMMAND) $@ \
+		-install_name $(libdir)/$@ \
+		-current_version 1.1.4 \
+		-compatibility_version 1.1.0 \
+		$(GLOBJECTS) $(GLDLIBS) -L. -lfltk-utf8
 	-$(RM) libfltk-utf8_gl.dylib
 	$(LN) libfltk-utf8_gl.1.1.dylib libfltk-utf8_gl.dylib
 
@@ -304,21 +310,25 @@ $(IMGLIBNAME): $(IMGOBJECTS)
 	$(LIBCOMMAND) $@ $(IMGOBJECTS)
 	$(RANLIB) $@
 
-libfltk-utf8_images.so.1.1: $(IMGOBJECTS)
+libfltk-utf8_images.so.1.1: $(IMGOBJECTS) libfltk-utf8.so.1.1
 	echo $(DSOCOMMAND) $@ ...
-	$(DSOCOMMAND) $@ $(IMGOBJECTS)
+	$(DSOCOMMAND) $@ $(IMGOBJECTS) -L. -lfltk-utf8
 	-$(RM) libfltk-utf8_images.so
 	$(LN) libfltk-utf8_images.so.1.1 libfltk-utf8_images.so
 
-libfltk-utf8_images.sl.1.1: $(IMGOBJECTS)
+libfltk-utf8_images.sl.1.1: $(IMGOBJECTS) libfltk-utf8.sl.1.1
 	echo $(DSOCOMMAND) $@ ...
-	$(DSOCOMMAND) $@ $(IMGOBJECTS)
+	$(DSOCOMMAND) $@ $(IMGOBJECTS) -L. -lfltk-utf8
 	-$(RM) libfltk-utf8_images.sl
 	$(LN) libfltk-utf8_images.sl.1.1 libfltk-utf8_images.sl
 
-libfltk-utf8_images.1.1.dylib: $(IMGOBJECTS)
+libfltk-utf8_images.1.1.dylib: $(IMGOBJECTS) libfltk-utf8.1.1.dylib
 	echo $(DSOCOMMAND) $@ ...
-	$(DSOCOMMAND) $@ $(IMGOBJECTS)
+	$(DSOCOMMAND) $@ \
+		-install_name $(libdir)/$@ \
+		-current_version 1.1.4 \
+		-compatibility_version 1.1.0 \
+		$(GLOBJECTS) $(GLDLIBS) -L. -lfltk-utf8
 	-$(RM) libfltk-utf8_images.dylib
 	$(LN) libfltk-utf8_images.1.1.dylib libfltk-utf8_images.dylib
 
@@ -341,8 +351,9 @@ clean :
 		libfltk-utf8_gl.dylib libfltk-utf8_images.dylib \
 		$(CLEAN)
 
-depend:	$(CPPFILES) $(FLCPPFILES) $(GLCPPFILES) $(CFILES)
-	makedepend -Y -I.. -f makedepend $(CPPFILES) $(GLCPPFILES) $(CFILES)
+depend:	$(CPPFILES) $(FLCPPFILES) $(GLCPPFILES) $(IMGCPPFILES) $(CFILES)
+	makedepend -Y -I.. -f makedepend $(CPPFILES) $(FLCPPFILES) \
+		$(GLCPPFILES) $(IMGCPPFILES) $(CFILES)
 
 # Automatically generated dependencies...
 include makedepend
@@ -575,5 +586,5 @@ uninstall:
 
 
 #
-# End of "$Id: Makefile,v 1.18.2.14.2.48 2002/09/16 01:35:34 easysw Exp $".
+# End of "$Id: Makefile,v 1.18.2.14.2.54 2003/08/24 13:09:06 easysw Exp $".
 #

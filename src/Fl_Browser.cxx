@@ -1,9 +1,9 @@
 //
-// "$Id: Fl_Browser.cxx,v 1.9.2.12.2.6 2002/08/09 01:09:48 easysw Exp $"
+// "$Id: Fl_Browser.cxx,v 1.9.2.12.2.8 2003/01/30 21:41:24 easysw Exp $"
 //
 // Browser widget for the Fast Light Tool Kit (FLTK).
 //
-// Copyright 1998-2002 by Bill Spitzak and others.
+// Copyright 1998-2003 by Bill Spitzak and others.
 //
 // This library is free software; you can redistribute it and/or
 // modify it under the terms of the GNU Library General Public
@@ -164,7 +164,7 @@ void Fl_Browser::insert(int line, FL_BLINE* t) {
 void Fl_Browser::insert(int line, const char* newtext, void* d) {
   int l = strlen(newtext);
   FL_BLINE* t = (FL_BLINE*)malloc(sizeof(FL_BLINE)+l);
-  t->length = l;
+  t->length = (short)l;
   t->flags = 0;
   strcpy(t->txt, newtext);
   t->data = d;
@@ -185,7 +185,7 @@ void Fl_Browser::text(int line, const char* newtext) {
     replacing(t, n);
     cache = n;
     n->data = t->data;
-    n->length = l;
+    n->length = (short)l;
     n->flags = t->flags;
     n->prev = t->prev;
     if (n->prev) n->prev->next = n; else first = n;
@@ -495,5 +495,5 @@ int Fl_Browser::value() const {
 }
 
 //
-// End of "$Id: Fl_Browser.cxx,v 1.9.2.12.2.6 2002/08/09 01:09:48 easysw Exp $".
+// End of "$Id: Fl_Browser.cxx,v 1.9.2.12.2.8 2003/01/30 21:41:24 easysw Exp $".
 //

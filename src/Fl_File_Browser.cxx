@@ -1,9 +1,9 @@
 //
-// "$Id: Fl_File_Browser.cxx,v 1.1.2.23 2002/08/13 15:42:44 easysw Exp $"
+// "$Id: Fl_File_Browser.cxx,v 1.1.2.26 2003/05/04 21:45:45 easysw Exp $"
 //
 // Fl_File_Browser routines.
 //
-// Copyright 1999-2002 by Michael Sweet.
+// Copyright 1999-2003 by Michael Sweet.
 //
 // This library is free software; you can redistribute it and/or
 // modify it under the terms of the GNU Library General Public
@@ -65,11 +65,11 @@
 
 // CodeWarrior (__MWERKS__) gets its include paths confused, so we
 // temporarily disable this...
-#if defined(__APPLE__) && !defined(__MWERKS__)
+#if defined(__MACOS__) && !defined(__MWERKS__)
 #  include <sys/param.h>
 #  include <sys/ucred.h>
 #  include <sys/mount.h>
-#endif // __APPLE__ && !__MWERKS__
+#endif // __MACOS__ && !__MWERKS__
 
 
 //
@@ -399,7 +399,7 @@ Fl_File_Browser::Fl_File_Browser(int        X,  // I - Upper-lefthand X coordina
   // Initialize the filter pattern, current directory, and icon size...
   pattern_   = "*";
   directory_ = "";
-  iconsize_  = 3 * textsize() / 2;
+  iconsize_  = (uchar)(3 * textsize() / 2);
   filetype_  = FILES;
 }
 
@@ -424,7 +424,11 @@ Fl_File_Browser::load(const char     *directory,// I - Directory to load
   clear();
   directory_ = directory;
 
+#if __MACOS__
+  if (0) 
+#else
   if (directory_[0] == '\0')
+#endif
   {
     //
     // No directory specified; for UNIX list all mount points.  For DOS
@@ -489,7 +493,7 @@ Fl_File_Browser::load(const char     *directory,// I - Directory to load
 
 	num_files ++;
       }
-#elif defined(__APPLE__) && !defined(__MWERKS__)
+#elif defined(__MACOS__) && !defined(__MWERKS__)
     // MacOS X and Darwin use getfsstat() system call...
     int			numfs;	// Number of file systems
     struct statfs	*fs;	// Buffer for file system info
@@ -574,6 +578,12 @@ Fl_File_Browser::load(const char     *directory,// I - Directory to load
       strlcat(filename, "/", sizeof(filename));
 
     num_files = fl_filename_list(filename, &files, sort);
+#elif __MACOS__
+    if (directory_[0] == '\0') {
+      num_files = fl_filename_list("/", &files, sort);
+    } else {
+      num_files = fl_filename_list(directory_, &files, sort);
+    }
 #else
     num_files = fl_filename_list(directory_, &files, sort);
 #endif /* WIN32 || __EMX__ */
@@ -583,17 +593,13 @@ Fl_File_Browser::load(const char     *directory,// I - Directory to load
 
     for (i = 0, num_dirs = 0; i < num_files; i ++)
     {
-#if 0
-      if (strcmp(files[i]->d_name, ".") != 0 &&
-          strcmp(files[i]->d_name, "..") != 0)
-#else
-      if (strcmp(files[i]->d_name, ".") != 0)
-#endif // 0
+      if (strcmp(files[i]->d_name, ".") &&
+          strcmp(files[i]->d_name, "./"))
       {
 	snprintf(filename, sizeof(filename), "%s/%s", directory_,
 	         files[i]->d_name);
 
-#if defined(WIN32) && !defined(__CYGWIN__)
+#if defined(WIN32) && !defined(__CYGWIN__) || __MACOS__
 	if (files[i]->d_name[strlen(files[i]->d_name) - 1] == '/')
 	{
           num_dirs ++;
@@ -644,5 +650,5 @@ Fl_File_Browser::filter(const char *pattern)	// I - Pattern string
 
 
 //
-// End of "$Id: Fl_File_Browser.cxx,v 1.1.2.23 2002/08/13 15:42:44 easysw Exp $".
+// End of "$Id: Fl_File_Browser.cxx,v 1.1.2.26 2003/05/04 21:45:45 easysw Exp $".
 //

@@ -47,7 +47,7 @@ int Fl_Tabs::tab_positions(int* p, int* wp) {
   int selected = 0;
   Fl_Widget*const* a = array();
   int i;
-  p[0] = 0;
+  p[0] = Fl::box_dx(box());
   for (i=0; i<children(); i++) {
     Fl_Widget* o = *a++;
     if (o->visible()) selected = i;
@@ -130,16 +130,19 @@ int Fl_Tabs::handle(int event) {
     } else {
       if (Fl::event_y() < y()+h()+H) return Fl_Group::handle(event);
     }}
-    if (Fl::visible_focus()) Fl::focus(this);
   case FL_DRAG:
   case FL_RELEASE:
     o = which(Fl::event_x(), Fl::event_y());
     if (event == FL_RELEASE) {push(0); if (o && value(o)) do_callback();}
     else push(o);
+    if (Fl::visible_focus() && event == FL_RELEASE) Fl::focus(this);
     return 1;
   case FL_FOCUS:
   case FL_UNFOCUS:
-    if (Fl::visible_focus()) {
+    if (!Fl::visible_focus()) return Fl_Group::handle(event);
+    if (Fl::event() == FL_RELEASE ||
+	Fl::event() == FL_SHORTCUT ||
+	Fl::event() == FL_KEYBOARD) {
       int H = tab_height();
       if (H >= 0) {
         H += Fl::box_dy(box());
@@ -149,7 +152,7 @@ int Fl_Tabs::handle(int event) {
         damage(FL_DAMAGE_SCROLL, x(), y() + h() - H, w(), H);
       }
       return 1;
-    } else return 0;
+    } else return Fl_Group::handle(event);
   case FL_KEYBOARD:
     switch (Fl::event_key()) {
       case FL_Left:

@@ -124,13 +124,14 @@ int Fl_Button::handle(int event) {
        // background...
        int X = x() > 0 ? x() - 1 : 0;
        int Y = y() > 0 ? y() - 1 : 0;
-       window()->damage(FL_DAMAGE_ALL, X, Y, w() + 2, h() + 2);
+       if (window()) window()->damage(FL_DAMAGE_ALL, X, Y, w() + 2, h() + 2);
       } else redraw();
 
       return 1;
     } else return 0;
   case FL_KEYBOARD :
-    if (Fl::focus() == this && Fl::event_key() == ' ') {
+    if (Fl::focus() == this && Fl::event_key() == ' ' &&
+        !(Fl::event_state() & (FL_SHIFT | FL_CTRL | FL_ALT | FL_META))) {
       if (type() == FL_RADIO_BUTTON && !value_) {
 	setonly();
 	if (when() & FL_WHEN_CHANGED) do_callback();

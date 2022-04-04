@@ -1,9 +1,9 @@
 //
-// "$Id: fl_font_xft.cxx,v 1.4.2.7 2002/06/08 13:07:19 easysw Exp $"
+// "$Id: fl_font_xft.cxx,v 1.4.2.12 2003/07/12 04:20:48 easysw Exp $"
 //
 // Xft font code for the Fast Light Tool Kit (FLTK).
 //
-// Copyright 2001-2002 Bill Spitzak and others.
+// Copyright 2001-2003 Bill Spitzak and others.
 //
 // This library is free software; you can redistribute it and/or
 // modify it under the terms of the GNU Library General Public
@@ -92,7 +92,7 @@ XFontStruct* fl_xfont = 0;
 const char* fl_encoding_ = "iso8859-1";
 Fl_FontSize* fl_fontsize = 0;
 
-void fl_font(int fnum, int size) {
+void Fl_Fltk::font(int fnum, int size) {
   if (fnum == fl_font_ && size == fl_size_ &&
       !strcasecmp(fl_fontsize->encoding, fl_encoding_))
     return;
@@ -110,7 +110,9 @@ void fl_font(int fnum, int size) {
     font->first = f;
   }
   fl_fontsize = f;
+#if XFT_MAJOR < 2
   fl_xfont    = f->font->u.core.font;
+#endif // XFT_MAJOR < 2
 }
 
 static XftFont* fontopen(const char* name, bool core) {
@@ -125,9 +127,22 @@ static XftFont* fontopen(const char* name, bool core) {
   case ' ': break;
   default: name--;
   }
+
+
+  //if (name[0] == '-') return XftFontOpenName(fl_display, fl_screen, "12x24rk" );
   // this call is extremely slow...
+  printf("%p\n",  XftFontOpen(fl_display, fl_screen,
+		     XFT_FAMILY, XftTypeString, "Courier Newi", //name,
+		     XFT_WEIGHT, XftTypeInteger, weight,
+		     XFT_SLANT, XftTypeInteger, slant,
+		     XFT_ENCODING, XftTypeString, fl_encoding_,
+		     XFT_PIXEL_SIZE, XftTypeDouble, (double)fl_size_,
+		     core ? XFT_CORE : 0, XftTypeBool, true,
+		     XFT_RENDER, XftTypeBool, false,
+		     0));
+
   return XftFontOpen(fl_display, fl_screen,
-		     XFT_FAMILY, XftTypeString, name,
+		     XFT_FAMILY, XftTypeString, "Elementary Heavy SF", //name,
 		     XFT_WEIGHT, XftTypeInteger, weight,
 		     XFT_SLANT, XftTypeInteger, slant,
 		     XFT_ENCODING, XftTypeString, fl_encoding_,
@@ -140,6 +155,9 @@ static XftFont* fontopen(const char* name, bool core) {
 Fl_FontSize::Fl_FontSize(const char* name) {
   encoding = fl_encoding_;
   size = fl_size_;
+#if HAVE_GL
+  listbase = 0;
+#endif // HAVE_GL
   font = fontopen(name, false);
 }
 
@@ -148,18 +166,36 @@ Fl_FontSize::~Fl_FontSize() {
 //  XftFontClose(fl_display, font);
 }
 
-int fl_height() { return current_font->ascent + current_font->descent; }
-int fl_descent() { return current_font->descent; }
+int Fl_Fltk::height() { return  current_font->ascent + current_font->descent; }
+int Fl_Fltk::descent() { return current_font->descent; }
 
-double fl_width(const char *str, int n) {
+double Fl_Fltk::width(const char *str, int n) {
   XGlyphInfo i;
-  XftTextExtents8(fl_display, current_font, (XftChar8 *)str, n, &i);
+  XftTextExtentsUtf8(fl_display, current_font, (XftChar8 *)str, n, &i);
   return i.xOff;
 }
 
-double fl_width(uchar c) {
+double Fl_Fltk::width(unsigned int c) {
   return fl_width((const char *)(&c), 1);
 }
+
+#if HAVE_GL
+// This call is used by opengl to get a bitmapped font.
+XFontStruct* fl_xxfont() {
+#  if XFT_MAJOR > 1
+  // kludge!
+  static XFontStruct* fixed = 0;
+  if (!fixed) fixed = XLoadQueryFont(fl_display, "fixed");
+  return fixed;
+#  else
+  if (current_font->core) return current_font->u.core.font;
+  static XftFont* xftfont;
+  if (xftfont) XftFontClose (fl_display, xftfont);
+  xftfont = fontopen(fl_fonts[fl_font_].name, true);
+  return xftfont->u.core.font;
+#  endif // XFT_MAJOR > 1
+}
+#endif // HAVE_GL
 
 #if USE_OVERLAY
 // Currently Xft does not work with colormapped visuals, so this probably
@@ -188,10 +224,20 @@ void fl_destroy_xft_draw(Window id) {
     XftDrawChange(draw_overlay, draw_overlay_window = fl_message_window);
 #endif
 }
+void Fl_Fltk::rtl_draw(const char *str, int n, int x, int y) {
+}
 
-void fl_draw(const char *str, int n, int x, int y) {
+
+char *fl_get_font_xfld(int, int)
+{
+
+}
+
+
+void Fl_Fltk::draw(const char *str, int n, int x, int y) {
+  XftDraw*& draw = ::draw;
 #if USE_OVERLAY
-  XftDraw*& draw = fl_overlay ? draw_overlay : ::draw;
+  draw = fl_overlay ? draw_overlay : ::draw;
   if (fl_overlay) {
     if (!draw) 
       draw = XftDrawCreate(fl_display, draw_overlay_window = fl_window,
@@ -207,10 +253,8 @@ void fl_draw(const char *str, int n, int x, int y) {
     XftDrawChange(draw, draw_window = fl_window);
 
   Region region = fl_clip_region();
-  if (region) {
-    if (XEmptyRegion(region)) return;
-    XftDrawSetClip(draw, region);
-  }
+  if (region && XEmptyRegion(region)) return;
+  XftDrawSetClip(draw, region);
 
   // Use fltk's color allocator, copy the results to match what
   // XftCollorAllocValue returns:
@@ -222,9 +266,9 @@ void fl_draw(const char *str, int n, int x, int y) {
   color.color.blue  = ((int)b)*0x101;
   color.color.alpha = 0xffff;
 
-  XftDrawString8(draw, &color, current_font, x, y, (XftChar8 *)str, n);
+  XftDrawStringUtf8(draw, &color, current_font, x, y, (XftChar8 *)str, n);
 }
 
 //
-// End of "$Id: fl_font_xft.cxx,v 1.4.2.7 2002/06/08 13:07:19 easysw Exp $"
+// End of "$Id: fl_font_xft.cxx,v 1.4.2.12 2003/07/12 04:20:48 easysw Exp $"
 //

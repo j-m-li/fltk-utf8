@@ -1,9 +1,9 @@
 //
-// "$Id: Fl_arg.cxx,v 1.5.2.8.2.12 2002/08/09 03:17:30 easysw Exp $"
+// "$Id: Fl_arg.cxx,v 1.5.2.8.2.16 2003/08/02 13:49:17 easysw Exp $"
 //
 // Optional argument initialization code for the Fast Light Tool Kit (FLTK).
 //
-// Copyright 1998-2002 by Bill Spitzak and others.
+// Copyright 1998-2003 by Bill Spitzak and others.
 //
 // This library is free software; you can redistribute it and/or
 // modify it under the terms of the GNU Library General Public
@@ -30,12 +30,17 @@
 #include <FL/x.H>
 #include <FL/Fl_Window.H>
 #include <FL/Fl_Tooltip.H>
+#if !MSDOS
 #include <FL/filename.H>
+#else
+#define strcasecmp stricmp
+#endif
 #include <FL/fl_draw.H>
+#include <FL/fl_utf8.H>
 #include <ctype.h>
 #include "flstring.h"
 
-#if defined(WIN32) || defined(__APPLE__)
+#if defined(WIN32) || defined(__MACOS__) || NANO_X || DJGPP
 int XParseGeometry(const char*, int*, int*, unsigned int*, unsigned int*);
 #  define NoValue	0x0000
 #  define XValue  	0x0001
@@ -109,6 +114,14 @@ int Fl::arg(int argc, char **argv, int &i) {
     i++;
     return 1;
   }
+#ifdef __MACOS__
+  // The Finder application in MacOS X passes the "-psn_N_NNNNN" option
+  // to all apps...
+  else if (strncmp(s, "psn_", 4) == 0) {
+    i++;
+    return 1;
+  }
+#endif // __MACOS__
 
   const char *v = argv[i+1];
   if (i >= argc-1 || !v)
@@ -121,7 +134,7 @@ int Fl::arg(int argc, char **argv, int &i) {
     if (!flags) return 0;
     geometry = v;
 
-#if !defined(WIN32) && !defined(__APPLE__)
+#if !defined(WIN32) && !defined(__MACOS__)
   } else if (fl_match(s, "display", 2)) {
     Fl::display(v);
 #endif
@@ -169,35 +182,36 @@ int Fl::args(int argc, char** argv, int& i, int (*cb)(int,char**,int&)) {
 
 // show a main window, use any parsed arguments
 void Fl_Window::show(int argc, char **argv) {
-  if (!argc) {show(); return;}
-  if (!arg_called) {
-#if !defined(WIN32) && !defined(__APPLE__)
-    // Get defaults for drag-n-drop and focus...
-    const char *key = 0, *val;
+  if (argc && !arg_called) Fl::args(argc,argv);
+#if NANO_X || DJGPP
+	show();
+	return;
+#else
 
-    fl_open_display();
+  Fl::get_system_colors();
 
-    if (Fl::first_window()) key = Fl::first_window()->xclass();
-    if (!key) key = "fltk";
+#if !defined(WIN32) && !defined(__MACOS__)
+  // Get defaults for drag-n-drop and focus...
+  const char *key = 0, *val;
 
-    val = XGetDefault(fl_display, key, "dndTextOps");
-    if (val) Fl::dnd_text_ops(strcasecmp(val, "true") == 0 ||
+  if (Fl::first_window()) key = Fl::first_window()->xclass();
+  if (!key) key = "fltk";
+
+  val = XGetDefault(fl_display, key, "dndTextOps");
+  if (val) Fl::dnd_text_ops(strcasecmp(val, "true") == 0 ||
+                            strcasecmp(val, "on") == 0 ||
+                            strcasecmp(val, "yes") == 0);
+
+  val = XGetDefault(fl_display, key, "tooltips");
+  if (val) Fl_Tooltip::enable(strcasecmp(val, "true") == 0 ||
                               strcasecmp(val, "on") == 0 ||
                               strcasecmp(val, "yes") == 0);
 
-    val = XGetDefault(fl_display, key, "tooltips");
-    if (val) Fl_Tooltip::enable(strcasecmp(val, "true") == 0 ||
-                                strcasecmp(val, "on") == 0 ||
-                                strcasecmp(val, "yes") == 0);
-
-    val = XGetDefault(fl_display, key, "visibleFocus");
-    if (val) Fl::visible_focus(strcasecmp(val, "true") == 0 ||
-                               strcasecmp(val, "on") == 0 ||
-                               strcasecmp(val, "yes") == 0);
-#endif // !WIN32 && !__APPLE__
-
-    Fl::args(argc,argv);
-  }
+  val = XGetDefault(fl_display, key, "visibleFocus");
+  if (val) Fl::visible_focus(strcasecmp(val, "true") == 0 ||
+                             strcasecmp(val, "on") == 0 ||
+                             strcasecmp(val, "yes") == 0);
+#endif // !WIN32 && !__MACOS__
 
   // set colors first, so background_pixel is correct:
   static char beenhere;
@@ -234,7 +248,7 @@ void Fl_Window::show(int argc, char **argv) {
     Fl::scheme(Fl::scheme()); // opens display!  May call Fl::fatal()
   }
 
-#if !defined(WIN32) && !defined(__APPLE__)
+#if !defined(WIN32) && !defined(__MACOS__)
   // set the command string, used by state-saving window managers:
   int j;
   int n=0; for (j=0; j<argc; j++) n += strlen(argv[j])+1;
@@ -244,7 +258,8 @@ void Fl_Window::show(int argc, char **argv) {
   XChangeProperty(fl_display, fl_xid(this), XA_WM_COMMAND, XA_STRING, 8, 0,
 		  (unsigned char *)buffer, p-buffer-1);
   delete[] buffer;
-#endif // !WIN32 && !__APPLE__
+#endif // !WIN32 && !__MACOS__
+#endif
 }
 
 // Calls useful for simple demo programs, with automatic help message:
@@ -273,7 +288,7 @@ void Fl::args(int argc, char **argv) {
   int i; if (Fl::args(argc,argv,i) < argc) Fl::error(helpmsg);
 }
 
-#if defined(WIN32) || defined(__APPLE__)
+#if defined(WIN32) || defined(__MACOS__) || NANO_X || DJGPP
 
 /* the following function was stolen from the X sources as indicated. */
 
@@ -412,5 +427,5 @@ int XParseGeometry(const char* string, int* x, int* y,
 #endif // ifdef WIN32
 
 //
-// End of "$Id: Fl_arg.cxx,v 1.5.2.8.2.12 2002/08/09 03:17:30 easysw Exp $".
+// End of "$Id: Fl_arg.cxx,v 1.5.2.8.2.16 2003/08/02 13:49:17 easysw Exp $".
 //

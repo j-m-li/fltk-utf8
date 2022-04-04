@@ -1,9 +1,9 @@
 //
-// "$Id: filename_expand.cxx,v 1.4.2.4.2.6 2002/05/16 12:47:43 easysw Exp $"
+// "$Id: filename_expand.cxx,v 1.4.2.4.2.7 2003/01/30 21:43:20 easysw Exp $"
 //
 // Filename expansion routines for the Fast Light Tool Kit (FLTK).
 //
-// Copyright 1998-2002 by Bill Spitzak and others.
+// Copyright 1998-2003 by Bill Spitzak and others.
 //
 // This library is free software; you can redistribute it and/or
 // modify it under the terms of the GNU Library General Public
@@ -34,9 +34,13 @@
 #include <FL/fl_utf8.H>
 #if defined(WIN32) && !defined(__CYGWIN__)
 #include <windows.h>
+#elif __MACOS__
+
 #else
 # include <unistd.h>
+#if !MSDOS
 # include <pwd.h>
+#endif
 #endif
 
 #if defined(WIN32) || defined(__EMX__) && !defined(__CYGWIN__)
@@ -55,24 +59,28 @@ int fl_filename_expand(char *to,int tolen, const char *from) {
   int ret = 0;
 
   for (char *a=temp; a<end; ) {	// for each slash component
-    char *e; for (e=a; e<end && !isdirsep(*e); e++); // find next slash
+    char *e; for (e=a; e<end && !isdirsep(*e); e++) {;} // find next slash
     const char *value = 0; // this will point at substitute value
     switch (*a) {
     case '~':	// a home directory name
       if (e <= a+1) {	// current user's directory
 #ifdef WIN32
-		unsigned short *e = _wgetenv(L"HOME");
-		value = (char*) malloc(wcslen(e) * 5);
+		xchar*e = (xchar*)_wgetenv(L"HOME");
+		value = (char*) malloc(wcslen((wchar_t*)e) * 5);
 		int l = fl_unicode2utf(e, l, (char*)value);
 		((char*)value)[l] = 0;
+#elif MSDOS
+		value = fl_getenv("HOME");
 #else
 		value = fl_getenv("HOME");
+#if !__MACOS__
       } else {	// another user's directory
 	struct passwd *pwd;
 	char t = *e; *(char *)e = 0; 
         pwd = getpwnam(a+1); 
         *(char *)e = t;
 	    if (pwd) value = pwd->pw_dir;
+#endif /* __MACOS__ */
 #endif
       }
       break;
@@ -80,13 +88,13 @@ int fl_filename_expand(char *to,int tolen, const char *from) {
       {char t = *e; *(char *)e = 0; 
 #ifdef WIN32
 		int len    = strlen(a+1);
-		unsigned short* wbuf = (unsigned short*)malloc((len+6) * sizeof(short));
+		xchar* wbuf = (xchar*)malloc((len+6) * sizeof(xchar));
 		len = fl_utf2unicode((unsigned char*)a+1, len, wbuf);
 		wbuf[len] = 0;
-		unsigned short *e = _wgetenv(wbuf);
+		xchar *e = (xchar*)_wgetenv((wchar_t*)wbuf);
 		free(wbuf);
-		value = (char*) malloc(wcslen(e) * 5);
-		len = fl_unicode2utf(e, wcslen(e), (char*)value);
+		value = (char*) malloc(wcslen((wchar_t*)e) * 5);
+		len = fl_unicode2utf(e, wcslen((wchar_t*)e), (char*)value);
 		((char*)value)[len] = 0;
 #else
 	  value = fl_getenv(a+1);
@@ -129,5 +137,5 @@ int fl_filename_expand(char *to,int tolen, const char *from) {
 
 
 //
-// End of "$Id: filename_expand.cxx,v 1.4.2.4.2.6 2002/05/16 12:47:43 easysw Exp $".
+// End of "$Id: filename_expand.cxx,v 1.4.2.4.2.7 2003/01/30 21:43:20 easysw Exp $".
 //

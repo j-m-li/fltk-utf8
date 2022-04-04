@@ -1,9 +1,9 @@
 //
-// "$Id: Fl_Color_Chooser.cxx,v 1.7.2.4.2.5 2002/08/09 01:09:48 easysw Exp $"
+// "$Id: Fl_Color_Chooser.cxx,v 1.7.2.4.2.6 2003/01/30 21:41:36 easysw Exp $"
 //
 // Color chooser for the Fast Light Tool Kit (FLTK).
 //
-// Copyright 1998-2002 by Bill Spitzak and others.
+// Copyright 1998-2003 by Bill Spitzak and others.
 //
 // This library is free software; you can redistribute it and/or
 // modify it under the terms of the GNU Library General Public
@@ -26,7 +26,7 @@
 #include <FL/Fl.H>
 #include <FL/Fl_Color_Chooser.H>
 #include <FL/fl_draw.H>
-#include <FL/math.h>
+#include <FL/fl_math.h>
 #include <stdio.h>
 
 // Besides being a useful object on it's own, the Fl_Color_Chooser was
@@ -521,5 +521,5 @@ int fl_color_chooser(const char* name, uchar& r, uchar& g, uchar& b) {
 }
 
 //
-// End of "$Id: Fl_Color_Chooser.cxx,v 1.7.2.4.2.5 2002/08/09 01:09:48 easysw Exp $".
+// End of "$Id: Fl_Color_Chooser.cxx,v 1.7.2.4.2.6 2003/01/30 21:41:36 easysw Exp $".
 //

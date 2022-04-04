@@ -1,9 +1,9 @@
 //
-// "$Id: Fl_Menu_Bar.cxx,v 1.7.2.6.2.1 2002/01/01 15:11:30 easysw Exp $"
+// "$Id: Fl_Menu_Bar.cxx,v 1.7.2.6.2.3 2003/01/30 21:42:18 easysw Exp $"
 //
 // Menu bar widget for the Fast Light Tool Kit (FLTK).
 //
-// Copyright 1998-2002 by Bill Spitzak and others.
+// Copyright 1998-2003 by Bill Spitzak and others.
 //
 // This library is free software; you can redistribute it and/or
 // modify it under the terms of the GNU Library General Public
@@ -25,6 +25,8 @@
 
 #include <FL/Fl.H>
 #include <FL/Fl_Menu_Bar.H>
+#include <FL/fl_draw.H>
+#include <stdlib.h>
 
 void Fl_Menu_Bar::draw() {
   draw_box();
@@ -35,6 +37,16 @@ void Fl_Menu_Bar::draw() {
     int W = m->measure(0,this) + 16;
     m->draw(X, y(), W, h(), this);
     X += W;
+    if (m->flags & FL_MENU_DIVIDER) {
+      int y1 = y() + Fl::box_dy(box());
+      int y2 = y1 + h() - Fl::box_dh(box()) - 1;
+
+      // Draw a vertical divider between menus...
+      fl_color(FL_DARK3);
+      fl_yxline(X - 6, y1, y2);
+      fl_color(FL_LIGHT3);
+      fl_yxline(X - 5, y1, y2);
+    }
   }
 }
 
@@ -61,5 +73,5 @@ int Fl_Menu_Bar::handle(int event) {
 }
 
 //
-// End of "$Id: Fl_Menu_Bar.cxx,v 1.7.2.6.2.1 2002/01/01 15:11:30 easysw Exp $".
+// End of "$Id: Fl_Menu_Bar.cxx,v 1.7.2.6.2.3 2003/01/30 21:42:18 easysw Exp $".
 //

@@ -527,7 +527,8 @@ event.
 <P>Returns the button state bits; if non-zero, then at least one
 button is pressed.
 
-<H4><A NAME="Fl.event_clicks">int event_clicks();</A></H4>
+<H4><A NAME="Fl.event_clicks">int event_clicks();<BR>
+void event_clicks(int i);</A></H4>
 
 <P>The first form returns non-zero if the most recent <tt>FL_PUSH</tt> or
 <tt>FL_KEYBOARD</tt> was a &quot;double click&quot;.  Returns N-1 for
@@ -741,7 +742,15 @@ overlay colormap.
 <H4><A NAME="Fl.get_color">unsigned get_color(Fl_Color c);<BR>
 void get_color(Fl_Color c, uchar&amp;r, uchar&amp;g, uchar&amp;b);</A></H4>
 
-<P>Returns the color index or RGB value for the given FLTK color index.
+<P>Returns the RGB value(s) for the given FLTK color index. The
+first form returns the RGB values packed in a 32-bit unsigned
+integer with the red value in the upper 8 bits, the green value
+in the next 8 bits, and the blue value in bits 8-15.  The lower
+8 bits will always be 0.
+
+<P>The second form returns the red, green, and blue values
+separately in referenced variables.
+
 
 <H4><A NAME="Fl.get_font">const char* get_font(Fl_Font);</A></H4>
 

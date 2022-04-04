@@ -1,9 +1,9 @@
 //
-// "$Id: fl_overlay.cxx,v 1.4.2.3.2.2 2002/01/01 15:11:32 easysw Exp $"
+// "$Id: fl_overlay.cxx,v 1.4.2.3.2.3 2003/01/30 21:43:59 easysw Exp $"
 //
 // Overlay support for the Fast Light Tool Kit (FLTK).
 //
-// Copyright 1998-2002 by Bill Spitzak and others.
+// Copyright 1998-2003 by Bill Spitzak and others.
 //
 // This library is free software; you can redistribute it and/or
 // modify it under the terms of the GNU Library General Public
@@ -38,10 +38,18 @@ static void draw_current_rect() {
   int old = SetROP2(fl_gc, R2_NOT);
   fl_rect(px, py, pw, ph);
   SetROP2(fl_gc, old);
-#elif defined(__APPLE__)
+#elif defined(__MACOS__)
   PenMode( patXor );
   fl_rect(px, py, pw, ph);
   PenMode( patCopy );
+#elif NANO_X
+       GR_GC_ID temp_gc = GrCopyGC(fl_gc);
+        GrSetGCMode(temp_gc,GR_MODE_XOR);
+	GrSetGCForeground(temp_gc,0xffffff);
+	GrRect(fl_window,temp_gc,px,py,pw,ph);
+	GrDestroyGC(temp_gc);
+#elif DJGPP
+//FIXME_DJGPP
 #else
   XSetFunction(fl_display, fl_gc, GXxor);
   XSetForeground(fl_display, fl_gc, 0xffffffff);
@@ -66,5 +74,5 @@ void fl_overlay_rect(int x, int y, int w, int h) {
 }
 
 //
-// End of "$Id: fl_overlay.cxx,v 1.4.2.3.2.2 2002/01/01 15:11:32 easysw Exp $".
+// End of "$Id: fl_overlay.cxx,v 1.4.2.3.2.3 2003/01/30 21:43:59 easysw Exp $".
 //

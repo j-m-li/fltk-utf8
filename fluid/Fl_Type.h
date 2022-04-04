@@ -1,5 +1,5 @@
 //
-// "$Id: Fl_Type.h,v 1.5.2.11.2.6 2002/08/09 22:57:00 easysw Exp $"
+// "$Id: Fl_Type.h,v 1.5.2.11.2.10 2003/09/03 19:50:54 easysw Exp $"
 //
 // Widget type header file for the Fast Light Tool Kit (FLTK).
 //
@@ -11,7 +11,7 @@
 // instance of this object.  It could also have a "copy()" function,
 // but it was easier to implement this by using the file read/write
 // that is needed to save the setup anyways.
-// Copyright 1998-2002 by Bill Spitzak and others.
+// Copyright 1998-2003 by Bill Spitzak and others.
 //
 // This library is free software; you can redistribute it and/or
 // modify it under the terms of the GNU Library General Public
@@ -127,6 +127,8 @@ public:
   virtual int is_class() const;
   virtual int is_public() const;
 
+  virtual int pixmapID() { return 0; }
+
   const char* class_name(const int need_nest) const;
 };
 
@@ -146,6 +148,7 @@ public:
   int is_parent() const {return 1;}
   int is_code_block() const {return 1;}
   virtual int is_public() const;
+  int pixmapID() { return 7; }
   void write_properties();
   void read_property(const char *);
 };
@@ -158,6 +161,7 @@ public:
   void open();
   virtual const char *type_name() {return "code";}
   int is_code_block() const {return 0;}
+  int pixmapID() { return 8; }
   virtual int is_public() const;
 };
 
@@ -172,6 +176,7 @@ public:
   int is_code_block() const {return 1;}
   int is_parent() const {return 1;}
   virtual int is_public() const;
+  int pixmapID() { return 9; }
   void write_properties();
   void read_property(const char *);
 };
@@ -187,6 +192,7 @@ public:
   void write_properties();
   void read_property(const char *);
   virtual int is_public() const;
+  int pixmapID() { return 10; }
 };
 
 class Fl_DeclBlock_Type : public Fl_Type {
@@ -201,6 +207,7 @@ public:
   void read_property(const char *);
   int is_parent() const {return 1;}
   int is_decl_block() const {return 1;}
+  int pixmapID() { return 11; }
 };
 
 class Fl_Class_Type : public Fl_Type {
@@ -220,8 +227,15 @@ public:
   int is_decl_block() const {return 1;}
   int is_class() const {return 1;}
   virtual int is_public() const;
+  int pixmapID() { return 12; }
   void write_properties();
   void read_property(const char *);
+
+  // class prefix attribute access
+  void prefix(const char* p);
+  const char*  prefix() const {return class_prefix;}
+private:
+  const char* class_prefix;
 };
 
 #define NUM_EXTRA_CODE 4
@@ -246,6 +260,7 @@ protected:
   void write_extra_code();
   void write_block_close();
   void write_code2();
+  void write_color(const char*, Fl_Color);
 
 public:
 
@@ -327,6 +342,7 @@ public:
   void remove_child(Fl_Type*);
   int is_parent() const {return 1;}
   int is_group() const {return 1;}
+  int pixmapID() { return 6; }
 };
 
 extern const char pack_type_name[];
@@ -337,6 +353,7 @@ class Fl_Pack_Type : public Fl_Group_Type {
 public:
   virtual const char *type_name() {return pack_type_name;}
   Fl_Widget_Type *_make() {return new Fl_Pack_Type();}
+  int pixmapID() { return 22; }
 };
 
 extern const char tabs_type_name[];
@@ -350,6 +367,7 @@ public:
   Fl_Type* click_test(int,int);
   void add_child(Fl_Type*, Fl_Type*);
   void remove_child(Fl_Type*);
+  int pixmapID() { return 13; }
 };
 
 extern const char scroll_type_name[];
@@ -360,6 +378,7 @@ class Fl_Scroll_Type : public Fl_Group_Type {
 public:
   virtual const char *type_name() {return scroll_type_name;}
   Fl_Widget_Type *_make() {return new Fl_Scroll_Type();}
+  int pixmapID() { return 19; }
 };
 
 extern const char tile_type_name[];
@@ -368,6 +387,7 @@ class Fl_Tile_Type : public Fl_Group_Type {
 public:
   virtual const char *type_name() {return tile_type_name;}
   Fl_Widget_Type *_make() {return new Fl_Tile_Type();}
+  int pixmapID() { return 20; }
 };
 
 extern const char wizard_type_name[];
@@ -378,6 +398,7 @@ public:
   Fl_Widget *widget(int X,int Y,int W,int H) {
     iwizard *g = new iwizard(X,Y,W,H); Fl_Group::current(0); return g;}
   Fl_Widget_Type *_make() {return new Fl_Wizard_Type();}
+  int pixmapID() { return 21; }
 };
 
 extern Fl_Menu_Item window_type_menu[];
@@ -404,6 +425,7 @@ class Fl_Window_Type : public Fl_Widget_Type {
   Fl_Widget *widget(int,int,int,int) {return 0;}
   int recalc;		// set by fix_overlay()
   void moveallchildren();
+  int pixmapID() { return 1; }
 
 public:
 
@@ -446,6 +468,7 @@ public:
   void write_item();
   void write_code1();
   void write_code2();
+  int pixmapID() { return 16; }
 };
 
 class Fl_Submenu_Type : public Fl_Menu_Item_Type {
@@ -460,6 +483,7 @@ public:
   void add_child(Fl_Type*a, Fl_Type*b) {parent->add_child(a,b);}
   void move_child(Fl_Type*a, Fl_Type*b) {parent->move_child(a,b);}
   void remove_child(Fl_Type*a) {parent->remove_child(a);}
+  int pixmapID() { return 18; }
 };
 
 
@@ -502,6 +526,7 @@ public:
   Fl_Widget *widget(int X,int Y,int W,int H) {
     return new Fl_Menu_Button(X,Y,W,H,"menu");}
   Fl_Widget_Type *_make() {return new Fl_Menu_Button_Type();}
+  int pixmapID() { return 26; }
 };
 
 extern Fl_Menu_Item dummymenu[];
@@ -516,6 +541,7 @@ public:
     return myo;
   }
   Fl_Widget_Type *_make() {return new Fl_Choice_Type();}
+  int pixmapID() { return 15; }
 };
 
 #include <FL/Fl_Menu_Bar.H>
@@ -525,6 +551,7 @@ public:
   Fl_Widget *widget(int X,int Y,int W,int H) {
     return new Fl_Menu_Bar(X,Y,W,H);}
   Fl_Widget_Type *_make() {return new Fl_Menu_Bar_Type();}
+  int pixmapID() { return 17; }
 };
 // object list operations:
 Fl_Widget *make_widget_browser(int X,int Y,int W,int H);
@@ -567,5 +594,5 @@ int storestring(const char *n, const char * & p, int nostrip=0);
 extern int include_H_from_C;
 
 //
-// End of "$Id: Fl_Type.h,v 1.5.2.11.2.6 2002/08/09 22:57:00 easysw Exp $".
+// End of "$Id: Fl_Type.h,v 1.5.2.11.2.10 2003/09/03 19:50:54 easysw Exp $".
 //

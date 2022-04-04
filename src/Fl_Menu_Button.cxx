@@ -1,9 +1,9 @@
 //
-// "$Id: Fl_Menu_Button.cxx,v 1.4.2.3.2.5 2002/09/01 22:39:33 easysw Exp $"
+// "$Id: Fl_Menu_Button.cxx,v 1.4.2.3.2.7 2003/01/30 21:42:20 easysw Exp $"
 //
 // Menu button widget for the Fast Light Tool Kit (FLTK).
 //
-// Copyright 1998-2002 by Bill Spitzak and others.
+// Copyright 1998-2003 by Bill Spitzak and others.
 //
 // This library is free software; you can redistribute it and/or
 // modify it under the terms of the GNU Library General Public
@@ -70,7 +70,8 @@ int Fl_Menu_Button::handle(int e) {
     return 1;
   case FL_KEYBOARD:
     if (!box()) return 0;
-    if (Fl::event_key() == ' ') {
+    if (Fl::event_key() == ' ' &&
+        !(Fl::event_state() & (FL_SHIFT | FL_CTRL | FL_ALT | FL_META))) {
       popup();
       return 1;
     } else return 0;
@@ -94,5 +95,5 @@ Fl_Menu_Button::Fl_Menu_Button(int X,int Y,int W,int H,const char *l)
 }
 
 //
-// End of "$Id: Fl_Menu_Button.cxx,v 1.4.2.3.2.5 2002/09/01 22:39:33 easysw Exp $".
+// End of "$Id: Fl_Menu_Button.cxx,v 1.4.2.3.2.7 2003/01/30 21:42:20 easysw Exp $".
 //

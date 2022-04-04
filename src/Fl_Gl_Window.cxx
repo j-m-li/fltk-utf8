@@ -78,7 +78,7 @@ void Fl_Gl_Window::show() {
       }
 
     }
-#if !defined(WIN32) && !defined(__APPLE__)
+#if !defined(WIN32) && !defined(__MACOS__)
     Fl_X::make_xid(this, g->vis, g->colormap);
     if (overlay && overlay != this) ((Fl_Gl_Window*)overlay)->show();
 #endif
@@ -95,9 +95,11 @@ void Fl_Gl_Window::invalidate() {
 
 int Fl_Gl_Window::mode(int m, const int *a) {
   if (m == mode_ && a == alist) return 0;
-#ifndef __APPLE__
+#ifndef __MACOS__
   int oldmode = mode_;
+#ifndef WIN32
   Fl_Gl_Choice* oldg = g;
+#endif
 #endif
   context(0);
   mode_ = m; alist = a;
@@ -108,7 +110,7 @@ int Fl_Gl_Window::mode(int m, const int *a) {
       hide();
       show();
     }
-#elif defined(__APPLE__)
+#elif defined(__MACOS__)
     redraw();
 #else
     // under X, if the visual changes we must make a new X window (yuck!):
@@ -126,10 +128,32 @@ int Fl_Gl_Window::mode(int m, const int *a) {
 #define NON_LOCAL_CONTEXT 0x80000000
 
 void Fl_Gl_Window::make_current() {
+//  puts("Fl_Gl_Window::make_current()");
+//  printf("make_current: context_=%p\n", context_);
   if (!context_) {
     mode_ &= ~NON_LOCAL_CONTEXT;
     context_ = fl_create_gl_context(this, g);
     valid(0);
+
+#ifdef __MACOS__
+    GLint xywh[4];
+
+    if (window()) {
+      // MRS: This isn't quite right, but the parent window won't have its W and H updated yet...
+      xywh[0] = x();
+      xywh[1] = window()->h() - y() - h();
+    } else {
+      xywh[0] = 0;
+      xywh[1] = 0;
+    }
+
+    xywh[2] = W;
+    xywh[3] = H;
+    aglSetInteger(context_, AGL_BUFFER_RECT, xywh);
+//    printf("resize: xywh=[%d %d %d %d]\n", xywh[0], xywh[1], xywh[2], xywh[3]);
+
+    aglUpdateContext(context_);
+#endif // __MACOS__
   }
   fl_set_gl_context(this, context_);
 #if defined(WIN32) && USE_COLORMAP
@@ -170,7 +194,7 @@ void Fl_Gl_Window::swap_buffers() {
 #  else
   SwapBuffers(Fl_X::i(this)->private_dc);
 #  endif
-#elif defined(__APPLE__)
+#elif defined(__MACOS__)
   aglSwapBuffers((AGLContext)context_);
 #else
   glXSwapBuffers(fl_display, fl_xid(this));
@@ -185,15 +209,7 @@ int fl_overlay_depth = 0;
 void Fl_Gl_Window::flush() {
   uchar save_valid = valid_;
 
-#ifdef __APPLE__
-  // \todo Mac : matt: I have no idea how expensive the following code is, but we need to reset the buffer rect after
-  // every window-reconfiguration, especially after window resizes. aglUpdateContext(ctxt) may help here!
-  if ( parent() ) { //: resize our GL buffer rectangle
-    Rect wrect; GetWindowPortBounds( fl_xid(this), &wrect );
-    GLint rect[] = { x(), wrect.bottom-h()-y(), w(), h() };
-    aglSetInteger( context_, AGL_BUFFER_RECT, rect );
-    aglEnable( context_, AGL_BUFFER_RECT );
-  }
+#ifdef __MACOS__
   //: clear previous clipping in this shared port
   GrafPtr port = GetWindowPort( fl_xid(this) );
   Rect rect; SetRect( &rect, 0, 0, 0x7fff, 0x7fff );
@@ -240,7 +256,7 @@ void Fl_Gl_Window::flush() {
     glDrawBuffer(GL_BACK);
 
     if (!SWAP_TYPE) {
-#ifdef __APPLE__
+#ifdef __MACOS__
       SWAP_TYPE = COPY;
 #else
       SWAP_TYPE = UNDEFINED;
@@ -326,13 +342,14 @@ void Fl_Gl_Window::flush() {
 void Fl_Gl_Window::resize(int X,int Y,int W,int H) {
   if (W != w() || H != h()) {
     valid(0);
-#ifdef __APPLE__
-  if ( parent() ) { //: resize our GL buffer rectangle (see aglUpdateContext()
-    Rect wrect; GetWindowPortBounds( fl_xid(this), &wrect );
-    GLint rect[] = { X, wrect.bottom-h()-y(), W, H };
-    aglSetInteger( context_, AGL_BUFFER_RECT, rect );
-    aglEnable( context_, AGL_BUFFER_RECT );
-  }
+#ifdef __MACOS__
+  GLint xywh[4];
+  xywh[0] = X;
+  xywh[1] = window()->h() - Y - H;
+  xywh[2] = W;
+  xywh[3] = H;
+  aglSetInteger(context_, AGL_BUFFER_RECT, xywh);
+  aglUpdateContext(context_);
 #elif !defined(WIN32)
     if (!resizable() && overlay && overlay != this)
       ((Fl_Gl_Window*)overlay)->resize(0,0,W,H);
@@ -375,6 +392,10 @@ void Fl_Gl_Window::init() {
   overlay  = 0;
   valid_   = 0;
   damage1_ = 0;
+
+  int H = h();
+  h(1); // Make sure we actually do something in resize()...
+  resize(x(), y(), w(), H);
 }
 
 void Fl_Gl_Window::draw_overlay() {}

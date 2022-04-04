@@ -1,9 +1,9 @@
 //
-// "$Id: gl_start.cxx,v 1.6.2.5.2.7 2002/01/03 08:08:21 matthiaswm Exp $"
+// "$Id: gl_start.cxx,v 1.6.2.5.2.8 2003/01/30 21:44:33 easysw Exp $"
 //
 // OpenGL context routines for the Fast Light Tool Kit (FLTK).
 //
-// Copyright 1998-2002 by Bill Spitzak and others.
+// Copyright 1998-2003 by Bill Spitzak and others.
 //
 // This library is free software; you can redistribute it and/or
 // modify it under the terms of the GNU Library General Public
@@ -54,7 +54,7 @@ static int pw, ph;
 static Fl_Gl_Choice* gl_choice;
 #endif
 
-#ifdef __APPLE__
+#ifdef __MACOS__
 static Fl_Gl_Choice* gl_choice;
 #endif
 
@@ -65,7 +65,7 @@ void gl_start() {
 #ifdef WIN32
     if (!gl_choice) Fl::gl_visual(0);
     context = fl_create_gl_context(Fl_Window::current(), gl_choice);
-#elif defined(__APPLE__)
+#elif defined(__MACOS__)
     // \todo Mac : We need to check the code and verify it with Apple Sample code. The 'shiny'-test should at least work with the software OpenGL emulator
     context = fl_create_gl_context(Fl_Window::current(), gl_choice);
 #else
@@ -73,7 +73,7 @@ void gl_start() {
 #endif
   }
   fl_set_gl_context(Fl_Window::current(), context);
-#if !defined(WIN32) && !defined(__APPLE__)
+#if !defined(WIN32) && !defined(__MACOS__)
   glXWaitX();
 #endif
   if (pw != Fl_Window::current()->w() || ph != Fl_Window::current()->h()) {
@@ -100,7 +100,7 @@ void gl_start() {
 
 void gl_finish() {
   glFlush();
-#if !defined(WIN32) && !defined(__APPLE__)
+#if !defined(WIN32) && !defined(__MACOS__)
   glXWaitGL();
 #endif
 }
@@ -110,7 +110,7 @@ int Fl::gl_visual(int mode, int *alist) {
   if (!c) return 0;
 #ifdef WIN32
   gl_choice = c;
-#elif defined(__APPLE__)
+#elif defined(__MACOS__)
   gl_choice = c;
 #else
   fl_visual = c->vis;
@@ -122,5 +122,5 @@ int Fl::gl_visual(int mode, int *alist) {
 #endif
 
 //
-// End of "$Id: gl_start.cxx,v 1.6.2.5.2.7 2002/01/03 08:08:21 matthiaswm Exp $".
+// End of "$Id: gl_start.cxx,v 1.6.2.5.2.8 2003/01/30 21:44:33 easysw Exp $".
 //

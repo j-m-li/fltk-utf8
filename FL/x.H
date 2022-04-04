@@ -1,9 +1,9 @@
 //
-// "$Id: x.H,v 1.10.2.8.2.11 2002/08/14 16:49:38 easysw Exp $"
+// "$Id: x.H,v 1.10.2.8.2.13 2003/06/01 00:31:32 easysw Exp $"
 //
 // X11 header file for the Fast Light Tool Kit (FLTK).
 //
-// Copyright 1998-2002 by Bill Spitzak and others.
+// Copyright 1998-2003 by Bill Spitzak and others.
 //
 // This library is free software; you can redistribute it and/or
 // modify it under the terms of the GNU Library General Public
@@ -35,8 +35,12 @@
 
 #  ifdef WIN32
 #    include "win32.H"
-#  elif defined(__APPLE__)
+#  elif defined(__MACOS__)
 #    include "mac.H"
+#  elif defined(NANO_X)
+#    include "nx.H"
+#  elif defined(DJGPP)
+#    include "dj2.H"
 #  else
 #    if defined(_ABIN32) || defined(_ABI64) // fix for broken SGI Irix X .h files
 #      pragma set woff 3322
@@ -71,11 +75,11 @@ extern FL_EXPORT Colormap fl_colormap;
 extern FL_EXPORT GC fl_gc;
 extern FL_EXPORT Window fl_window;
 
-#    if HAVE_XUTF8
+#if HAVE_XUTF8 && !USE_XFT
 extern FL_EXPORT XUtf8FontStruct* fl_xfont;
-#    else 
+#else 
 extern FL_EXPORT XFontStruct* fl_xfont;
-#    endif
+#endif
 FL_EXPORT ulong fl_xpixel(Fl_Color i);
 FL_EXPORT ulong fl_xpixel(uchar r, uchar g, uchar b);
 FL_EXPORT void fl_clip_region(Fl_Region);
@@ -141,11 +145,14 @@ FL_EXPORT Fl_Window* fl_find(Window xid);
 extern FL_EXPORT char fl_override_redirect; // hack into Fl_X::make_xid()
 extern FL_EXPORT int fl_background_pixel;  // hack into Fl_X::make_xid()
 
+// Dummy function to register a function for opening files via the window manager...
+inline void fl_open_callback(void (*)(const char *)) {}
+
 extern FL_EXPORT int fl_parse_color(const char* p, uchar& r, uchar& g, uchar& b);
 
 #  endif
 #endif
 
 //
-// End of "$Id: x.H,v 1.10.2.8.2.11 2002/08/14 16:49:38 easysw Exp $".
+// End of "$Id: x.H,v 1.10.2.8.2.13 2003/06/01 00:31:32 easysw Exp $".
 //

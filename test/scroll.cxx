@@ -36,7 +36,7 @@
 #include <string.h>
 #include <stdio.h>
 #include <FL/fl_draw.H>
-#include <FL/math.h>
+#include <FL/fl_math.h>
 #include <FL/Fl_File_Chooser.H>
 #include <FL/Fl_Ps.H>
 #ifdef WIN32
@@ -70,7 +70,7 @@ void print(Fl_Widget *, void *w) {
 	FILE *o = fl_fopen(f, "w");
 	Fl_Ps * doc= new Fl_Ps(o,1,PS_PORTRAIT, PS_A4);
 #endif
-	doc->page(72,72,72,72, PS_UNCHANGED, PS_ASK); //margins
+	doc->page(72,72,72,72, PS_LANDSCAPE, PS_ASK); //margins
 	doc->fit(g->x(),g->y(),g->w(),g->h()); //fitting into margins
 	g->print(doc);
 	delete doc;
@@ -106,7 +106,8 @@ void box_cb(Fl_Widget* o, void*) {
 }
 
 void type_cb(Fl_Widget*, void* v) {
-  thescroll->type(int(v));
+  long x = (long)v;
+  thescroll->type(x);
   thescroll->redraw();
 }
 

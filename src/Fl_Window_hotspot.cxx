@@ -1,9 +1,9 @@
 //
-// "$Id: Fl_Window_hotspot.cxx,v 1.7.2.3.2.3 2002/04/15 20:30:06 easysw Exp $"
+// "$Id: Fl_Window_hotspot.cxx,v 1.7.2.3.2.5 2003/01/30 21:42:59 easysw Exp $"
 //
 // Common hotspot routines for the Fast Light Tool Kit (FLTK).
 //
-// Copyright 1998-2002 by Bill Spitzak and others.
+// Copyright 1998-2003 by Bill Spitzak and others.
 //
 // This library is free software; you can redistribute it and/or
 // modify it under the terms of the GNU Library General Public
@@ -37,7 +37,7 @@ void Fl_Window::hotspot(int X, int Y, int offscreen) {
   // If offscreen is 0 (the default), make sure that the window
   // stays on the screen, if possible.
   if (!offscreen) {
-#if defined(WIN32) || defined(__APPLE__)
+#if defined(WIN32) || defined(__MACOS__)
     // These will be used by reference, so we must passed different variables
     int bt,bx,by;
     x(X);y(Y);
@@ -71,7 +71,7 @@ void Fl_Window::hotspot(int X, int Y, int offscreen) {
 void Fl_Window::hotspot(const Fl_Widget *o, int offscreen) {
   int X = o->w()/2;
   int Y = o->h()/2;
-  while (o != this) {
+  while (o != this && o) {
     X += o->x(); Y += o->y();
     o = o->window();
   }
@@ -80,5 +80,5 @@ void Fl_Window::hotspot(const Fl_Widget *o, int offscreen) {
 
 
 //
-// End of "$Id: Fl_Window_hotspot.cxx,v 1.7.2.3.2.3 2002/04/15 20:30:06 easysw Exp $".
+// End of "$Id: Fl_Window_hotspot.cxx,v 1.7.2.3.2.5 2003/01/30 21:42:59 easysw Exp $".
 //

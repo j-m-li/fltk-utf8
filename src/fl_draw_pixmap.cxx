@@ -1,9 +1,9 @@
 //
-// "$Id: fl_draw_pixmap.cxx,v 1.4.2.8.2.10 2002/08/09 03:17:30 easysw Exp $"
+// "$Id: fl_draw_pixmap.cxx,v 1.4.2.8.2.12 2003/01/30 21:43:43 easysw Exp $"
 //
 // Pixmap drawing code for the Fast Light Tool Kit (FLTK).
 //
-// Copyright 1998-2002 by Bill Spitzak and others.
+// Copyright 1998-2003 by Bill Spitzak and others.
 //
 // This library is free software; you can redistribute it and/or
 // modify it under the terms of the GNU Library General Public
@@ -46,6 +46,7 @@ int fl_measure_pixmap(/*const*/ char* const* data, int &w, int &h) {
 }
 
 int fl_measure_pixmap(const char * const *data, int &w, int &h) {
+  if (!data || !data[0]) return 0;
   int i = sscanf(data[0],"%d%d%d%d",&w,&h,&ncolors,&chars_per_pixel);
   if (i<4 || w<=0 || h<=0 ||
       chars_per_pixel!=1 && chars_per_pixel!=2) return w=0;
@@ -97,7 +98,9 @@ static void cb2(void*v, int x, int y, int w, uchar* buf) {
 }
 
 #else
-
+#if MSDOS && !DJGPP
+typedef unsigned long U32;
+#endif
 // The callback from fl_draw_image to get a row of data passes this:
 struct pixmap_data {
   int w, h;
@@ -230,7 +233,7 @@ int fl_draw_pixmap(const char*const* di, int x, int y, Fl_Color bg) {
       const uchar* p = data[Y];
       if (chars_per_pixel <= 1) {
 	for (int X = 0; X < W; X++) {
-	  int b = (*p++ != transparent_index);
+	  uchar b = (*p++ != transparent_index);
 	  if (*p++ != transparent_index) b |= 2;
 	  if (*p++ != transparent_index) b |= 4;
 	  if (*p++ != transparent_index) b |= 8;
@@ -242,7 +245,7 @@ int fl_draw_pixmap(const char*const* di, int x, int y, Fl_Color bg) {
 	}
       } else {
 	for (int X = 0; X < W; X++) {
-	  int b = 0;
+	  uchar b = 0;
 	  for (int i = 0; i < 8; i++) {
 	    int ind = *p++;
 	    ind = (ind<<8) | (*p++);
@@ -263,5 +266,5 @@ int fl_draw_pixmap(const char*const* di, int x, int y, Fl_Color bg) {
 }
 
 //
-// End of "$Id: fl_draw_pixmap.cxx,v 1.4.2.8.2.10 2002/08/09 03:17:30 easysw Exp $".
+// End of "$Id: fl_draw_pixmap.cxx,v 1.4.2.8.2.12 2003/01/30 21:43:43 easysw Exp $".
 //

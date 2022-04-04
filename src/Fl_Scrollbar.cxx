@@ -112,7 +112,6 @@ int Fl_Scrollbar::handle(int event) {
     handle_release();
     return 1;
   case FL_PUSH:
-    if (Fl::visible_focus()) Fl::focus(this);
     if (pushed_) return 1;
     if (area != 8) pushed_ = area;
     if (pushed_) {
@@ -130,12 +129,6 @@ int Fl_Scrollbar::handle(int event) {
     if (horizontal()) return 0;
     handle_drag(clamp(value() + linesize_ * Fl::e_dy));
     return 1;
-  case FL_FOCUS :
-  case FL_UNFOCUS :
-    if (Fl::visible_focus()) {
-      redraw();
-      return 1;
-    } else return 0;
   case FL_SHORTCUT:
   case FL_KEYBOARD: {
     int v = value();

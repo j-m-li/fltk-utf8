@@ -12,7 +12,7 @@
 
 
 class Fl_Ps:public Fl_Device{
-
+protected:
 	int **fonts;
 	int nb_fonts;
 	int lang_level_;

@@ -1,9 +1,9 @@
 //
-// "$Id: fl_shortcut.cxx,v 1.4.2.9.2.7 2002/08/09 03:17:30 easysw Exp $"
+// "$Id: fl_shortcut.cxx,v 1.4.2.9.2.12 2003/07/18 17:43:30 matthiaswm Exp $"
 //
 // Shortcut support routines for the Fast Light Tool Kit (FLTK).
 //
-// Copyright 1998-2002 by Bill Spitzak and others.
+// Copyright 1998-2003 by Bill Spitzak and others.
 //
 // This library is free software; you can redistribute it and/or
 // modify it under the terms of the GNU Library General Public
@@ -45,7 +45,7 @@
 #include <FL/fl_draw.H>
 #include <ctype.h>
 #include "flstring.h"
-#if !defined(WIN32) && !defined(__APPLE__)
+#if !defined(WIN32) && !defined(__MACOS__)
 #include <FL/x.H>
 #endif
 
@@ -74,10 +74,11 @@ int Fl::test_shortcut(int shortcut) {
   return 0;
 }
 
-#if defined(WIN32) || defined(__APPLE__) // if not X
+#if defined(WIN32) || defined(__MACOS__) // if not X
 // This table must be in numeric order by fltk (X) keysym number:
 struct Keyname {int key; const char* name;};
 static Keyname table[] = {
+  {' ', "Space"},
   {FL_BackSpace, "Backspace"},
   {FL_Tab,	"Tab"},
   {0xff0b/*XK_Clear*/, "Clear"},
@@ -115,20 +116,20 @@ const char * fl_shortcut_label(int shortcut) {
   static char buf[20];
   char *p = buf;
   if (!shortcut) {*p = 0; return buf;}
-#ifdef __APPLE__
-  // \todo Mac :  we might want to change the symbols for Mac users - consider drawing Apple Symbols... .
-  if (shortcut & FL_SHIFT) {strcpy(p,"shift+"); p += 6;} //: Mac hollow up arrow
-  if (shortcut & FL_META)  {strcpy(p,"ctrl+"); p += 5;}  //: Mac 'cotrol'
-  if (shortcut & FL_ALT)   {strcpy(p,"option+"); p += 7;}   //: Mac 'Option' or fancy switch symbol
-  if (shortcut & FL_CTRL)  {strcpy(p,"cmd+"); p += 4;}  //: Mac Apple or Curlyflour
+#ifdef __MACOS__
+    // \todo Mac :  we might want to change the symbols for Mac users - consider drawing Apple Symbols... .
+  if (shortcut & FL_SHIFT) {strcpy(p,"Shift+"); p += 6;} //: Mac hollow up arrow
+  if (shortcut & FL_META)  {strcpy(p,"Cmd+"); p += 4;}  //: Mac 'Apple' key
+  if (shortcut & FL_ALT)   {strcpy(p,"Option+"); p += 7;}   //: Mac 'Alt/Option' or fancy switch symbol
+  if (shortcut & FL_CTRL)  {strcpy(p,"Ctrl+"); p += 5;}  //: Mac ctrl key
 #else
   if (shortcut & FL_META) {strcpy(p,"Meta+"); p += 5;}
   if (shortcut & FL_ALT) {strcpy(p,"Alt+"); p += 4;}
   if (shortcut & FL_SHIFT) {strcpy(p,"Shift+"); p += 6;}
   if (shortcut & FL_CTRL) {strcpy(p,"Ctrl+"); p += 5;}
-#endif // __APPLE__
+#endif // __MACOS__
   int key = shortcut & 0xFFFF;
-#if defined(WIN32) || defined(__APPLE__) // if not X
+#if defined(WIN32) || defined(__MACOS__) // if not X
   if (key >= FL_F && key <= FL_F_Last) {
     *p++ = 'F';
     if (key > FL_F+9) *p++ = (key-FL_F)/10+'0';
@@ -158,10 +159,13 @@ const char * fl_shortcut_label(int shortcut) {
   *p = 0;
   return buf;
 #else
-  const char* q;
+  const char* q = 0;
   if (key == FL_Enter || key == '\r') q="Enter";  // don't use Xlib's "Return":
   else if (key > 32 && key < 0x100) q = 0;
+#if !NANO_X && !DJGPP
+//FIXME_DJGPP
   else q = XKeysymToString(key);
+#endif
   if (!q) {*p++ = uchar(key); *p = 0; return buf;}
   if (p > buf) {strcpy(p,q); return buf;} else return q;
 #endif
@@ -171,7 +175,7 @@ const char * fl_shortcut_label(int shortcut) {
 #include <stdlib.h>
 int fl_old_shortcut(const char* s) {
   if (!s || !*s) return 0;
-  int n = 0;
+  long n = 0;
   if (*s == '#') {n |= FL_ALT; s++;}
   if (*s == '+') {n |= FL_SHIFT; s++;}
   if (*s == '^') {n |= FL_CTRL; s++;}
@@ -200,5 +204,5 @@ int Fl_Widget::test_shortcut() {
 }
 
 //
-// End of "$Id: fl_shortcut.cxx,v 1.4.2.9.2.7 2002/08/09 03:17:30 easysw Exp $".
+// End of "$Id: fl_shortcut.cxx,v 1.4.2.9.2.12 2003/07/18 17:43:30 matthiaswm Exp $".
 //

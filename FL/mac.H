@@ -1,9 +1,9 @@
 //
-// "$Id: mac.H,v 1.1.2.8 2002/06/07 15:06:31 easysw Exp $"
+// "$Id: mac.H,v 1.1.2.10 2003/05/30 07:03:08 easysw Exp $"
 //
 // Mac header file for the Fast Light Tool Kit (FLTK).
 //
-// Copyright 1998-2002 by Bill Spitzak and others.
+// Copyright 1998-2003 by Bill Spitzak and others.
 //
 // This library is free software; you can redistribute it and/or
 // modify it under the terms of the GNU Library General Public
@@ -31,11 +31,11 @@
 #  error "Never use <FL/mac.H> directly; include <FL/x.H> instead."
 #endif // !Fl_X_H
 
-// Standard MacOS Carbon API includes...
-#include <Carbon/Carbon.h>
-
 // Now make some fixes to the headers...
 #undef check			// Dunno where this comes from...
+
+enum { kEventClassFLTK = 'fltk' };
+enum { kEventFLTKBreakLoop = 1, kEventFLTKDataReady };
 
 // Some random X equivalents
 typedef WindowPtr Window;
@@ -112,9 +112,12 @@ extern FL_EXPORT void fl_delete_bitmask(Fl_Bitmask bm);
 
 extern void fl_open_display();
 
+// Register a function for opening files via the finder...
+extern void fl_open_callback(void (*cb)(const char *));
+
 extern FL_EXPORT int fl_parse_color(const char* p, uchar& r, uchar& g, uchar& b);
 
 //
-// End of "$Id: mac.H,v 1.1.2.8 2002/06/07 15:06:31 easysw Exp $".
+// End of "$Id: mac.H,v 1.1.2.10 2003/05/30 07:03:08 easysw Exp $".
 //
 

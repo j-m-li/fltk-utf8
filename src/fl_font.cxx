@@ -22,7 +22,7 @@
 //
 // Please report all bugs and problems to "fltk-bugs@fltk.org".
 //
- 
+
 // Select fonts from the FLTK font table.
 #include "flstring.h"
 #include <FL/Fl.H>
@@ -37,8 +37,12 @@
 
 #ifdef WIN32
 #  include "fl_font_win32.cxx"
-#elif defined(__APPLE__)
+#elif defined(__MACOS__)
 #  include "fl_font_mac.cxx"
+#elif NANO_X
+#  include "fl_font_nx.cxx"
+#elif DJGPP
+#  include "fl_font_dj2.cxx"
 #elif USE_XFT
 #  include "fl_font_xft.cxx"
 #else

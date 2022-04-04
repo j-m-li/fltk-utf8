@@ -1,9 +1,9 @@
 //
-// "$Id: Fl_Group.cxx,v 1.8.2.8.2.18 2002/08/09 01:09:48 easysw Exp $"
+// "$Id: Fl_Group.cxx,v 1.8.2.8.2.21 2003/01/30 21:41:51 easysw Exp $"
 //
 // Group widget for the Fast Light Tool Kit (FLTK).
 //
-// Copyright 1998-2002 by Bill Spitzak and others.
+// Copyright 1998-2003 by Bill Spitzak and others.
 //
 // This library is free software; you can redistribute it and/or
 // modify it under the terms of the GNU Library General Public
@@ -107,7 +107,7 @@ static int navkey() {
   case FL_Down:
     return FL_Down;
   default:
-    if (Fl::event_text()) {
+    if (Fl::event_text() && !Fl::minimal_shortcuts()) {
       switch (Fl::event_text()[0]) {
       case ctrl('N') : return FL_Down;
       case ctrl('P') : return FL_Up;
@@ -417,9 +417,9 @@ void Fl_Group::init_sizes() {
   delete[] sizes_; sizes_ = 0;
 }
 
-short* Fl_Group::sizes() {
+int* Fl_Group::sizes() {
   if (!sizes_) {
-    short* p = sizes_ = new short[4*(children_+2)];
+    int* p = sizes_ = new int[4*(children_+2)];
     // first thing in sizes array is the group's size:
     if (type() < FL_WINDOW) {p[0] = x(); p[2] = y();} else {p[0] = p[2] = 0;}
     p[1] = p[0]+w(); p[3] = p[2]+h();
@@ -466,7 +466,7 @@ void Fl_Group::resize(int X, int Y, int W, int H) {
 
   } else if (children_) {
 
-    short* p = sizes();
+    int* p = sizes();
 
     // get changes in size/position from the initial size:
     int dx = X - p[0];
@@ -521,11 +521,9 @@ void Fl_Group::resize(int X, int Y, int W, int H) {
   Fl_Widget::resize(X,Y,W,H);
 }
 
-void Fl_Group::draw() {
+void Fl_Group::draw_children() {
   Fl_Widget*const* a = array();
   if (damage() & ~FL_DAMAGE_CHILD) { // redraw the entire thing:
-    draw_box();
-    draw_label();
     for (int i=children_; i--;) {
       Fl_Widget& o = **a++;
       draw_child(o);
@@ -534,6 +532,14 @@ void Fl_Group::draw() {
   } else {	// only redraw the children that need it:
     for (int i=children_; i--;) update_child(**a++);
   }
+}
+
+void Fl_Group::draw() {
+  if (damage() & ~FL_DAMAGE_CHILD) { // redraw the entire thing:
+    draw_box();
+    draw_label();
+  }
+  draw_children();
 }
 
 // Draw a child only if it needs it:
@@ -589,5 +595,5 @@ void Fl_Group::draw_outside_label(const Fl_Widget& widget) const {
 }
 
 //
-// End of "$Id: Fl_Group.cxx,v 1.8.2.8.2.18 2002/08/09 01:09:48 easysw Exp $".
+// End of "$Id: Fl_Group.cxx,v 1.8.2.8.2.21 2003/01/30 21:41:51 easysw Exp $".
 //

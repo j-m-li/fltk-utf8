@@ -1,9 +1,9 @@
 //
-// "$Id: Fl_abort.cxx,v 1.8.2.3.2.4 2002/01/01 15:11:31 easysw Exp $"
+// "$Id: Fl_abort.cxx,v 1.8.2.3.2.5 2003/01/30 21:43:01 easysw Exp $"
 //
 // Warning/error message code for the Fast Light Tool Kit (FLTK).
 //
-// Copyright 1998-2002 by Bill Spitzak and others.
+// Copyright 1998-2003 by Bill Spitzak and others.
 //
 // This library is free software; you can redistribute it and/or
 // modify it under the terms of the GNU Library General Public
@@ -33,6 +33,8 @@
 #include <stdarg.h>
 #include "flstring.h"
 
+const char* fl_error = "Error";
+
 #ifdef WIN32
 #  include <windows.h>
 
@@ -46,7 +48,7 @@ static void error(const char *format, ...) {
   va_start(args, format);
   vsnprintf(buf, 1024, format, args);
   va_end(args);
-  MessageBox(0,buf,"Error",MB_ICONEXCLAMATION|MB_SYSTEMMODAL);
+  MessageBox(0,buf,fl_error,MB_ICONEXCLAMATION|MB_SYSTEMMODAL);
 }
 
 static void fatal(const char *format, ...) {
@@ -55,7 +57,7 @@ static void fatal(const char *format, ...) {
   va_start(args, format);
   vsnprintf(buf, 1024, format, args);
   va_end(args);
-  MessageBox(0,buf,"Error",MB_ICONSTOP|MB_SYSTEMMODAL);
+  MessageBox(0,buf,fl_error,MB_ICONSTOP|MB_SYSTEMMODAL);
   ::exit(1);
 }
 
@@ -96,5 +98,5 @@ void (*Fl::error)(const char* format, ...) = ::error;
 void (*Fl::fatal)(const char* format, ...) = ::fatal;
 
 //
-// End of "$Id: Fl_abort.cxx,v 1.8.2.3.2.4 2002/01/01 15:11:31 easysw Exp $".
+// End of "$Id: Fl_abort.cxx,v 1.8.2.3.2.5 2003/01/30 21:43:01 easysw Exp $".
 //

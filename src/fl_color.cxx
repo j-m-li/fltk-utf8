@@ -1,9 +1,9 @@
 //
-// "$Id: fl_color.cxx,v 1.12.2.5.2.7 2002/05/16 02:16:17 easysw Exp $"
+// "$Id: fl_color.cxx,v 1.12.2.5.2.8 2003/01/30 21:43:28 easysw Exp $"
 //
 // Color functions for the Fast Light Tool Kit (FLTK).
 //
-// Copyright 1998-2002 by Bill Spitzak and others.
+// Copyright 1998-2003 by Bill Spitzak and others.
 //
 // This library is free software; you can redistribute it and/or
 // modify it under the terms of the GNU Library General Public
@@ -27,8 +27,12 @@
 
 #ifdef WIN32
 #  include "fl_color_win32.cxx"
-#elif defined(__APPLE__)
+#elif defined(__MACOS__)
 #  include "fl_color_mac.cxx"
+#elif defined(NANO_X)
+#  include "fl_color_nx.cxx"
+#elif defined(DJGPP)
+#  include "fl_color_dj2.cxx"
 #else
 
 // Also code to look at the X visual and figure out the best way to turn
@@ -45,7 +49,7 @@
 
 #  include "Fl_XColor.H"
 
-
+const char* fl_requires_true_color = "Requires true color visual";
 
 ////////////////////////////////////////////////////////////////
 // figure_out_visual() calculates masks & shifts for generating
@@ -62,7 +66,7 @@ static void figure_out_visual() {
     fl_redmask = 0;
     return;
 #  else
-    Fl::fatal("Requires true color visual");
+    Fl::fatal(fl_requires_true_color);
 #  endif
   }
 
@@ -95,7 +99,7 @@ static void figure_out_visual() {
 
 }
 
-static unsigned fl_cmap[256] = {
+static unsigned long fl_cmap[256] = {
 #include "fl_cmap.h" // this is a file produced by "cmap.cxx":
 };
 
@@ -381,5 +385,5 @@ Fl_Color fl_contrast(Fl_Color fg, Fl_Color bg) {
 }
 
 //
-// End of "$Id: fl_color.cxx,v 1.12.2.5.2.7 2002/05/16 02:16:17 easysw Exp $".
+// End of "$Id: fl_color.cxx,v 1.12.2.5.2.8 2003/01/30 21:43:28 easysw Exp $".
 //

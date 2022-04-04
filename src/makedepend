@@ -34,7 +34,7 @@ Fl_Box.o: ../FL/Enumerations.H ../FL/Fl_Export.H
 Fl_Button.o: ../FL/Fl.H ../FL/Enumerations.H ../FL/Fl_Export.H
 Fl_Button.o: ../FL/Fl_Button.H ../FL/Fl_Widget.H ../FL/Fl_Group.H
 Fl_Button.o: ../FL/Fl_Window.H ../FL/Fl_Group.H
-Fl_Chart.o: ../FL/math.h ../FL/Fl.H ../FL/Enumerations.H ../FL/Fl_Export.H
+Fl_Chart.o: ../FL/fl_math.h ../FL/Fl.H ../FL/Enumerations.H ../FL/Fl_Export.H
 Fl_Chart.o: ../FL/Fl_Chart.H ../FL/Fl_Widget.H ../FL/fl_draw.H flstring.h
 Fl_Chart.o: ../FL/Fl_Export.H ../config.h
 Fl_Check_Browser.o: flstring.h ../FL/Fl_Export.H ../config.h ../FL/fl_draw.H
@@ -58,13 +58,13 @@ Fl_Color_Chooser.o: ../FL/Fl_Button.H ../FL/Fl_Choice.H ../FL/Fl_Menu_.H
 Fl_Color_Chooser.o: ../FL/Fl_Menu_Item.H ../FL/Fl_Image.H ../FL/x.H
 Fl_Color_Chooser.o: ../FL/Fl_Window.H ../FL/Fl_Value_Input.H
 Fl_Color_Chooser.o: ../FL/Fl_Valuator.H ../FL/Fl_Input.H ../FL/Fl_Input_.H
-Fl_Color_Chooser.o: ../FL/fl_draw.H ../FL/math.h ../FL/Fl_Window.H
+Fl_Color_Chooser.o: ../FL/fl_draw.H ../FL/fl_math.h ../FL/Fl_Window.H
 Fl_Color_Chooser.o: ../FL/Fl_Group.H
 Fl_Counter.o: ../FL/Fl.H ../FL/Enumerations.H ../FL/Fl_Export.H
 Fl_Counter.o: ../FL/Fl_Counter.H ../FL/Fl_Valuator.H ../FL/Fl_Widget.H
 Fl_Counter.o: ../FL/fl_draw.H
 Fl_Dial.o: ../FL/Fl.H ../FL/Enumerations.H ../FL/Fl_Export.H ../FL/Fl_Dial.H
-Fl_Dial.o: ../FL/Fl_Valuator.H ../FL/Fl_Widget.H ../FL/fl_draw.H ../FL/math.h
+Fl_Dial.o: ../FL/Fl_Valuator.H ../FL/Fl_Widget.H ../FL/fl_draw.H ../FL/fl_math.h
 Fl_Double_Window.o: ../config.h ../FL/Fl.H ../FL/Enumerations.H
 Fl_Double_Window.o: ../FL/Fl_Export.H ../FL/Fl_Double_Window.H
 Fl_Double_Window.o: ../FL/Fl_Window.H ../FL/x.H ../FL/fl_draw.H
@@ -123,7 +123,8 @@ Fl_Help_Dialog.o: ../FL/Fl_Window.H ../FL/Fl_Help_View.H ../FL/Fl.H
 Fl_Help_Dialog.o: ../FL/Fl_Group.H ../FL/Fl_Widget.H ../FL/Fl_Scrollbar.H
 Fl_Help_Dialog.o: ../FL/Fl_Slider.H ../FL/Fl_Valuator.H ../FL/fl_draw.H
 Fl_Help_Dialog.o: ../FL/Fl_Shared_Image.H ../FL/Fl_Image.H ../FL/x.H
-Fl_Help_Dialog.o: ../FL/Fl_Button.H flstring.h ../FL/Fl_Export.H ../config.h
+Fl_Help_Dialog.o: ../FL/Fl_Input.H ../FL/Fl_Input_.H flstring.h
+Fl_Help_Dialog.o: ../FL/Fl_Export.H ../config.h ../FL/fl_ask.H
 Fl_Help_View.o: ../FL/Fl_Help_View.H ../FL/Fl.H ../FL/Enumerations.H
 Fl_Help_View.o: ../FL/Fl_Export.H ../FL/Fl_Group.H ../FL/Fl_Widget.H
 Fl_Help_View.o: ../FL/Fl_Scrollbar.H ../FL/Fl_Slider.H ../FL/Fl_Valuator.H
@@ -252,11 +253,11 @@ Fl_Tooltip.o: ../FL/Fl_Export.H ../FL/Fl_Widget.H ../FL/fl_draw.H
 Fl_Tooltip.o: ../FL/Fl_Menu_Window.H ../FL/Fl_Single_Window.H
 Fl_Tooltip.o: ../FL/Fl_Window.H
 Fl_Valuator.o: ../FL/Fl.H ../FL/Enumerations.H ../FL/Fl_Export.H
-Fl_Valuator.o: ../FL/Fl_Valuator.H ../FL/Fl_Widget.H ../FL/math.h
+Fl_Valuator.o: ../FL/Fl_Valuator.H ../FL/Fl_Widget.H ../FL/fl_math.h
 Fl_Value_Input.o: ../FL/Fl.H ../FL/Enumerations.H ../FL/Fl_Export.H
 Fl_Value_Input.o: ../FL/Fl_Value_Input.H ../FL/Fl_Valuator.H
 Fl_Value_Input.o: ../FL/Fl_Widget.H ../FL/Fl_Input.H ../FL/Fl_Input_.H
-Fl_Value_Input.o: ../FL/Fl_Group.H ../FL/math.h
+Fl_Value_Input.o: ../FL/Fl_Group.H ../FL/fl_math.h
 Fl_Value_Output.o: ../FL/Fl.H ../FL/Enumerations.H ../FL/Fl_Export.H
 Fl_Value_Output.o: ../FL/Fl_Value_Output.H ../FL/Fl_Valuator.H
 Fl_Value_Output.o: ../FL/Fl_Widget.H ../FL/fl_draw.H
@@ -300,7 +301,7 @@ Fl_get_key.o: ../FL/Fl.H ../FL/Enumerations.H ../FL/Fl_Export.H ../FL/x.H
 Fl_get_key.o: ../FL/Fl_Window.H
 Fl_get_system_colors.o: ../FL/Fl.H ../FL/Enumerations.H ../FL/Fl_Export.H
 Fl_get_system_colors.o: ../FL/fl_draw.H ../FL/x.H ../FL/Fl_Window.H
-Fl_get_system_colors.o: ../FL/math.h flstring.h ../FL/Fl_Export.H ../config.h
+Fl_get_system_colors.o: ../FL/fl_math.h flstring.h ../FL/Fl_Export.H ../config.h
 Fl_get_system_colors.o: ../FL/Fl_Pixmap.H ../FL/Fl_Image.H ../FL/x.H
 Fl_get_system_colors.o: ../FL/Fl_Tiled_Image.H tile.xpm
 Fl_grab.o: ../config.h ../FL/Fl.H ../FL/Enumerations.H ../FL/Fl_Export.H
@@ -321,7 +322,7 @@ filename_isdir.o: flstring.h ../FL/Fl_Export.H ../config.h ../FL/filename.H
 filename_list.o: ../FL/filename.H flstring.h ../FL/Fl_Export.H ../config.h
 filename_match.o: ../FL/filename.H
 filename_setext.o: ../FL/filename.H flstring.h ../FL/Fl_Export.H ../config.h
-fl_arc.o: ../FL/fl_draw.H ../FL/Enumerations.H ../FL/Fl_Export.H ../FL/math.h
+fl_arc.o: ../FL/fl_draw.H ../FL/Enumerations.H ../FL/Fl_Export.H ../FL/fl_math.h
 fl_arci.o: ../FL/fl_draw.H ../FL/Enumerations.H ../FL/Fl_Export.H ../FL/x.H
 fl_arci.o: ../FL/Fl_Window.H
 fl_ask.o: flstring.h ../FL/Fl_Export.H ../config.h ../FL/Fl.H
@@ -414,9 +415,10 @@ fl_show_colormap.o: ../FL/fl_draw.H ../FL/fl_show_colormap.H ../config.h
 fl_symbols.o: ../FL/Fl.H ../FL/Enumerations.H ../FL/Fl_Export.H
 fl_symbols.o: ../FL/fl_draw.H flstring.h ../FL/Fl_Export.H ../config.h
 fl_vertex.o: ../FL/fl_draw.H ../FL/Enumerations.H ../FL/Fl_Export.H ../FL/x.H
-fl_vertex.o: ../FL/Fl_Window.H ../FL/math.h
+fl_vertex.o: ../FL/Fl_Window.H ../FL/fl_math.h
 Fl_Gl_Choice.o: ../config.h ../FL/Fl.H ../FL/Enumerations.H ../FL/Fl_Export.H
-Fl_Gl_Choice.o: ../FL/x.H ../FL/Fl_Window.H Fl_Gl_Choice.H
+Fl_Gl_Choice.o: ../FL/x.H ../FL/Fl_Window.H Fl_Gl_Choice.H flstring.h
+Fl_Gl_Choice.o: ../FL/Fl_Export.H
 Fl_Gl_Overlay.o: ../config.h ../FL/Fl.H ../FL/Enumerations.H
 Fl_Gl_Overlay.o: ../FL/Fl_Export.H ../FL/x.H ../FL/Fl_Window.H Fl_Gl_Choice.H
 Fl_Gl_Overlay.o: ../FL/Fl_Gl_Window.H

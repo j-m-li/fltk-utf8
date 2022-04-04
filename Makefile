@@ -35,16 +35,16 @@ all: makeinclude
 
 install: makeinclude
 	-mkdir -p $(bindir)
-	$(RM) $(bindir)/fltk-utf8-config
-	-cp fltk-utf8-config $(bindir)
-	-chmod 755 $(bindir)/fltk-utf8-config
+	$(RM) $(bindir)/fltk-config
+	-cp fltk-config $(bindir)
+	-chmod 755 $(bindir)/fltk-config
 	for dir in FL $(DIRS); do\
 		echo "=== installing $$dir ===";\
 		(cd $$dir; $(MAKE) $(MFLAGS) install) || break;\
 	done
 
 uninstall: makeinclude
-	$(RM) $(bindir)/fltk-utf8-config
+	$(RM) $(bindir)/fltk-config
 	for dir in FL $(DIRS); do\
 		echo "=== uninstalling $$dir ===";\
 		(cd $$dir; $(MAKE) $(MFLAGS) uninstall) || break;\
@@ -62,6 +62,12 @@ clean:
 		echo "=== cleaning $$dir ===";\
 		(cd $$dir; $(MAKE) $(MFLAGS) clean) || break;\
 	done
+	(cd lib ;rm -f *.lib *.dll *.exp)
+	(rm -f `find . -name .DS_Store -print`)
+	(rm -f `find . -name '*~' -print`)
+	(cd visualc; rm -rf `find -name '*' -type d  -print`)
+	(chmod 0664 `find -name '*' -type f  -print` 2> /dev/null)
+	(chmod 775 configure fluid/tounix debian/rules 2>/dev/null)
 
 distclean: clean
 	$(RM) config.* makeinclude
@@ -82,10 +88,10 @@ configure: configure.in
 	autoconf
 
 portable-dist:
-	epm -v fltk
+	epm -v -s fltk.xpm fltk-utf8
 
 native-dist:
-	epm -v -f native fltk
+	epm -v -f native fltk-utf8
 
 
 #
