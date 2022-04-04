@@ -1,9 +1,9 @@
 //
-// "$Id: fl_read_image.cxx,v 1.1.2.2 2003/01/30 21:44:01 easysw Exp $"
+// "$Id: fl_read_image.cxx,v 1.1.2.5 2004/04/25 01:22:56 easysw Exp $"
 //
 // X11 image reading routines for the Fast Light Tool Kit (FLTK).
 //
-// Copyright 1998-2003 by Bill Spitzak and others.
+// Copyright 1998-2004 by Bill Spitzak and others.
 //
 // This library is free software; you can redistribute it and/or
 // modify it under the terms of the GNU Library General Public
@@ -33,17 +33,17 @@
 
 #ifdef WIN32
 #  include "fl_read_image_win32.cxx"
-#elif defined(__MACOS__)
+#elif defined(__APPLE__)
 #  include "fl_read_image_mac.cxx"
-#elif defined(NANO_X)
-#  include "fl_read_image_nx.cxx"
-#elif defined(DJGPP)
-#  include "fl_read_image_dj2.cxx"
 #else
 #  include <X11/Xutil.h>
 #  ifdef __sgi
 #    include <X11/extensions/readdisplay.h>
 #  endif // __sgi
+
+// Defined in fl_color.cxx
+extern uchar fl_redmask, fl_greenmask, fl_bluemask;
+extern int fl_redshift, fl_greenshift, fl_blueshift, fl_extrashift;
 
 //
 // 'fl_read_image()' - Read an image from the current window.
@@ -121,8 +121,16 @@ fl_read_image(uchar *p,		// I - Pixel buffer or NULL to allocate
   // Initialize the default colors/alpha in the whole image...
   memset(p, alpha, w * h * d);
 
+  // Check that we have valid mask/shift values...
+  if (!image->red_mask && image->bits_per_pixel > 12) {
+    // Greater than 12 bits must be TrueColor...
+    image->red_mask   = fl_redmask << fl_redshift;
+    image->green_mask = fl_greenmask << fl_greenshift;
+    image->blue_mask  = fl_bluemask << fl_blueshift;
+  }
+
   // Check if we have colormap image...
-  if (image->red_mask == 0) {
+  if (!image->red_mask) {
     // Get the colormap entries for this window...
     maxindex = fl_visual->visual->map_entries;
 
@@ -397,5 +405,5 @@ fl_read_image(uchar *p,		// I - Pixel buffer or NULL to allocate
 #endif
 
 //
-// End of "$Id: fl_read_image.cxx,v 1.1.2.2 2003/01/30 21:44:01 easysw Exp $".
+// End of "$Id: fl_read_image.cxx,v 1.1.2.5 2004/04/25 01:22:56 easysw Exp $".
 //

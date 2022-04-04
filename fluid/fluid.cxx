@@ -1,9 +1,9 @@
 //
-// "$Id: fluid.cxx,v 1.15.2.13.2.33 2002/09/02 10:41:51 easysw Exp $"
+// "$Id: fluid.cxx,v 1.15.2.13.2.46 2004/09/08 15:42:47 easysw Exp $"
 //
 // FLUID main entry for the Fast Light Tool Kit (FLTK).
 //
-// Copyright 1998-2002 by Bill Spitzak and others.
+// Copyright 1998-2004 by Bill Spitzak and others.
 //
 // This library is free software; you can redistribute it and/or
 // modify it under the terms of the GNU Library General Public
@@ -24,7 +24,6 @@
 //
 
 #include <FL/Fl.H>
-#include <FL/fl_utf8.H>
 #include <FL/Fl_Double_Window.H>
 #include <FL/Fl_Box.H>
 #include <FL/Fl_Button.H>
@@ -98,7 +97,7 @@ void goto_source_dir() {
   strlcpy(buffer, filename, sizeof(buffer));
   int n = p-filename; if (n>1) n--; buffer[n] = 0;
   if (!pwd) {
-    pwd = fl_getcwd(0,1024);
+    pwd = getcwd(0,1024);
     if (!pwd) {fprintf(stderr,"getwd : %s\n",strerror(errno)); return;}
   }
   if (chdir(buffer)<0) {fprintf(stderr, "Can't chdir to %s : %s\n",
@@ -136,7 +135,7 @@ void save_position(Fl_Window *w, const char *prefsName) {
   pos.set("y", w->y());
   pos.set("w", w->w());
   pos.set("h", w->h());
-  pos.set("visible", w->shown() && w->visible() );
+  pos.set("visible", (int)(w->shown() && w->visible()));
 }
 
 Fl_Window *main_window;
@@ -428,7 +427,7 @@ void show_help(const char *name) {
   
   if (!help_dialog) help_dialog = new Fl_Help_Dialog();
 
-  if ((docdir = fl_getenv("FLTK_DOCDIR")) == NULL) {
+  if ((docdir = getenv("FLTK_DOCDIR")) == NULL) {
 #ifdef __EMX__
     // Doesn't make sense to have a hardcoded fallback
     static char fltk_docdir[1024];
@@ -714,7 +713,7 @@ do_shell_command(Fl_Return_Button*, void*) {
   shell_run_buffer->append("\n");
   shell_run_window->label("Shell Command Running...");
 
-  if ((shell_pipe = popen(command, "r")) == NULL) {
+  if ((shell_pipe = popen((char *)command, "r")) == NULL) {
     fl_alert("Unable to run shell command: %s", strerror(errno));
     return;
   }
@@ -887,5 +886,5 @@ int main(int argc,char **argv) {
 }
 
 //
-// End of "$Id: fluid.cxx,v 1.15.2.13.2.33 2002/09/02 10:41:51 easysw Exp $".
+// End of "$Id: fluid.cxx,v 1.15.2.13.2.46 2004/09/08 15:42:47 easysw Exp $".
 //

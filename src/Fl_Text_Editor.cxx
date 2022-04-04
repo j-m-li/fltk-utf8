@@ -1,7 +1,7 @@
 //
-// "$Id: Fl_Text_Editor.cxx,v 1.9.2.7 2002/08/09 03:17:30 easysw Exp $"
+// "$Id: Fl_Text_Editor.cxx,v 1.9.2.21 2004/07/27 16:02:21 easysw Exp $"
 //
-// Copyright 2001-2002 by Bill Spitzak and others.
+// Copyright 2001-2004 by Bill Spitzak and others.
 // Original code Copyright Mark Edel.  Permission to distribute under
 // the LGPL for the FLTK library granted by Mark Edel.
 //
@@ -31,8 +31,26 @@
 #include <FL/Fl_Text_Editor.H>
 #include <FL/fl_ask.H>
 
-extern void fl_reset_spot(void);
-extern void fl_set_spot(int font, int size, int x, int y, int w, int h);
+static int utf_len(char c)
+{
+  if (!(c & 0x80)) return 1;
+  if (c & 0x40) {
+    if (c & 0x20) {
+      if (c & 0x10) {
+        if (c & 0x08) {
+          if (c & 0x04) {
+            return 6;
+          }
+          return 5;
+        }
+        return 4;
+      }
+      return 3;
+    }
+    return 2;
+  }
+  return 0;
+}
 
 Fl_Text_Editor::Fl_Text_Editor(int X, int Y, int W, int H,  const char* l)
     : Fl_Text_Display(X, Y, W, H, l) {
@@ -49,12 +67,10 @@ Fl_Text_Editor::Fl_Text_Editor(int X, int Y, int W, int H,  const char* l)
 
 Fl_Text_Editor::Key_Binding* Fl_Text_Editor::global_key_bindings = 0;
 
-static int ctrl_a(int, Fl_Text_Editor* e);
-
 // These are the default key bindings every widget should start with
 static struct {
   int key;
-  long state;
+  int state;
   Fl_Text_Editor::Key_Func func;
 } default_key_bindings[] = {
   { FL_Escape,    FL_TEXT_EDITOR_ANY_STATE, Fl_Text_Editor::kf_ignore     },
@@ -104,40 +120,19 @@ static struct {
   { FL_Insert,    FL_CTRL,                  Fl_Text_Editor::kf_copy       },
   { 'v',          FL_CTRL,                  Fl_Text_Editor::kf_paste      },
   { FL_Insert,    FL_SHIFT,                 Fl_Text_Editor::kf_paste      },
-  { 'a',          FL_CTRL,                  ctrl_a                        },
+  { 'a',          FL_CTRL,                  Fl_Text_Editor::kf_select_all },
 
-#ifdef __MACOS__
+#ifdef __APPLE__
   // Define CMD+key accelerators...
   { 'z',          FL_COMMAND,               Fl_Text_Editor::kf_undo       },
   { 'x',          FL_COMMAND,               Fl_Text_Editor::kf_cut        },
   { 'c',          FL_COMMAND,               Fl_Text_Editor::kf_copy       },
   { 'v',          FL_COMMAND,               Fl_Text_Editor::kf_paste      },
-  { 'a',          FL_COMMAND,               ctrl_a                        },
-#endif // __MACOS__
+  { 'a',          FL_COMMAND,               Fl_Text_Editor::kf_select_all },
+#endif // __APPLE__
 
   { 0,            0,                        0                             }
 };
-
-static int utf_len(char c)
-{
-  if (!(c & 0x80)) return 1;
-  if (c & 0x40) {
-    if (c & 0x20) {
-      if (c & 0x10) {
-        if (c & 0x08) {
-          if (c & 0x04) {
-            return 6;
-          }
-          return 5;
-        }
-        return 4;
-      }
-      return 3;
-    }
-    return 2;
-  }
-  return 0;
-}
 
 void Fl_Text_Editor::add_default_key_bindings(Key_Binding** list) {
   for (int i = 0; default_key_bindings[i].key; i++) {
@@ -210,8 +205,8 @@ int Fl_Text_Editor::kf_default(int c, Fl_Text_Editor* e) {
   if (e->insert_mode()) e->insert(s);
   else e->overstrike(s);
   e->show_insert_position();
+  e->set_changed();
   if (e->when()&FL_WHEN_CHANGED) e->do_callback();
-  else e->set_changed();
   return 1;
 }
 
@@ -225,12 +220,13 @@ int Fl_Text_Editor::kf_backspace(int, Fl_Text_Editor* e) {
     char c = e->buffer()->character(e->insert_position());
     if (c & 0x80 && c & 0x40) {
       l = utf_len(c);
-    } 
+    }
     e->buffer()->select(e->insert_position(), e->insert_position()+l);
   }
   kill_selection(e);
   e->show_insert_position();
-  if (e->when()&FL_WHEN_CHANGED) e->do_callback(); else e->set_changed();
+  e->set_changed();
+  if (e->when()&FL_WHEN_CHANGED) e->do_callback();
   return 1;
 }
 
@@ -238,7 +234,8 @@ int Fl_Text_Editor::kf_enter(int, Fl_Text_Editor* e) {
   kill_selection(e);
   e->insert("\n");
   e->show_insert_position();
-  if (e->when()&FL_WHEN_CHANGED) e->do_callback(); else e->set_changed();
+  e->set_changed();
+  if (e->when()&FL_WHEN_CHANGED) e->do_callback();
   return 1;
 }
 
@@ -330,20 +327,6 @@ int Fl_Text_Editor::kf_c_s_move(int c, Fl_Text_Editor* e) {
   return 1;
 }
 
-static int ctrl_a(int, Fl_Text_Editor* e) {
-  // make 2+ ^A's in a row toggle select-all:
-  int i = e->buffer()->line_start(e->insert_position());
-  if (i != e->insert_position())
-    return Fl_Text_Editor::kf_move(FL_Home, e);
-  else {
-    if (e->buffer()->selected())
-      e->buffer()->unselect();
-    else
-      Fl_Text_Editor::kf_select_all(0, e);
-  }
-  return 1;
-}
-
 int Fl_Text_Editor::kf_home(int, Fl_Text_Editor* e) {
     return kf_move(FL_Home, e);
 }
@@ -388,12 +371,14 @@ int Fl_Text_Editor::kf_delete(int, Fl_Text_Editor* e) {
     char c = e->buffer()->character(e->insert_position());
     if (c & 0x80 && c & 0x40) {
       l = utf_len(c);
-    } 
+    }
     e->buffer()->select(e->insert_position(), e->insert_position()+l);
   }
+
   kill_selection(e);
   e->show_insert_position();
-  if (e->when()&FL_WHEN_CHANGED) e->do_callback(); else e->set_changed();
+  e->set_changed();
+  if (e->when()&FL_WHEN_CHANGED) e->do_callback();
   return 1;
 }
 
@@ -409,7 +394,8 @@ int Fl_Text_Editor::kf_copy(int, Fl_Text_Editor* e) {
 int Fl_Text_Editor::kf_cut(int c, Fl_Text_Editor* e) {
   kf_copy(c, e);
   kill_selection(e);
-  if (e->when()&FL_WHEN_CHANGED) e->do_callback(); else e->set_changed();
+  e->set_changed();
+  if (e->when()&FL_WHEN_CHANGED) e->do_callback();
   return 1;
 }
 
@@ -417,7 +403,8 @@ int Fl_Text_Editor::kf_paste(int, Fl_Text_Editor* e) {
   kill_selection(e);
   Fl::paste(*e, 1);
   e->show_insert_position();
-  if (e->when()&FL_WHEN_CHANGED) e->do_callback(); else e->set_changed();
+  e->set_changed();
+  if (e->when()&FL_WHEN_CHANGED) e->do_callback();
   return 1;
 }
 
@@ -432,7 +419,8 @@ int Fl_Text_Editor::kf_undo(int , Fl_Text_Editor* e) {
   int ret = e->buffer()->undo(&crsr);
   e->insert_position(crsr);
   e->show_insert_position();
-  if (e->when()&FL_WHEN_CHANGED) e->do_callback(); else e->set_changed();
+  e->set_changed();
+  if (e->when()&FL_WHEN_CHANGED) e->do_callback();
   return ret;
 }
 
@@ -450,8 +438,8 @@ int Fl_Text_Editor::handle_key() {
       else overstrike(Fl::event_text());
     }
     show_insert_position();
+    set_changed();
     if (when()&FL_WHEN_CHANGED) do_callback();
-    else set_changed();
     return 1;
   }
 
@@ -468,8 +456,7 @@ int Fl_Text_Editor::handle_key() {
 void Fl_Text_Editor::maybe_do_callback() {
 //  printf("Fl_Text_Editor::maybe_do_callback()\n");
 //  printf("changed()=%d, when()=%x\n", changed(), when());
-  if (changed() || (when()&FL_WHEN_NOT_CHANGED)) {
-    clear_changed(); do_callback();}
+  if (changed() || (when()&FL_WHEN_NOT_CHANGED)) do_callback();
 }
 
 int Fl_Text_Editor::handle(int event) {
@@ -479,7 +466,8 @@ int Fl_Text_Editor::handle(int event) {
     dragType = -1;
     Fl::paste(*this, 0);
     Fl::focus(this);
-    if (when()&FL_WHEN_CHANGED) do_callback(); else set_changed();
+    set_changed();
+    if (when()&FL_WHEN_CHANGED) do_callback();
     return 1;
   }
 
@@ -487,17 +475,15 @@ int Fl_Text_Editor::handle(int event) {
     case FL_FOCUS:
       fl_set_spot(textfont(), textsize(), x(), y(), w(), h());
       show_cursor(mCursorOn); // redraws the cursor
-      if (buffer()->primary_selection()->start() !=
-          buffer()->primary_selection()->end()) redraw(); // Redraw selections...
+      if (buffer()->selected()) redraw(); // Redraw selections...
       Fl::focus(this);
       return 1;
 
     case FL_UNFOCUS:
-      fl_reset_spot();
       show_cursor(mCursorOn); // redraws the cursor
-      if (buffer()->primary_selection()->start() !=
-          buffer()->primary_selection()->end()) redraw(); // Redraw selections...
+      if (buffer()->selected()) redraw(); // Redraw selections...
     case FL_HIDE:
+      fl_reset_spot();
       if (when() & FL_WHEN_RELEASE) maybe_do_callback();
       return 1;
 
@@ -513,19 +499,20 @@ int Fl_Text_Editor::handle(int event) {
       if (insert_mode()) insert(Fl::event_text());
       else overstrike(Fl::event_text());
       show_insert_position();
-      if (when()&FL_WHEN_CHANGED) do_callback(); else set_changed();
+      set_changed();
+      if (when()&FL_WHEN_CHANGED) do_callback();
       return 1;
+
     case FL_ENTER:
 // MRS: WIN32 only?  Need to test!
 //    case FL_MOVE:
       show_cursor(mCursorOn);
       return 1;
-
   }
 
   return Fl_Text_Display::handle(event);
 }
 
 //
-// End of "$Id: Fl_Text_Editor.cxx,v 1.9.2.7 2002/08/09 03:17:30 easysw Exp $".
+// End of "$Id: Fl_Text_Editor.cxx,v 1.9.2.21 2004/07/27 16:02:21 easysw Exp $".
 //

@@ -1,9 +1,9 @@
 //
-// "$Id: gl_draw.cxx,v 1.7.2.5 2001/03/14 17:20:02 spitzak Exp $"
+// "$Id: gl_draw.cxx,v 1.7.2.5.2.17 2004/09/09 21:34:48 matthiaswm Exp $"
 //
 // OpenGL drawing support routines for the Fast Light Tool Kit (FLTK).
 //
-// Copyright 1998-2002 by Bill Spitzak and others.
+// Copyright 1998-2004 by Bill Spitzak and others.
 //
 // This library is free software; you can redistribute it and/or
 // modify it under the terms of the GNU Library General Public
@@ -24,7 +24,7 @@
 //
 
 // Functions from <FL/gl.h>
-// See also Fl_Gl_Window and gl_start.C
+// See also Fl_Gl_Window and gl_start.cxx
 
 #include "flstring.h"
 #if HAVE_GL
@@ -35,8 +35,11 @@
 #include <FL/fl_draw.H>
 #include "Fl_Gl_Choice.H"
 #include "Fl_Font.H"
-#include <stdlib.h>
 #include <FL/fl_utf8.H>
+
+#if !defined(WIN32) && !defined(__APPLE__)
+#include <FL/Xutf8.h>
+#endif
 
 #if USE_XFT
 extern XFontStruct* fl_xxfont();
@@ -49,6 +52,7 @@ double gl_width(const char* s, int n) {return fl_width(s,n);}
 double gl_width(uchar c) {return fl_width(c);}
 
 static Fl_FontSize *gl_fontsize;
+
 
 void  gl_font(int fontid, int size) {
   fl_font(fontid, size);
@@ -64,27 +68,83 @@ static void get_list(int r) {
   gl_fontsize->glok[r] = 1;
 #ifdef WIN32
   HFONT oldFid = (HFONT)SelectObject(fl_gc, gl_fontsize->fid);
-  wglUseFontBitmapsW(fl_gc, ii, ii + 0x03ff, gl_fontsize->listbase+ii); 
+  wglUseFontBitmapsW(fl_gc, ii, ii + 0x03ff, gl_fontsize->listbase+ii);
   SelectObject(fl_gc, oldFid);
-#elif defined(__MACOS__)
+#elif defined(__APPLE_QD__)
     aglUseFont(aglGetCurrentContext(), gl_fontsize->font, gl_fontsize->face,
                gl_fontsize->size, ii, 0x03ff fl_fontsize->listbase+ii);
+#elif defined(__APPLE_QUARTZ__)
+// FIXME
+    short font, face, size;
+    uchar fn[256]; 
+    fn[0]=strlen(fl_fontsize->q_name); 
+    strcpy((char*)(fn+1), fl_fontsize->q_name);
+    GetFNum(fn, &font);
+    face = 0;
+    size = fl_fontsize->size;
+    fl_fontsize->listbase = glGenLists(256);
+    aglUseFont(aglGetCurrentContext(), font, face,
+               size, 0, 256, fl_fontsize->listbase);
 #else
-#  if USE_XFT
-    fl_xfont = fl_xxfont();
-#  endif // USE_XFT
-
   for (int i = 0; i < 0x400; i++) {
     XFontStruct *font = NULL;
     unsigned short id;
-    XGetUtf8FontAndGlyph(gl_fontsize->font, ii, &font, &id); 
+    XGetUtf8FontAndGlyph(gl_fontsize->font, ii, &font, &id);
     if (font) glXUseXFont(font->fid, id, 1, gl_fontsize->listbase+ii);
     ii++;
-  }
+   }
 #endif
 }
 
+
+void gl_remove_displaylist_fonts()
+{
+# if HAVE_GL
+
+  // clear variables used mostly in fl_font
+  fl_font_ = 0;
+  fl_size_ = 0;
+
+  for (int j = 0 ; j < FL_FREE_FONT ; ++j)
+  {
+    Fl_FontSize* past = 0;
+    Fl_Fontdesc* s    = fl_fonts + j ;
+    Fl_FontSize* f    = s->first;
+    while (f != 0) {
+      if(f->listbase) {
+        if(f == s->first) {
+          s->first = f->next;
+        }
+        else {
+          past->next = f->next;
+        }
+
+        // It would be nice if this next line was in a descturctor somewhere
+        glDeleteLists(f->listbase, 256);
+
+        Fl_FontSize* tmp = f;
+        f = f->next;
+        delete tmp;
+      }
+      else {
+        past = f;
+        f = f->next;
+      }
+    }
+  }
+
+#endif
+}
+
+#ifdef __APPLE__
+const char *fl_iso2macRoman(const char*, int);
+#endif
+
 void gl_draw(const char* str, int n) {
+#ifdef __APPLE__
+  const char *txt = fl_iso2macRoman(str, n);
+  glCallLists(n, GL_UNSIGNED_BYTE, txt);
+#else
   static xchar *buf = NULL;
   static int l = 0;
   if (n > l) {
@@ -99,6 +159,7 @@ void gl_draw(const char* str, int n) {
     if (!gl_fontsize->glok[r]) get_list(r);
   }
   glCallLists(n, GL_UNSIGNED_SHORT, buf);
+#endif
 }
 
 void gl_draw(const char* str, int n, int x, int y) {
@@ -189,5 +250,5 @@ void gl_draw_image(const uchar* b, int x, int y, int w, int h, int d, int ld) {
 #endif
 
 //
-// End of "$Id: gl_draw.cxx,v 1.7.2.5 2001/03/14 17:20:02 spitzak Exp $".
+// End of "$Id: gl_draw.cxx,v 1.7.2.5.2.17 2004/09/09 21:34:48 matthiaswm Exp $".
 //

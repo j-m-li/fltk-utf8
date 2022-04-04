@@ -1,9 +1,9 @@
 //
-// "$Id: Fl_mac.cxx,v 1.1.2.51 2003/08/02 05:54:43 matthiaswm Exp $"
+// "$Id: Fl_mac.cxx,v 1.1.2.65 2004/11/23 00:28:35 matthiaswm Exp $"
 //
 // MacOS specific code for the Fast Light Tool Kit (FLTK).
 //
-// Copyright 1998-2003 by Bill Spitzak and others.
+// Copyright 1998-2004 by Bill Spitzak and others.
 //
 // This library is free software; you can redistribute it and/or
 // modify it under the terms of the GNU Library General Public
@@ -23,6 +23,24 @@
 // Please report all bugs and problems to "fltk-bugs@fltk.org".
 //
 
+//// From the inner edge of a MetroWerks CodeWarrior CD:
+// (without permission)
+//
+// Three Compiles for 68Ks under the sky,
+// Seven Compiles for PPCs in their fragments of code,
+// Nine Compiles for Mortal Carbon doomed to die,
+// One Compile for Mach-O Cocoa on its Mach-O throne,
+// in the Land of MacOS X where the Drop-Shadows lie.
+// 
+// One Compile to link them all, One Compile to merge them,
+// One Compile to copy them all and in the bundle bind them,
+// in the Land of MacOS X where the Drop-Shadows lie.
+
+// warning: the Apple Quartz version still uses some Quickdraw calls,
+//          mostly to get around the single active context in QD and 
+//          to implement clipping. This should be changed into pure
+//          Quartz calls in the near future.
+
 // we don't need the following definition because we deliver only
 // true mouse moves.  On very slow systems however, this flag may
 // still be useful.
@@ -31,6 +49,7 @@ extern "C" {
 #include <pthread.h>
 }
 
+#include <config.h>
 #include <FL/Fl.H>
 #include <FL/x.H>
 #include <FL/Fl_Tooltip.H>
@@ -43,13 +62,15 @@ extern "C" {
 
 // #define DEBUG_SELECT		// UNCOMMENT FOR SELECT()/THREAD DEBUGGING
 #ifdef DEBUG_SELECT
-#include <stdio.h>	// testing
-#define DEBUGMSG(msg)		fprintf(stderr, msg);
-#define DEBUGPERRORMSG(msg)	perror(msg)
+#include <stdio.h>		// testing
+#define DEBUGMSG(msg)		if ( msg ) fprintf(stderr, msg);
+#define DEBUGPERRORMSG(msg)	if ( msg ) perror(msg)
+#define DEBUGTEXT(txt)		txt
 #else
 #define DEBUGMSG(msg)
 #define DEBUGPERRORMSG(msg)
-#endif /*DEBUGSELECT*/
+#define DEBUGTEXT(txt)		NULL
+#endif /*DEBUG_SELECT*/
 
 // external functions
 extern Fl_Window* fl_find(Window);
@@ -62,6 +83,7 @@ static int FSSpec2UnixPath( FSSpec *fs, char *dst );
 
 // public variables
 int fl_screen;
+CGContextRef fl_gc = 0;
 Handle fl_system_menu;
 Fl_Sys_Menu_Bar *fl_sys_menu_bar = 0;
 CursHandle fl_default_cursor;
@@ -88,21 +110,8 @@ static Fl_Window* send_motion;
 extern Fl_Window* fl_xmousewin;
 #endif
 
-/* status bar position for International Imput Method */
-void fl_set_status(int X, int Y, int W, int H)
-{
-}
-
-/* cursor position for International Imput Method */
-void fl_set_spot(int font, int size, int x, int y, int w, int h)
-{
-}
-
-/* hide spot for International Imput Method */
-void fl_reset_spot(void)
-{
-
-}
+enum { kEventClassFLTK = 'fltk' };
+enum { kEventFLTKBreakLoop = 1, kEventFLTKDataReady };
 
 /**
 * Mac keyboard lookup table
@@ -128,7 +137,7 @@ static unsigned short macKeyLookUp[128] =
     FL_KP+'6', FL_KP+'7', 0, FL_KP+'8', FL_KP+'9', 0, 0, 0,
 
     FL_F+5, FL_F+6, FL_F+7, FL_F+3, FL_F+8, FL_F+9, 0, FL_F+11,
-    0, 0, FL_Print, FL_Scroll_Lock, 0, FL_F+10, 0, FL_F+12,
+    0, 0, FL_Print, FL_Scroll_Lock, 0, FL_F+10, FL_Menu, FL_F+12,
 
     0, FL_Pause, FL_Help, FL_Home, FL_Page_Up, FL_Delete, FL_F+4, FL_End,
     FL_F+2, FL_Page_Down, FL_F+1, FL_Left, FL_Right, FL_Down, FL_Up, 0,
@@ -140,30 +149,269 @@ static void nothing() {}
 void (*fl_lock_function)() = nothing;
 void (*fl_unlock_function)() = nothing;
 
-#    define POLLIN 1
-#    define POLLOUT 4
-#    define POLLERR 8
+//
+// Select interface -- how it's implemented:
+//     When the user app configures one or more file descriptors to monitor
+//     with Fl::add_fd(), we start a separate thread to select() the  data,
+//     sending a custom OSX 'FLTK data ready event' to the parent  thread's
+//     RunApplicationLoop(), so that it triggers the data  ready  callbacks
+//     in the parent thread.                               -erco 04/04/04
+//     
+#define POLLIN  1
+#define POLLOUT 4
+#define POLLERR 8
+
+// Class to handle select() 'data ready'
+class DataReady
+{
+    struct FD
+    {
+      int fd;
+      short events;
+      void (*cb)(int, void*);
+      void* arg;
+    };
+    int nfds, fd_array_size;
+    FD *fds;
+    pthread_t tid;		// select()'s thread id
+
+    // Data that needs to be locked (all start with '_')
+    pthread_mutex_t _datalock;	// data lock
+    fd_set _fdsets[3];		// r/w/x sets user wants to monitor
+    int _maxfd;			// max fd count to monitor
+    int _cancelpipe[2];		// pipe used to help cancel thread
+    void *_userdata;		// thread's userdata
+
+public:
+    DataReady()
+    {
+      nfds = 0;
+      fd_array_size = 0;
+      fds = 0;
+      tid = 0;
+
+      pthread_mutex_init(&_datalock, NULL);
+      FD_ZERO(&_fdsets[0]); FD_ZERO(&_fdsets[1]); FD_ZERO(&_fdsets[2]);
+      _cancelpipe[0] = _cancelpipe[1] = 0;
+      _userdata = 0;
+      _maxfd = 0;
+    }
+
+    ~DataReady()
+    {
+        CancelThread(DEBUGTEXT("DESTRUCTOR\n"));
+        if (fds) { free(fds); fds = 0; }
+	nfds = 0;
+    }
+
+    // Locks
+    //    The convention for locks: volatile vars start with '_',
+    //    and must be locked before use. Locked code is prefixed 
+    //    with /*LOCK*/ to make painfully obvious esp. in debuggers. -erco
+    //
+    void DataLock() { pthread_mutex_lock(&_datalock); }
+    void DataUnlock() { pthread_mutex_unlock(&_datalock); }
+
+    // Accessors
+    int IsThreadRunning() { return(tid ? 1 : 0); }
+    int GetNfds() { return(nfds); }
+    int GetCancelPipe(int ix) { return(_cancelpipe[ix]); }
+    fd_set GetFdset(int ix) { return(_fdsets[ix]); }
+
+    // Methods
+    void AddFD(int n, int events, void (*cb)(int, void*), void *v);
+    void RemoveFD(int n, int events);
+    int CheckData(fd_set& r, fd_set& w, fd_set& x);
+    void HandleData(fd_set& r, fd_set& w, fd_set& x);
+    static void* DataReadyThread(void *self);
+    void StartThread(void *userdata);
+    void CancelThread(const char *reason);
+};
+
+static DataReady dataready;
+
+void DataReady::AddFD(int n, int events, void (*cb)(int, void*), void *v)
+{
+  RemoveFD(n, events);
+  int i = nfds++;
+  if (i >= fd_array_size) 
+  {
+    FD *temp;
+    fd_array_size = 2*fd_array_size+1;
+    if (!fds) { temp = (FD*)malloc(fd_array_size*sizeof(FD)); }
+    else { temp = (FD*)realloc(fds, fd_array_size*sizeof(FD)); }
+    if (!temp) return;
+    fds = temp;
+  }
+  fds[i].cb  = cb;
+  fds[i].arg = v;
+  fds[i].fd  = n;
+  fds[i].events = events;
+  DataLock();
+  /*LOCK*/  if (events & POLLIN)  FD_SET(n, &_fdsets[0]);
+  /*LOCK*/  if (events & POLLOUT) FD_SET(n, &_fdsets[1]);
+  /*LOCK*/  if (events & POLLERR) FD_SET(n, &_fdsets[2]);
+  /*LOCK*/  if (n > _maxfd) _maxfd = n;
+  DataUnlock();
+}
+
+// Remove an FD from the array
+void DataReady::RemoveFD(int n, int events)
+{
+  int i,j;
+  for (i=j=0; i<nfds; i++)
+  {
+    if (fds[i].fd == n) 
+    {
+      int e = fds[i].events & ~events;
+      if (!e) continue; // if no events left, delete this fd
+      fds[i].events = e;
+    }
+    // move it down in the array if necessary:
+    if (j<i)
+      { fds[j] = fds[i]; }
+    j++;
+  }
+  nfds = j;
+  DataLock();
+  /*LOCK*/  if (events & POLLIN)  FD_CLR(n, &_fdsets[0]);
+  /*LOCK*/  if (events & POLLOUT) FD_CLR(n, &_fdsets[1]);
+  /*LOCK*/  if (events & POLLERR) FD_CLR(n, &_fdsets[2]);
+  /*LOCK*/  if (n == _maxfd) _maxfd--;
+  DataUnlock();
+}
+
+// CHECK IF USER DATA READY, RETURNS r/w/x INDICATING WHICH IF ANY
+int DataReady::CheckData(fd_set& r, fd_set& w, fd_set& x)
+{
+  int ret;
+  DataLock();
+  /*LOCK*/  timeval t = { 0, 1 };		// quick check
+  /*LOCK*/  r = _fdsets[0], w = _fdsets[1], x = _fdsets[2];
+  /*LOCK*/  ret = ::select(_maxfd+1, &r, &w, &x, &t);
+  DataUnlock();
+  if ( ret == -1 )
+    { DEBUGPERRORMSG("CheckData(): select()"); }
+  return(ret);
+}
+
+// HANDLE DATA READY CALLBACKS
+void DataReady::HandleData(fd_set& r, fd_set& w, fd_set& x)
+{
+  for (int i=0; i<nfds; i++) 
+  {
+    int f = fds[i].fd;
+    short revents = 0;
+    if (FD_ISSET(f, &r)) revents |= POLLIN;
+    if (FD_ISSET(f, &w)) revents |= POLLOUT;
+    if (FD_ISSET(f, &x)) revents |= POLLERR;
+    if (fds[i].events & revents) 
+    {
+      DEBUGMSG("DOING CALLBACK: ");
+      fds[i].cb(f, fds[i].arg);
+      DEBUGMSG("DONE\n");
+    }
+  }
+}
+
+// DATA READY THREAD
+//    This thread watches for changes in user's file descriptors.
+//    Sends a 'data ready event' to the main thread if any change.
+//
+void* DataReady::DataReadyThread(void *o)
+{
+  DataReady *self = (DataReady*)o;
+  while ( 1 )					// loop until thread cancel or error
+  {
+    // Thread safe local copies of data before each select()
+    self->DataLock();
+    /*LOCK*/  int maxfd = self->_maxfd;
+    /*LOCK*/  fd_set r = self->GetFdset(0);
+    /*LOCK*/  fd_set w = self->GetFdset(1);
+    /*LOCK*/  fd_set x = self->GetFdset(2);
+    /*LOCK*/  void *userdata = self->_userdata;
+    /*LOCK*/  int cancelpipe = self->GetCancelPipe(0);
+    /*LOCK*/  if ( cancelpipe > maxfd ) maxfd = cancelpipe;
+    /*LOCK*/  FD_SET(cancelpipe, &r);		// add cancelpipe to fd's to watch
+    /*LOCK*/  FD_SET(cancelpipe, &x);
+    self->DataUnlock();
+    // timeval t = { 1000, 0 };	// 1000 seconds;
+    timeval t = { 2, 0 };	// HACK: 2 secs prevents 'hanging' problem
+    int ret = ::select(maxfd+1, &r, &w, &x, &t);
+    pthread_testcancel();	// OSX 10.0.4 and older: needed for parent to cancel
+    switch ( ret )
+    {
+      case 0:	// NO DATA
+        continue;
+      case -1:	// ERROR
+      {
+        DEBUGPERRORMSG("CHILD THREAD: select() failed");
+        return(NULL);		// error? exit thread
+      }
+      default:	// DATA READY
+      {
+	if (FD_ISSET(cancelpipe, &r) || FD_ISSET(cancelpipe, &x)) 	// cancel?
+	    { return(NULL); }						// just exit
+        DEBUGMSG("CHILD THREAD: DATA IS READY\n");
+        EventRef drEvent;
+        CreateEvent( 0, kEventClassFLTK, kEventFLTKDataReady,
+		     0, kEventAttributeUserEvent, &drEvent);
+        EventQueueRef eventqueue = (EventQueueRef)userdata;
+        PostEventToQueue(eventqueue, drEvent, kEventPriorityStandard );
+        ReleaseEvent( drEvent );
+        return(NULL);		// done with thread
+      }
+    }
+  }
+}
+
+// START 'DATA READY' THREAD RUNNING, CREATE INTER-THREAD PIPE
+void DataReady::StartThread(void *new_userdata)
+{
+  CancelThread(DEBUGTEXT("STARTING NEW THREAD\n"));
+  DataLock();
+  /*LOCK*/  pipe(_cancelpipe);	// pipe for sending cancel msg to thread
+  /*LOCK*/  _userdata = new_userdata;
+  DataUnlock();
+  DEBUGMSG("*** START THREAD\n");
+  pthread_create(&tid, NULL, DataReadyThread, (void*)this);
+}
+
+// CANCEL 'DATA READY' THREAD, CLOSE PIPE
+void DataReady::CancelThread(const char *reason)
+{
+  if ( tid )
+  {
+    DEBUGMSG("*** CANCEL THREAD: ");
+    DEBUGMSG(reason);
+    if ( pthread_cancel(tid) == 0 )		// cancel first
+    {
+      DataLock();
+      /*LOCK*/  write(_cancelpipe[1], "x", 1);	// wake thread from select
+      DataUnlock();
+      pthread_join(tid, NULL);			// wait for thread to finish
+    }
+    tid = 0;
+    DEBUGMSG("(JOINED) OK\n");
+  }
+  // Close pipe if open
+  DataLock();
+  /*LOCK*/  if ( _cancelpipe[0] ) { close(_cancelpipe[0]); _cancelpipe[0] = 0; }
+  /*LOCK*/  if ( _cancelpipe[1] ) { close(_cancelpipe[1]); _cancelpipe[1] = 0; }
+  DataUnlock();
+}
 
 void Fl::add_fd( int n, int events, void (*cb)(int, void*), void *v )
-{
-  // not supported
-}
+    { dataready.AddFD(n, events, cb, v); }
 
 void Fl::add_fd(int fd, void (*cb)(int, void*), void* v)
-{
-  Fl::add_fd(fd, POLLIN, cb, v);
-}
+    { dataready.AddFD(fd, POLLIN, cb, v); }
 
 void Fl::remove_fd(int n, int events)
-{
-  // not supported
-}
+    { dataready.RemoveFD(n, events); }
 
 void Fl::remove_fd(int n)
-{
-  remove_fd(n, -1);
-}
-
+    { dataready.RemoveFD(n, -1); }
 
 /**
  * Check if there is actually a message pending!
@@ -173,7 +421,6 @@ int fl_ready()
   if (GetNumEventsInQueue(GetCurrentEventQueue()) > 0) return 1;
   return 0;
 }
-
 
 /**
  * handle Apple Menu items (can be created using the Fl_Sys_Menu_Bar
@@ -247,8 +494,10 @@ static pascal OSStatus carbonDispatchHandler( EventHandlerCallRef nextHandler, E
     case kEventMouseDragged:
       if ( fl_capture )
         ret = SendEventToEventTarget( event, GetWindowEventTarget( fl_capture ) );
-      else if ( fl_os_capture )
+      else if ( fl_os_capture ){
         ret = SendEventToEventTarget( event, GetWindowEventTarget( fl_os_capture ) );
+	fl_os_capture = 0;
+      }
       break;
     }
     break;
@@ -269,11 +518,22 @@ static pascal OSStatus carbonDispatchHandler( EventHandlerCallRef nextHandler, E
       break;
     case kEventFLTKDataReady:
       {
-	DEBUGMSG("DATA READY EVENT: RECEIVED\n");
+	dataready.CancelThread(DEBUGTEXT("DATA READY EVENT\n"));
 
         // CHILD THREAD TELLS US DATA READY
 	//     Check to see what's ready, and invoke user's cb's
 	//
+	fd_set r,w,x;
+	switch(dataready.CheckData(r,w,x))
+	{
+	  case 0:	// NO DATA
+	    break;
+	  case -1:	// ERROR
+	    break;
+	  default:	// DATA READY
+	    dataready.HandleData(r,w,x);
+	    break;
+        }
       }
       ret = noErr;
       break;
@@ -300,9 +560,6 @@ static pascal void timerProcCB( EventLoopTimerRef, void* )
 
   fl_unlock_function();
 }
-
-
-
 
 /**
  * break the current event loop
@@ -374,11 +631,21 @@ static double do_queued_events( double time = 0.0 )
 
   got_events = 0;
 
+  // Check for re-entrant condition
+  if ( dataready.IsThreadRunning() )
+    { dataready.CancelThread(DEBUGTEXT("AVOID REENTRY\n")); }
+
+  // Start thread to watch for data ready
+  if ( dataready.GetNfds() )
+      { dataready.StartThread((void*)GetCurrentEventQueue()); }
+
   fl_unlock_function();
 
   SetEventLoopTimerNextFireTime( timer, time );
   RunApplicationEventLoop(); // will return after the previously set time
-  
+  if ( dataready.IsThreadRunning() )
+    { dataready.CancelThread(DEBUGTEXT("APPEVENTLOOP DONE\n")); }
+
   fl_lock_function();
 
 #if CONSOLIDATE_MOTION
@@ -439,7 +706,7 @@ static pascal OSStatus carbonWindowHandler( EventHandlerCallRef nextHandler, Eve
   UInt32 kind = GetEventKind( event );
   OSStatus ret = eventNotHandledErr;
   Fl_Window *window = (Fl_Window*)userData;
-  
+
   Rect currentBounds, originalBounds;
   WindowClass winClass;
   static Fl_Window *activeWindow = 0;
@@ -453,8 +720,8 @@ static pascal OSStatus carbonWindowHandler( EventHandlerCallRef nextHandler, Eve
     GetEventParameter( event, kEventParamOriginalBounds, typeQDRectangle, NULL, sizeof(Rect), NULL, &originalBounds );
     break;
   case kEventWindowDrawContent:
-    ret = noErr;
     handleUpdateEvent( fl_xid( window ) );
+    ret = noErr;
     break;
   case kEventWindowBoundsChanged: {
     GetEventParameter( event, kEventParamCurrentBounds, typeQDRectangle, NULL, sizeof(Rect), NULL, &currentBounds );
@@ -506,11 +773,11 @@ static pascal OSStatus carbonWindowHandler( EventHandlerCallRef nextHandler, Eve
     // if there are no more windows, send a high-level quit event
     if (!Fl_X::first) QuitAppleEventHandler( 0, 0, 0 );
     ret = noErr; // returning noErr tells Carbon to stop following up on this event
-    free(malloc(5)); //FIXME
     break;
   }
 
   fl_unlock_function();
+
   return ret;
 }
 
@@ -675,6 +942,7 @@ static void mods_to_e_keysym( UInt32 mods )
   else if ( mods & rightShiftKey ) Fl::e_keysym = FL_Shift_R;
   else if ( mods & alphaLock ) Fl::e_keysym = FL_Caps_Lock;
   else Fl::e_keysym = 0;
+  //printf( "to sym 0x%08x (%04x)\n", Fl::e_keysym, mods );
 }
 
 /**
@@ -691,84 +959,54 @@ static unsigned short keycode_to_sym( UInt32 keyCode, UInt32 mods, unsigned shor
       map = *GetResource('KCHR', kbID);
     }
   }
-  //  UCKeyTranslate
   if (map)
     return KeyTranslate(map, keyCode|mods, &state );
   return deflt;
 }
 
 /**
- * handle carbon TextInput events
- */
-pascal OSStatus carbonMlteHandler( EventHandlerCallRef nextHandler, EventRef event, void *userData )
-{
-  static char buffer[1024];
-  int sendEvent = 0;
-  Fl_Window *window = (Fl_Window*)userData;
-  UniChar unicode[256];
-  ByteCount unilen = 510;
-  
-  fl_lock_function();
-  GetEventParameter( event, kEventParamTextInputSendText, typeUnicodeText, NULL, unilen, &unilen, &unicode );
-
-  if (unilen > 1) sendEvent = FL_KEYBOARD;
- // printf("%x %d\n", unicode[0], unilen);  
-  unicode[unilen / 2] = 0;
-  Fl::e_length = fl_unicode2utf((xchar*)unicode, unilen/2, buffer);
-  if (Fl::e_length < 1) Fl::e_length = 0;
-  buffer[Fl::e_length] = 0;
-  Fl::e_text = buffer;
-  Fl::e_keysym = 0; 
-  while (window->parent()) window = window->window();
-  int state = Fl::e_state;
-  Fl::e_state = 0;
-  if (sendEvent && Fl::handle(sendEvent,window)) {
-    fl_unlock_function();
-     Fl::e_state = state;
-    return noErr; // return noErr if FLTK handled the event
-  } else {
-    fl_unlock_function();
-    Fl::e_state = state;
-    return CallNextEventHandler( nextHandler, event );;
-  } 
-}
-
-/**
  * handle carbon keyboard events
  */
-pascal OSStatus carbonKeyboardHandler( EventHandlerCallRef nextHandler, EventRef event, void *userData )
+pascal OSStatus carbonKeyboardHandler( 
+  EventHandlerCallRef nextHandler, EventRef event, void *userData )
 {
-  static char buffer[1024];
+  static char buffer[5];
   int sendEvent = 0;
   Fl_Window *window = (Fl_Window*)userData;
   UInt32 mods;
   static UInt32 prevMods = 0xffffffff;
-  static Handle uchrHandle = NULL;
-  static Handle kchrHandle = NULL;
-  static UInt32 deadKeyState = 0;
-  SInt16 currentKeyScript;
-  static SInt16 lastKeyLayoutID = -1;
-  UniChar unicodeInputString[256];
-  OSStatus status;
-   
-  fl_lock_function();
 
-  GetEventParameter( event, kEventParamKeyModifiers, typeUInt32, NULL, sizeof(UInt32), NULL, &mods );
-  if ( prevMods == 0xffffffff ) prevMods = mods;
-  UInt32 keyCode;
-  GetEventParameter( event, kEventParamKeyCode, typeUInt32, NULL, sizeof(UInt32), NULL, &keyCode );
-  unsigned char key;
-  GetEventParameter( event, kEventParamKeyMacCharCodes, typeChar, NULL, sizeof(char), NULL, &key );
-  UInt32 keyboard;
-  GetEventParameter( event, kEventParamKeyboardType, typeUInt32, NULL, sizeof(UInt32), NULL, &keyboard );
-  UniChar unicode[256];
-  ByteCount unilen = 0;
-  GetEventParameter( event, kEventParamKeyUnicodes, typeUnicodeText, NULL, sizeof(unicode), &unilen, &unicode );
-  unicode[unilen / 2] = 0;
-  // printf("nor -- %x %d\n", unicode[0], unilen);  
-  unsigned short sym;
+  fl_lock_function();
   
-  switch ( GetEventKind( event ) )
+  int kind = GetEventKind(event);
+  
+  // get the modifiers for any of the events
+  GetEventParameter( event, kEventParamKeyModifiers, typeUInt32, 
+                     NULL, sizeof(UInt32), NULL, &mods );
+  if ( prevMods == 0xffffffff ) prevMods = mods;
+  
+  // get the key code only for key events
+  UInt32 keyCode = 0;
+  unsigned char key = 0;
+  unsigned short sym = 0;
+  if (kind!=kEventRawKeyModifiersChanged) {
+    GetEventParameter( event, kEventParamKeyCode, typeUInt32, 
+                       NULL, sizeof(UInt32), NULL, &keyCode );
+    GetEventParameter( event, kEventParamKeyMacCharCodes, typeChar, 
+                       NULL, sizeof(char), NULL, &key );
+  }
+  /* output a human readbale event identifier for debugging
+  const char *ev = "";
+  switch (kind) {
+    case kEventRawKeyDown: ev = "kEventRawKeyDown"; break;
+    case kEventRawKeyRepeat: ev = "kEventRawKeyRepeat"; break;
+    case kEventRawKeyUp: ev = "kEventRawKeyUp"; break;
+    case kEventRawKeyModifiersChanged: ev = "kEventRawKeyModifiersChanged"; break;
+    default: ev = "unknown";
+  }
+  printf("%08x %08x %08x '%c' %s \n", mods, keyCode, key, key, ev);
+  */
+  switch (kind)
   {
   case kEventRawKeyDown:
   case kEventRawKeyRepeat:
@@ -776,31 +1014,33 @@ pascal OSStatus carbonKeyboardHandler( EventHandlerCallRef nextHandler, EventRef
     // fall through
   case kEventRawKeyUp:
     if ( !sendEvent ) sendEvent = FL_KEYUP;
-    // if the user pressed alt/option, event_key should have the keycap, but event_text should generate the international symbol
+    // if the user pressed alt/option, event_key should have the keycap, 
+    // but event_text should generate the international symbol
     if ( isalpha(key) )
       sym = tolower(key);
     else if ( Fl::e_state&FL_CTRL && key<32 )
       sym = key+96;
-    else if ( Fl::e_state&FL_ALT )
-      sym = keycode_to_sym( keyCode & 0x7f, 0, macKeyLookUp[ keyCode & 0x7f ] ); // find the keycap of this key
+    else if ( Fl::e_state&FL_ALT ) // find the keycap of this key
+      sym = keycode_to_sym( keyCode & 0x7f, 0, macKeyLookUp[ keyCode & 0x7f ] );
     else
       sym = macKeyLookUp[ keyCode & 0x7f ];
     Fl::e_keysym = sym;
     if ( keyCode==0x4c ) key=0x0d;
-    if ( ( (sym>=FL_KP) && (sym<=FL_KP_Last) ) || ((sym&0xff00)==0) || (sym==FL_Tab) || (sym==FL_Enter) ) {
+    // Matt: the Mac has no concept of a NumLock key, or at least not visible
+    // Matt: to Carbon. The kEventKeyModifierNumLockMask is only set when
+    // Matt: a numeric keypad key is pressed and does not correspond with
+    // Matt: the NumLock light in PowerBook keyboards.
+    if ( (sym >= FL_KP && sym <= FL_KP_Last) || !(sym & 0xff00) ||
+            sym == FL_Tab || sym == FL_Enter) {
       buffer[0] = key;
       Fl::e_length = 1;
     } else {
       buffer[0] = 0;
       Fl::e_length = 0;
     }
-
-    Fl::e_length = fl_unicode2utf((xchar*)unicode, unilen/2, buffer);
-    if (Fl::e_length < 1) Fl::e_length = 0;
-    buffer[Fl::e_length] = 0;
     Fl::e_text = buffer;
+    // insert UnicodeHandling here!
     break;
-    
   case kEventRawKeyModifiersChanged: {
     UInt32 tMods = prevMods ^ mods;
     if ( tMods )
@@ -817,13 +1057,14 @@ pascal OSStatus carbonKeyboardHandler( EventHandlerCallRef nextHandler, EventRef
   }
   while (window->parent()) window = window->window();
   if (sendEvent && Fl::handle(sendEvent,window)) {
-    fl_unlock_function();
-  
+    fl_unlock_function();  
     return noErr; // return noErr if FLTK handled the event
   } else {
     fl_unlock_function();
-  
-    return CallNextEventHandler( nextHandler, event );;
+    //return CallNextEventHandler( nextHandler, event );;
+    // Matt: I had better results (no duplicate events) always returning
+    // Matt: 'noErr'. System keyboard events still seem to work just fine.
+    return noErr;
   }
 }
 
@@ -923,11 +1164,6 @@ void fl_open_display() {
     FlushEvents(everyEvent,0);
 
     MoreMasters(); // \todo Carbon suggests MoreMasterPointers()
-    InterfaceTypeList tl;
-    *tl = kUnicodeDocument;
-    TSMDocumentID tsm_id = 0;
-    NewTSMDocument(1, tl, &tsm_id, 1);
-    ActivateTSMDocument(tsm_id);
     AEInstallEventHandler( kCoreEventClass, kAEQuitApplication, NewAEEventHandlerUPP((AEEventHandlerProcPtr)QuitAppleEventHandler), 0, false );
 
     // create the Mac Handle for the default cursor (a pointer to a pointer)
@@ -938,7 +1174,6 @@ void fl_open_display() {
     ClearMenuBar();
     AppendResMenu( GetMenuHandle( 1 ), 'DRVR' );
     DrawMenuBar();
-    
   }
 }
 
@@ -1021,8 +1256,16 @@ unsigned short mac2fltk(ulong macKey)
 void Fl_X::flush()
 {
   w->flush();
+#ifdef __APPLE_QD__
+  GrafPtr port; 
+  GetPort( &port );
+  if ( port )
+    QDFlushPortBuffer( port, 0 );
+#elif defined (__APPLE_QUARTZ__)
+  if (fl_gc) 
+    CGContextFlush(fl_gc);
+#endif          
   SetOrigin( 0, 0 );
-  //QDFlushPortBuffer( GetWindowPort(xid), 0 ); // \todo do we need this?
 }
 
 
@@ -1050,7 +1293,6 @@ void handleUpdateEvent( WindowPtr xid )
     DisposeRgn( i->region );
     i->region = 0;
   }
-
   for ( Fl_X *cx = i->xidChildren; cx; cx = cx->xidNext )
   {
     cx->w->clear_damage(window->damage()|FL_DAMAGE_EXPOSE);
@@ -1060,9 +1302,7 @@ void handleUpdateEvent( WindowPtr xid )
   window->clear_damage(window->damage()|FL_DAMAGE_EXPOSE);
   i->flush();
   window->clear_damage();
-
   SetPort( oldPort );
-
 }     
 
 
@@ -1072,7 +1312,6 @@ void handleUpdateEvent( WindowPtr xid )
 int Fl_X::fake_X_wm(const Fl_Window* w,int &X,int &Y, int &bt,int &bx, int &by) {
   int W, H, xoff, yoff, dx, dy;
   int ret = bx = by = bt = 0;
-  
   if (w->border() && !w->parent()) {
     if (w->maxw != w->minw || w->maxh != w->minh) {
       ret = 2;
@@ -1096,18 +1335,70 @@ int Fl_X::fake_X_wm(const Fl_Window* w,int &X,int &Y, int &bt,int &bx, int &by) 
   H = w->h()+dy;
 
   //Proceed to positioning the window fully inside the screen, if possible
-  //Make border's lower right corner visible
-  if (Fl::w() < X+W) X = Fl::w() - W;
-  if (Fl::h() < Y+H) Y = Fl::h() - H;
-  //Make border's upper left corner visible
-  if (X<0) X = 0;
-  if (Y<0) Y = 0;
-  //Make client area's lower right corner visible
-  if (Fl::w() < X+dx+ w->w()) X = Fl::w() - w->w() - dx;
-  if (Fl::h() < Y+dy+ w->h()) Y = Fl::h() - w->h() - dy;
-  //Make client area's upper left corner visible
-  if (X+xoff < 0) X = -xoff;
-  if (Y+yoff < 0) Y = -yoff;
+
+  // let's get a little elaborate here. Mac OS X puts a lot of stuff on the desk
+  // that we want to avoid when positioning our window, namely the Dock and the
+  // top menu bar (and even more stuff in 10.4 Tiger). So we will go through the
+  // list of all available screens and find the one that this window is most
+  // likely to go to, and then reposition it to fit withing the 'good' area.
+  Rect r;
+  // find the screen, that the center of this window will fall into
+  int R = X+W, B = Y+H; // right and bottom
+  int cx = (X+R)/2, cy = (Y+B)/2; // center of window;
+  GDHandle gd = 0L;
+  for (gd = GetDeviceList(); gd; gd = GetNextDevice(gd)) {
+  GDPtr gp = *gd;
+  if (    cx >= gp->gdRect.left && cx <= gp->gdRect.right
+       && cy >= gp->gdRect.top  && cy <= gp->gdRect.bottom)
+    break;
+  }
+  // if the center doesn't fall on a screen, try the top left
+  if (!gd) {
+    for (gd = GetDeviceList(); gd; gd = GetNextDevice(gd)) {
+      GDPtr gp = *gd;
+      if (    X >= gp->gdRect.left && X <= gp->gdRect.right
+           && Y >= gp->gdRect.top  && Y <= gp->gdRect.bottom)
+        break;
+    }
+  }
+  // if that doesn't fall on a screen, try the top right
+  if (!gd) {
+    for (gd = GetDeviceList(); gd; gd = GetNextDevice(gd)) {
+      GDPtr gp = *gd;
+      if (    R >= gp->gdRect.left && R <= gp->gdRect.right
+           && Y >= gp->gdRect.top  && Y <= gp->gdRect.bottom)
+        break;
+    }
+  }
+  // if that doesn't fall on a screen, try the bottom left
+  if (!gd) {
+    for (gd = GetDeviceList(); gd; gd = GetNextDevice(gd)) {
+      GDPtr gp = *gd;
+      if (    X >= gp->gdRect.left && X <= gp->gdRect.right
+           && B >= gp->gdRect.top  && B <= gp->gdRect.bottom)
+        break;
+    }
+  }
+  // last resort, try the bottom right
+  if (!gd) {
+    for (gd = GetDeviceList(); gd; gd = GetNextDevice(gd)) {
+      GDPtr gp = *gd;
+      if (    R >= gp->gdRect.left && R <= gp->gdRect.right
+           && B >= gp->gdRect.top  && B <= gp->gdRect.bottom)
+        break;
+    }
+  }
+  // if we still have not found a screen, we will use the main
+  // screen, the one that has the application menu bar.
+  if (!gd) gd = GetMainDevice();
+  if (gd) {
+    GetAvailableWindowPositioningBounds(gd, &r);
+    if ( R > r.right )  X -= R - r.right;
+    if ( B > r.bottom ) Y -= B - r.bottom;
+    if ( X < r.left )   X = r.left;
+    if ( Y < r.top )    Y = r.top;
+  }
+
   //Return the client area's top left corner in (X,Y)
   X+=xoff;
   Y+=yoff;
@@ -1124,33 +1415,6 @@ static int FSSpec2UnixPath( FSSpec *fs, char *dst )
   FSpMakeFSRef( fs, &fsRef );
   FSRefMakePath( &fsRef, (UInt8*)dst, 1024 );
   return strlen(dst);
-/* keep the code below. The above function is only implemented in OS X, so we might need the other code for OS 9 and friends
-  short offset = 0;
-  if ( fs->parID != fsRtParID )
-  {
-    FSSpec parent;
-    OSErr ret = FSMakeFSSpec( fs->vRefNum, fs->parID, 0, &parent );
-    if ( ret != noErr ) return 0;
-    offset = FSSpec2UnixPath( &parent, dst );
-  }
-
-  if ( fs->parID == fsRtParID && fs->vRefNum == -100 ) //+ bad hack: we assume that volume -100 is mounted as root
-  {
-    memcpy( dst, "/", 2 );
-    return 1; // don't add anything to the filename - we are fine already
-  }
-
-  short len = fs->name[0];
-  if ( fs->parID == fsRtParID ) { // assume tat all other volumes are in this directory (international name WILL vary!)
-    memcpy( dst, "/Volumes", 8 );
-    offset = 8;
-  }
-  
-  if ( offset!=1 ) dst[ offset++ ] = '/'; // avoid double '/'
-  memcpy( dst+offset, fs->name+1, len );
-  dst[ len+offset ] = 0;
-  return len+offset;
-*/
 }
  
 Fl_Window *fl_dnd_target_window = 0;
@@ -1160,7 +1424,6 @@ Fl_Window *fl_dnd_target_window = 0;
  */
 static pascal OSErr dndTrackingHandler( DragTrackingMessage msg, WindowPtr w, void *userData, DragReference dragRef )
 {
-return 0;
   Fl_Window *target = (Fl_Window*)userData;
   Point mp;
   static int px, py;
@@ -1219,8 +1482,7 @@ static pascal OSErr dndReceiveHandler( WindowPtr w, void *userData, DragReferenc
 {
   Point mp;
   OSErr ret;
- 
-  // FIXME
+  
   Fl_Window *target = fl_dnd_target_window = (Fl_Window*)userData;
   GetDragMouse( dragRef, &mp, 0 );
   Fl::e_x_root = mp.h;
@@ -1261,7 +1523,7 @@ static pascal OSErr dndReceiveHandler( WindowPtr w, void *userData, DragReferenc
   for ( i = 1; i <= nItem; i++ )
   {
     GetDragItemReferenceNumber( dragRef, i, &itemRef );
-/*    ret = GetFlavorFlags( dragRef, itemRef, 'TEXT', &flags );
+    ret = GetFlavorFlags( dragRef, itemRef, 'TEXT', &flags );
     if ( ret == noErr )
     {
       GetFlavorDataSize( dragRef, itemRef, 'TEXT', &itemSize );
@@ -1269,7 +1531,6 @@ static pascal OSErr dndReceiveHandler( WindowPtr w, void *userData, DragReferenc
       dst += itemSize;
       *dst++ = '\n'; // add our element seperator
     }
-*/
     ret = GetFlavorFlags( dragRef, itemRef, 'hfs ', &flags );
     if ( ret == noErr )
     {
@@ -1286,9 +1547,10 @@ static pascal OSErr dndReceiveHandler( WindowPtr w, void *userData, DragReferenc
   dst[-1] = 0;
 //  if ( Fl::e_text[Fl::e_length-1]==0 ) Fl::e_length--; // modify, if trailing 0 is part of string
   Fl::e_length = dst - Fl::e_text - 1;
-  target->handle(FL_DROP);
+//  printf("Sending following text to widget %p:\n%s\n", Fl::belowmouse(), Fl::e_text);
+  target->handle(FL_PASTE);
   free( Fl::e_text );
-  
+
   fl_dnd_target_window = 0L;
   breakMacEventLoop();
   return noErr;
@@ -1301,7 +1563,7 @@ static pascal OSErr dndReceiveHandler( WindowPtr w, void *userData, DragReferenc
  */
 void Fl_X::make(Fl_Window* w)
 {
-  static int xyPos = 50;
+  static int xyPos = 100;
   if ( w->parent() ) // create a subwindow
   {
     Fl_Group::current(0);
@@ -1316,6 +1578,7 @@ void Fl_X::make(Fl_Window* w)
     x->region = 0;
     x->subRegion = 0;
     x->cursor = fl_default_cursor;
+    x->gc = 0; // stay 0 for Quickdraw; fill with CGContext for Quartz
     Fl_Window *win = w->window();
     Fl_X *xo = Fl_X::i(win);
     w->set_visible();
@@ -1337,7 +1600,6 @@ void Fl_X::make(Fl_Window* w)
   {
     Fl_Group::current(0);
     fl_open_display();
-    
     int winclass = kDocumentWindowClass;
     int winattr = kWindowStandardHandlerAttribute | kWindowCloseBoxAttribute | kWindowCollapseBoxAttribute;
     int xp = w->x();
@@ -1377,7 +1639,7 @@ void Fl_X::make(Fl_Window* w)
       w->x(xyPos+Fl::x());
       w->y(xyPos+Fl::y());
       xyPos += 25;
-      if (xyPos>200) xyPos = 25;
+      if (xyPos>200) xyPos = 100;
     } else {
       if (!Fl::grab()) {
         xp = xwm; yp = ywm;
@@ -1415,12 +1677,12 @@ void Fl_X::make(Fl_Window* w)
     x->cursor = fl_default_cursor;
     x->xidChildren = 0;
     x->xidNext = 0;
+    x->gc = 0;
 
     winattr &= GetAvailableWindowAttributes( winclass );	// make sure that the window will open
     CreateNewWindow( winclass, winattr, &wRect, &(x->xid) );
     SetWTitle(x->xid, pTitle);
     MoveWindow(x->xid, wRect.left, wRect.top, 1);	// avoid Carbon Bug on old OS
-    
     if (w->non_modal() && !w->modal()) {
       // Major kludge: this is to have the regular look, but stay above the document windows
       SetWindowClass(x->xid, kFloatingWindowClass);
@@ -1437,7 +1699,6 @@ void Fl_X::make(Fl_Window* w)
       }
     }
     x->w = w; w->i = x;
- 
     x->wait_for_expose = 1;
     x->next = Fl_X::first;
     Fl_X::first = x;
@@ -1471,28 +1732,20 @@ void Fl_X::make(Fl_Window* w)
         { kEventClassWindow, kEventWindowActivated },
         { kEventClassWindow, kEventWindowDeactivated },
         { kEventClassWindow, kEventWindowClose },
-	{ kEventClassWindow, kEventWindowBoundsChanging },
+        { kEventClassWindow, kEventWindowBoundsChanging },
         { kEventClassWindow, kEventWindowBoundsChanged } };
-     ret = InstallWindowEventHandler( x->xid, windowHandler, 8, windowEvents, w, 0L ); 
-      static EventTypeSpec mlteEvents[] = {
-    	{ kEventClassTextInput, kEventTextInputUnicodeForKeyEvent }/*,
-    	{ kEventClassTextInput, kEventTextInputUpdateActiveInputArea }*/ };
-      EventHandlerUPP mlteHandler = NewEventHandlerUPP(carbonMlteHandler);
-	  ret = InstallWindowEventHandler(x->xid, mlteHandler, 1, mlteEvents, w, 0L);
-                                    
-      ret = InstallTrackingHandler( (OpaqueDragTrackingHandlerProcPtr*)
-                     dndTrackingHandler, x->xid, w );
-      ret = InstallReceiveHandler( (OpaqueDragReceiveHandlerProcPtr*)
-                      dndReceiveHandler, x->xid, w );
+      ret = InstallWindowEventHandler( x->xid, windowHandler, 8, windowEvents, w, 0L );
+      ret = InstallTrackingHandler( dndTrackingHandler, x->xid, w );
+      ret = InstallReceiveHandler( dndReceiveHandler, x->xid, w );
     }
-    
+
     if ( ! Fl_X::first->next ) // if this is the first window, we need to bring the application to the front
     { 
       ProcessSerialNumber psn;
       OSErr err = GetCurrentProcess( &psn );
       if ( err==noErr ) SetFrontProcess( &psn );
     }
- 
+    
     if (fl_show_iconic) { 
       fl_show_iconic = 0;
       CollapseWindow( x->xid, true ); // \todo Mac ; untested
@@ -1506,7 +1759,6 @@ void Fl_X::make(Fl_Window* w)
     GetWindowBounds(x->xid, kWindowContentRgn, &rect);
     w->x(rect.left); w->y(rect.top);
     w->w(rect.right-rect.left); w->h(rect.bottom-rect.top);
-
 
     w->handle(FL_SHOW);
     w->redraw(); // force draw to happen
@@ -1629,6 +1881,9 @@ void Fl_Window::resize(int X,int Y,int W,int H) {
  */
 void Fl_Window::make_current() 
 {
+#ifdef __APPLE_QUARTZ__
+  Fl_X::q_release_context();
+#endif
   if ( !fl_window_region )
     fl_window_region = NewRgn();
   fl_window = i->xid;
@@ -1663,8 +1918,80 @@ void Fl_Window::make_current()
   
   fl_clip_region( 0 );
   SetPortClipRegion( GetWindowPort(i->xid), fl_window_region );
+#ifdef __APPLE_QUARTZ__
+  QDBeginCGContext(GetWindowPort(i->xid), &i->gc);
+  fl_gc = i->gc;
+  CGContextSaveGState(fl_gc);
+  Fl_X::q_fill_context();
+#endif
   return;
 }
+
+// helper function to manage the current CGContext fl_gc
+#ifdef __APPLE_QUARTZ__
+extern Fl_Color fl_color_;
+extern class Fl_FontSize *fl_fontsize;
+extern void fl_font(class Fl_FontSize*);
+extern void fl_quartz_restore_line_style_();
+
+// FLTK has only on global graphics state. This function copies the FLTK state into the
+// current Quartz context
+void Fl_X::q_fill_context() {
+  if (!fl_gc) return;
+  int hgt = 0;
+  if (fl_window) {
+    Rect portRect; 
+    GetPortBounds(GetWindowPort( fl_window ), &portRect);
+    hgt = portRect.bottom-portRect.top;
+  } else {
+    hgt = CGBitmapContextGetHeight(fl_gc);
+  }
+  CGContextTranslateCTM(fl_gc, 0.5, hgt-0.5f);
+  CGContextScaleCTM(fl_gc, 1.0f, -1.0f);
+  static CGAffineTransform font_mx = { 1, 0, 0, -1, 0, 0 };
+  CGContextSetTextMatrix(fl_gc, font_mx);
+  fl_font(fl_fontsize);
+  fl_color(fl_color_);
+  fl_quartz_restore_line_style_();
+}
+
+// The only way to reste clipping to its original state is to pop the current graphics
+// state and restore the global state.
+void Fl_X::q_clear_clipping() {
+  if (!fl_gc) return;
+  CGContextRestoreGState(fl_gc);
+  CGContextSaveGState(fl_gc);
+}
+
+// Give the Quartz context back to the system
+void Fl_X::q_release_context(Fl_X *x) {
+  if (x && x->gc!=fl_gc) return;
+  if (!fl_gc) return;
+  CGContextRestoreGState(fl_gc);
+  if (fl_window) QDEndCGContext(GetWindowPort(fl_window), &fl_gc);
+  fl_gc = 0;
+}
+
+void Fl_X::q_begin_image(CGRect &rect, int cx, int cy, int w, int h) {
+  CGContextSaveGState(fl_gc);
+  CGAffineTransform mx = CGContextGetCTM(fl_gc);
+  CGRect r2 = rect;
+  r2.origin.x -= 0.5f;
+  r2.origin.y -= 0.5f;
+  CGContextClipToRect(fl_gc, r2);
+  mx.d = -1.0; mx.tx = -mx.tx;
+  CGContextConcatCTM(fl_gc, mx);
+  rect.origin.x = rect.origin.x - cx;
+  rect.origin.y = (mx.ty+0.5f) - rect.origin.y - h + cy;
+  rect.size.width = w;
+  rect.size.height = h;
+}
+
+void Fl_X::q_end_image() {
+  CGContextRestoreGState(fl_gc);
+}
+
+#endif
 
 ////////////////////////////////////////////////////////////////
 // Cut & paste.
@@ -1738,6 +2065,6 @@ void Fl::paste(Fl_Widget &receiver, int clipboard) {
 
 
 //
-// End of "$Id: Fl_mac.cxx,v 1.1.2.51 2003/08/02 05:54:43 matthiaswm Exp $".
+// End of "$Id: Fl_mac.cxx,v 1.1.2.65 2004/11/23 00:28:35 matthiaswm Exp $".
 //
 

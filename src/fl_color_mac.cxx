@@ -1,9 +1,9 @@
 //
-// "$Id: fl_color_mac.cxx,v 1.1.2.5 2003/01/30 21:43:29 easysw Exp $"
+// "$Id: fl_color_mac.cxx,v 1.1.2.9 2004/08/27 20:02:44 matthiaswm Exp $"
 //
 // MacOS color functions for the Fast Light Tool Kit (FLTK).
 //
-// Copyright 1998-2003 by Bill Spitzak and others.
+// Copyright 1998-2004 by Bill Spitzak and others.
 //
 // This library is free software; you can redistribute it and/or
 // modify it under the terms of the GNU Library General Public
@@ -28,14 +28,15 @@
 // changes can be made.  Not to be confused with the X colormap, which
 // I try to hide completely.
 
-// MacOS - matt: the macintosh port does not support colormaps
+// matt: Neither Quartz nor Quickdraw support colormaps in this implementation
+// matt: Quartz support done
 
 #include <config.h>
 #include <FL/Fl.H>
 #include <FL/x.H>
 #include <FL/fl_draw.H>
 
-unsigned fl_cmap[256] = {
+static unsigned fl_cmap[256] = {
 #include "fl_cmap.h" // this is a file produced by "cmap.cxx":
 };
 
@@ -44,9 +45,9 @@ Fl_XMap fl_xmap[256];
 
 Fl_XMap* fl_current_xmap;
 
-Fl_Color fl_color_ = (Fl_Color)0;
+Fl_Color fl_color_;
 
-void Fl_Fltk::color(Fl_Color i) {
+void fl_color(Fl_Color i) {
   fl_color_ = i;
   int index;
   uchar r, g, b;
@@ -63,20 +64,41 @@ void Fl_Fltk::color(Fl_Color i) {
     g = c>>16;
     b = c>> 8;
   }
+#ifdef __APPLE_QD__
   RGBColor rgb; 
   rgb.red   = (r<<8)|r;
   rgb.green = (g<<8)|g;
   rgb.blue  = (b<<8)|b;
   RGBForeColor(&rgb);
+#elif defined(__APPLE_QUARTZ__)
+  if (!fl_gc) return; // no context yet? We will assign the color later.
+  float fr = r/255.0f;
+  float fg = g/255.0f;
+  float fb = b/255.0f;
+  CGContextSetRGBFillColor(fl_gc, fr, fg, fb, 1.0f);
+  CGContextSetRGBStrokeColor(fl_gc, fr, fg, fb, 1.0f);
+#else
+#  error : neither Quickdraw nor Quartz defined
+#endif
 }
 
-void Fl_Fltk::color(uchar r, uchar g, uchar b) {
-  RGBColor rgb; 
+void fl_color(uchar r, uchar g, uchar b) {
   fl_color_ = fl_rgb_color(r, g, b);
+#ifdef __APPLE_QD__
+  RGBColor rgb; 
   rgb.red   = (r<<8)|r;
   rgb.green = (g<<8)|g;
   rgb.blue  = (b<<8)|b;
   RGBForeColor(&rgb);
+#elif defined(__APPLE_QUARTZ__)
+  float fr = r/255.0f;
+  float fg = g/255.0f;
+  float fb = b/255.0f;
+  CGContextSetRGBFillColor(fl_gc, fr, fg, fb, 1.0f);
+  CGContextSetRGBStrokeColor(fl_gc, fr, fg, fb, 1.0f);
+#else
+#  error : neither Quickdraw nor Quartz defined
+#endif
 }
 
 void Fl::set_color(Fl_Color i, unsigned c) {
@@ -86,5 +108,5 @@ void Fl::set_color(Fl_Color i, unsigned c) {
 }
 
 //
-// End of "$Id: fl_color_mac.cxx,v 1.1.2.5 2003/01/30 21:43:29 easysw Exp $".
+// End of "$Id: fl_color_mac.cxx,v 1.1.2.9 2004/08/27 20:02:44 matthiaswm Exp $".
 //

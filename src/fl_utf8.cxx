@@ -38,8 +38,8 @@
 
 
 #include <config.h>
-#include "spacing.h"
 #include <FL/filename.H>
+#include <stdarg.h>
 
 #if defined(WIN32)
 #include <ctype.h>
@@ -49,7 +49,12 @@
 #include <winbase.h>
 #include <process.h>
 
-#elif defined(__MACOS__)
+extern "C" {
+  int XUtf8Tolower(int ucs);
+  unsigned short XUtf8IsNonSpacing(unsigned int ucs);
+};
+
+#elif defined(__APPLE__)
 #include <stdio.h>
 #include <time.h>
 #include <unix.h>
@@ -59,11 +64,7 @@
 #include <stdlib.h>
 #else
 
-#if HAVE_XUTF8 && !NANO_X
-#include <libXutf8/Xutf8.h>
-#else 
-#include <ctype.h>
-#endif //HAVE_XUTF8
+#include <FL/Xutf8.h>
 
 #include <sys/types.h>
 #include <sys/stat.h>
@@ -81,78 +82,6 @@
 /***        but only 16 bits are realy used under Linux and win32  ***/
 
 
-static int 
-Tolower(
-	int ucs)
-{
-	int ret;
-
-	if (ucs <= 0x02B6) {
-		if (ucs >= 0x0041) {
-			ret = ucs_table_0041[ucs - 0x0041];
-			if (ret > 0) return ret;
-		}
-		return ucs;
-	}
-
-	if (ucs <= 0x0556) {
-		if (ucs >= 0x0386) {
-			ret = ucs_table_0386[ucs - 0x0386];
-			if (ret > 0) return ret;
-		}
-		return ucs;
-	}
-
-	if (ucs <= 0x10C5) {
-		if (ucs >= 0x10A0) {
-			ret = ucs_table_10A0[ucs - 0x10A0];
-			if (ret > 0) return ret;
-		}
-		return ucs;
-	}
-
-	if (ucs <= 0x1FFC) {
-		if (ucs >= 0x1E00) {
-			ret = ucs_table_1E00[ucs - 0x1E00];
-			if (ret > 0) return ret;
-		}
-		return ucs;
-	}
-
-	if (ucs <= 0x2133) {
-		if (ucs >= 0x2102) {
-			ret = ucs_table_2102[ucs - 0x2102];
-			if (ret > 0) return ret;
-		}
-		return ucs;
-	}
-
-	if (ucs <= 0x24CF) {
-		if (ucs >= 0x24B6) {
-			ret = ucs_table_24B6[ucs - 0x24B6];
-			if (ret > 0) return ret;
-		}
-		return ucs;
-	}
-
-	if (ucs <= 0x33CE) {
-		if (ucs >= 0x33CE) {
-			ret = ucs_table_33CE[ucs - 0x33CE];
-			if (ret > 0) return ret;
-		}
-		return ucs;
-	}
-
-	if (ucs <= 0xFF3A) {
-		if (ucs >= 0xFF21) {
-			ret = ucs_table_FF21[ucs - 0xFF21];
-			if (ret > 0) return ret;
-		}
-		return ucs;
-	}
-
-	return ucs;
-}
 #if MSDOS
 #define NBC 255
 #else
@@ -173,7 +102,7 @@ Toupper(
 		}	
 		for (i = 0; i < NBC; i++) {
 			int l;
-			l = Tolower(i);			
+			l = XUtf8Tolower(i);			
 			if (l != i) table[l] = (unsigned short) i;
 		}	
 
@@ -339,7 +268,7 @@ int fl_utf_strncasecmp(const char *s1, const char *s2, int n)
                 l1 = fl_utf2ucs((unsigned char*)s1 + i, n - i, &u1);
                 l2 = fl_utf2ucs((unsigned char*)s2 + i, n - i, &u2);
                 if (l1 - l2 != 0) return l1 - l2;
-                res = Tolower(u1) - Tolower(u2);
+                res = XUtf8Tolower(u1) - XUtf8Tolower(u2);
                 if (res != 0) return res;
                 if (l1 < 1) {
                         i += 1;
@@ -373,7 +302,7 @@ int fl_utf_strcasecmp(const char *s1, const char *s2)
  */
 int fl_tolower(unsigned int ucs) 
 {
-	return Tolower(ucs);
+	return XUtf8Tolower(ucs);
 }
 
 /*
@@ -397,7 +326,7 @@ int fl_utf_tolower(const unsigned char *str, int len, char *buf)
                 unsigned int u1;
 
                 l1 = fl_utf2ucs((unsigned char*)str + i, len - i, &u1);
-                l2 = fl_ucs2utf((unsigned int) Tolower(u1), buf + l);
+                l2 = fl_ucs2utf((unsigned int) XUtf8Tolower(u1), buf + l);
                 if (l1 < 1) {
                         i += 1;
                 } else {
@@ -538,61 +467,58 @@ int fl_latin12utf(const unsigned char *str, int len, char *buf)
 
 unsigned int fl_nonspacing(unsigned int ucs)
 {
-        if (ucs <= 0x0361) {
-                if (ucs >= 0x0300) return ucs_table_0300[ucs - 0x0300];
-                return 0;
-        }
-
-        if (ucs <= 0x0486) {
-                if (ucs >= 0x0483) return ucs_table_0483[ucs - 0x0483];
-                return 0;
-        }
-
-        if (ucs <= 0x05C4) {
-                if (ucs >= 0x0591) return ucs_table_0591[ucs - 0x0591];
-                return 0;
-        }
-
-        if (ucs <= 0x06ED) {
-                if (ucs >= 0x064B) return ucs_table_064B[ucs - 0x064B];
-                return 0;
-        }
-
-        if (ucs <= 0x0D4D) {
-                if (ucs >= 0x0901) return ucs_table_0901[ucs - 0x0901];
-                return 0;
-        }
-
-        if (ucs <= 0x0FB9) {
-                if (ucs >= 0x0E31) return ucs_table_0E31[ucs - 0x0E31];
-                return 0;
-        }
-
-        if (ucs <= 0x20E1) {
-                if (ucs >= 0x20D0) return ucs_table_20D0[ucs - 0x20D0];
-                return 0;
-        }
-
-        if (ucs <= 0x309A) {
-                if (ucs >= 0x302A) return ucs_table_302A[ucs - 0x302A];
-                return 0;
-        }
-
-        if (ucs <= 0xFB1E) {
-                if (ucs >= 0xFB1E) return ucs_table_FB1E[ucs - 0xFB1E];
-                return 0;
-        }
-
-        if (ucs <= 0xFE23) {
-                if (ucs >= 0xFE20) return ucs_table_FE20[ucs - 0xFE20];
-                return 0;
-        }
-
-        return 0;
+	return (unsigned int) XUtf8IsNonSpacing(ucs);
 }
 
 #if defined(WIN32) || __MACOS__
 static xchar *mbwbuf = NULL;
+#endif
+
+#ifdef WIN32
+
+unsigned int fl_codepage = 0;
+static char *buf = NULL;
+static int buf_len = 0;
+static unsigned short *wbufa = NULL;
+
+char *fl_utf82locale(const char *s, int len, UINT codepage)
+{
+	if (!s) return "";
+	int l = 0;
+	if (buf_len < len * 2 + 1) {
+		buf_len = len * 2 + 1;
+		buf = (char*) realloc(buf, buf_len);
+		wbufa = (unsigned short*) realloc(wbufa, buf_len * sizeof(short));
+	}
+	if (codepage < 1) codepage = fl_codepage;
+	l = fl_utf2unicode((const unsigned char *)s, len, (xchar*) wbufa);
+	buf[l] = 0;
+	l = WideCharToMultiByte(codepage, 0, (WCHAR*)wbufa, l, buf, 
+		buf_len, NULL, NULL);
+	if (l < 0) l = 0;
+	buf[l] = 0;
+	return buf;	
+}
+
+char *fl_locale2utf8(const char *s, int len, UINT codepage)
+{
+	if (!s) return "";
+	int l = 0;
+	if (buf_len < len * 5 + 1) {
+		buf_len = len * 5 + 1;
+		buf = (char*) realloc(buf, buf_len);
+		wbufa = (unsigned short*) realloc(wbufa, buf_len * sizeof(short));
+	}
+	if (codepage < 1) codepage = fl_codepage;
+	buf[l] = 0;
+	
+	l = MultiByteToWideChar(codepage, 0, s, len, (WCHAR*)wbufa, buf_len);
+	if (l < 0) l = 0;
+	wbufa[l] = 0;
+	l = fl_unicode2utf((xchar*)wbufa, l, buf);
+	buf[l] = 0;
+	return buf;	
+}
 #endif
 
 char * fl_utf2mbcs(const char *s)
@@ -606,7 +532,7 @@ char * fl_utf2mbcs(const char *s)
 	l = fl_utf2unicode((unsigned char*)s, l, mbwbuf);
 	mbwbuf[l] = 0;
 	buf = (char*)realloc(buf, l * 6 + 1);
-	l = wcstombs(buf, mbwbuf, l);
+	l = wcstombs(buf, mbwbuf, l * 6);
 	buf[l] = 0;
 	return buf;
 #else
@@ -827,8 +753,13 @@ char *fl_getenv(const char* v)
 #endif
 }
 
-int fl_open(const char* f, int oflags, int pmode)
+int fl_open(const char* f, int oflags, ...)
 {
+	int pmode;
+	va_list ap;
+	va_start(ap, oflags);
+	pmode = va_arg (ap, int);
+	va_end(ap);
 #ifdef WIN32
 	if (fl_is_nt4()) {
 		int l = strlen(f);

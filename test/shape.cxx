@@ -27,7 +27,7 @@
 #include <FL/Fl.H>
 #include <FL/Fl_Window.H>
 #include <FL/Fl_Hor_Slider.H>
-#include <FL/fl_math.h>
+#include <FL/math.h>
 
 #if HAVE_GL
 

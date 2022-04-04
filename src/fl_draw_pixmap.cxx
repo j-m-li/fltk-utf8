@@ -1,9 +1,9 @@
 //
-// "$Id: fl_draw_pixmap.cxx,v 1.4.2.8.2.12 2003/01/30 21:43:43 easysw Exp $"
+// "$Id: fl_draw_pixmap.cxx,v 1.4.2.8.2.16 2004/09/11 19:32:43 easysw Exp $"
 //
 // Pixmap drawing code for the Fast Light Tool Kit (FLTK).
 //
-// Copyright 1998-2003 by Bill Spitzak and others.
+// Copyright 1998-2004 by Bill Spitzak and others.
 //
 // This library is free software; you can redistribute it and/or
 // modify it under the terms of the GNU Library General Public
@@ -70,12 +70,20 @@ static void cb1(void*v, int x, int y, int w, uchar* buf) {
   pixmap_data& d = *(pixmap_data*)v;
   const uchar* p = d.data[y]+x;
   U64* q = (U64*)buf;
-  for (int X=(w+1)/2; X--; p += 2) {
+  for (int X=w; X>0; X-=2, p += 2) {
+    if (X>1) {
 #  if WORDS_BIGENDIAN
-    *q++ = (d.colors[p[0]]<<32) | d.colors[p[1]];
+      *q++ = (d.colors[p[0]]<<32) | d.colors[p[1]];
 #  else
-    *q++ = (d.colors[p[1]]<<32) | d.colors[p[0]];
+      *q++ = (d.colors[p[1]]<<32) | d.colors[p[0]];
 #  endif
+    } else {
+#  if WORDS_BIGENDIAN
+      *q++ = d.colors[p[0]]<<32;
+#  else
+      *q++ = d.colors[p[0]];
+#  endif
+    }
   }
 }
 
@@ -84,23 +92,29 @@ static void cb2(void*v, int x, int y, int w, uchar* buf) {
   pixmap_data& d = *(pixmap_data*)v;
   const uchar* p = d.data[y]+2*x;
   U64* q = (U64*)buf;
-  for (int X=(w+1)/2; X--;) {
+  for (int X=w; X>0; X-=2) {
     U64* colors = d.byte1[*p++];
     int index = *p++;
-    U64* colors1 = d.byte1[*p++];
-    int index1 = *p++;
+    if (X>1) {
+      U64* colors1 = d.byte1[*p++];
+      int index1 = *p++;
 #  if WORDS_BIGENDIAN
-    *q++ = (colors[index]<<32) | colors1[index1];
+      *q++ = (colors[index]<<32) | colors1[index1];
 #  else
-    *q++ = (colors1[index1]<<32) | colors[index];
+      *q++ = (colors1[index1]<<32) | colors[index];
 #  endif
+    } else {
+#  if WORDS_BIGENDIAN
+      *q++ = colors[index]<<32;
+#  else
+      *q++ = colors[index];
+#  endif
+    }
   }
 }
 
-#else
-#if MSDOS && !DJGPP
-typedef unsigned long U32;
-#endif
+#else // U32
+
 // The callback from fl_draw_image to get a row of data passes this:
 struct pixmap_data {
   int w, h;
@@ -110,6 +124,8 @@ struct pixmap_data {
     U32* byte1[256];
   };
 };
+
+#  ifndef __APPLE_QUARTZ__
 
 // callback for 1 byte per pixel:
 static void cb1(void*v, int x, int y, int w, uchar* buf) {
@@ -130,7 +146,9 @@ static void cb2(void*v, int x, int y, int w, uchar* buf) {
   }
 }
 
-#endif
+#  endif  // !__APPLE_QUARTZ__
+
+#endif // U64 else U32
 
 uchar **fl_mask_bitmap; // if non-zero, create bitmap and store pointer here
 
@@ -150,7 +168,186 @@ int fl_draw_pixmap(const char*const* di, int x, int y, Fl_Color bg) {
     // if first color is ' ' it is transparent (put it later to make
     // it not be transparent):
     if (*p == ' ') {
-      uchar* c = (uchar*)&d.colors[' '];
+      uchar* c = (uchar*)&d.colors[(int)' '];
+#ifdef U64
+      *(U64*)c = 0;
+#  if WORDS_BIGENDIAN
+      c += 4;
+#  endif
+#endif
+      transparent_index = ' ';
+      Fl::get_color(bg, c[0], c[1], c[2]); c[3] = 0;
+      p += 4;
+      ncolors--;
+    }
+    // read all the rest of the colors:
+    for (int i=0; i < ncolors; i++) {
+      uchar* c = (uchar*)&d.colors[*p++];
+#ifdef U64
+      *(U64*)c = 0;
+#  if WORDS_BIGENDIAN
+      c += 4;
+#  endif
+#endif
+      *c++ = *p++;
+      *c++ = *p++;
+      *c++ = *p++;
+#ifdef __APPLE_QUARTZ__
+      *c = 255;
+#else
+      *c = 0;
+#endif
+    }
+  } else {	// normal XPM colormap with names
+    if (chars_per_pixel>1) memset(d.byte1, 0, sizeof(d.byte1));
+    for (int i=0; i<ncolors; i++) {
+      const uchar *p = *data++;
+      // the first 1 or 2 characters are the color index:
+      int ind = *p++;
+      uchar* c;
+      if (chars_per_pixel>1) {
+#ifdef U64
+	U64* colors = d.byte1[ind];
+	if (!colors) colors = d.byte1[ind] = new U64[256];
+#else
+	U32* colors = d.byte1[ind];
+	if (!colors) colors = d.byte1[ind] = new U32[256];
+#endif
+	c = (uchar*)&colors[*p];
+	ind = (ind<<8)|*p++;
+      } else {
+	c = (uchar *)&d.colors[ind];
+      }
+      // look for "c word", or last word if none:
+      const uchar *previous_word = p;
+      for (;;) {
+	while (*p && isspace(*p)) p++;
+	uchar what = *p++;
+	while (*p && !isspace(*p)) p++;
+	while (*p && isspace(*p)) p++;
+	if (!*p) {p = previous_word; break;}
+	if (what == 'c') break;
+	previous_word = p;
+	while (*p && !isspace(*p)) p++;
+      }
+#ifdef U64
+      *(U64*)c = 0;
+#  if WORDS_BIGENDIAN
+      c += 4;
+#  endif
+#endif
+#ifdef __APPLE_QUARTZ__
+      c[3] = 255;
+#endif
+      if (!fl_parse_color((const char*)p, c[0], c[1], c[2])) {
+        // assume "None" or "#transparent" for any errors
+	// "bg" should be transparent...
+	Fl::get_color(bg, c[0], c[1], c[2]);
+#ifdef __APPLE_QUARTZ__
+        c[3] = 0;
+#endif
+	transparent_index = ind;
+      }
+    }
+  }
+  d.data = data;
+
+#ifndef __APPLE_QUARTZ__
+
+  // build the mask bitmap used by Fl_Pixmap:
+  if (fl_mask_bitmap && transparent_index >= 0) {
+    int W = (d.w+7)/8;
+    uchar* bitmap = new uchar[W * d.h];
+    *fl_mask_bitmap = bitmap;
+    for (int Y = 0; Y < d.h; Y++) {
+      const uchar* p = data[Y];
+      if (chars_per_pixel <= 1) {
+	for (int X = 0; X < W; X++) {
+	  uchar b = (*p++ != transparent_index);
+	  if (*p++ != transparent_index) b |= 2;
+	  if (*p++ != transparent_index) b |= 4;
+	  if (*p++ != transparent_index) b |= 8;
+	  if (*p++ != transparent_index) b |= 16;
+	  if (*p++ != transparent_index) b |= 32;
+	  if (*p++ != transparent_index) b |= 64;
+	  if (*p++ != transparent_index) b |= 128;
+	  *bitmap++ = b;
+	}
+      } else {
+        uchar b = 0, bit = 1;
+	for (int X = 0; X < d.w; X++) {
+	  int ind = *p++;
+	  ind = (ind<<8) | (*p++);
+	  if (ind != transparent_index) b |= bit;
+
+          if (bit < 128) bit <<= 1;
+	  else {
+	    *bitmap++ = b;
+	    b = 0;
+	    bit = 1;
+	  }
+	}
+
+        if (bit > 1) *bitmap++ = b;
+      }
+    }
+  }
+
+  fl_draw_image(chars_per_pixel==1 ? cb1 : cb2, &d, x, y, d.w, d.h, 4);
+
+#else // __APPLE_QUARTZ__
+
+  bool transparent = (transparent_index>=0);
+  transparent = true;
+  U32 *array = new U32[d.w * d.h], *q = array;
+  for (int Y = 0; Y < d.h; Y++) {
+    const uchar* p = data[Y];
+    if (chars_per_pixel <= 1) {
+      for (int X = 0; X < d.w; X++) {
+        *q++ = d.colors[*p++];
+      }
+    } else {
+      for (int X = 0; X < d.w; X++) {
+        U32* colors = d.byte1[*p++];
+        *q++ = colors[*p++];
+      }
+    }
+  }
+  CGColorSpaceRef lut = CGColorSpaceCreateDeviceRGB();
+  CGDataProviderRef src = CGDataProviderCreateWithData( 0L, array, d.w * d.h * 4, 0L);
+  CGImageRef img = CGImageCreate(d.w, d.h, 8, 4*8, 4*d.w,
+        lut, transparent?kCGImageAlphaLast:kCGImageAlphaNoneSkipLast,
+        src, 0L, false, kCGRenderingIntentDefault);
+  CGColorSpaceRelease(lut);
+  CGDataProviderRelease(src);
+  CGRect rect = { x, y, d.w, d.h };
+  Fl_X::q_begin_image(rect, x, y, d.w, d.h);
+  CGContextDrawImage(fl_gc, rect, img);
+  Fl_X::q_end_image();
+  CGContextFlush(fl_gc);
+  CGImageRelease(img);
+  delete array;
+
+#endif // !__APPLE_QUARTZ__
+
+  if (chars_per_pixel > 1) for (int i = 0; i < 256; i++) delete[] d.byte1[i];
+  return 1;
+}
+
+int fl_rgba_pixmap(const char* const* di, Fl_Color bg, uchar* buf)
+{
+  pixmap_data d;
+  if (!fl_measure_pixmap(di, d.w, d.h)) return 0;
+  const uchar*const* data = (const uchar*const*)(di+1);
+  int transparent_index = -1;
+
+  if (ncolors < 0) {    // FLTK (non standard) compressed colormap
+    ncolors = -ncolors;
+    const uchar *p = *data++;
+    // if first color is ' ' it is transparent (put it later to make
+    // it not be transparent):
+    if (*p == ' ') {
+      uchar* c = (uchar*)&d.colors[(int)' '];
 #ifdef U64
       *(U64*)c = 0;
 #  if WORDS_BIGENDIAN
@@ -176,7 +373,7 @@ int fl_draw_pixmap(const char*const* di, int x, int y, Fl_Color bg) {
       *c++ = *p++;
       *c = 0;
     }
-  } else {	// normal XPM colormap with names
+  } else {      // normal XPM colormap with names
     if (chars_per_pixel>1) memset(d.byte1, 0, sizeof(d.byte1));
     for (int i=0; i<ncolors; i++) {
       const uchar *p = *data++;
@@ -185,28 +382,28 @@ int fl_draw_pixmap(const char*const* di, int x, int y, Fl_Color bg) {
       uchar* c;
       if (chars_per_pixel>1) {
 #ifdef U64
-	U64* colors = d.byte1[ind];
-	if (!colors) colors = d.byte1[ind] = new U64[256];
+        U64* colors = d.byte1[ind];
+        if (!colors) colors = d.byte1[ind] = new U64[256];
 #else
-	U32* colors = d.byte1[ind];
-	if (!colors) colors = d.byte1[ind] = new U32[256];
+        U32* colors = d.byte1[ind];
+        if (!colors) colors = d.byte1[ind] = new U32[256];
 #endif
-	c = (uchar*)&colors[*p];
-	ind = (ind<<8)+*p++;
+        c = (uchar*)&colors[*p];
+        ind = (ind<<8)+*p++;
       } else {
-	c = (uchar *)&d.colors[ind];
+        c = (uchar *)&d.colors[ind];
       }
       // look for "c word", or last word if none:
       const uchar *previous_word = p;
       for (;;) {
-	while (*p && isspace(*p)) p++;
-	uchar what = *p++;
-	while (*p && !isspace(*p)) p++;
-	while (*p && isspace(*p)) p++;
-	if (!*p) {p = previous_word; break;}
-	if (what == 'c') break;
-	previous_word = p;
-	while (*p && !isspace(*p)) p++;
+        while (*p && isspace(*p)) p++;
+        uchar what = *p++;
+        while (*p && !isspace(*p)) p++;
+        while (*p && isspace(*p)) p++;
+        if (!*p) {p = previous_word; break;}
+        if (what == 'c') break;
+        previous_word = p;
+        while (*p && !isspace(*p)) p++;
       }
 #ifdef U64
       *(U64*)c = 0;
@@ -216,55 +413,47 @@ int fl_draw_pixmap(const char*const* di, int x, int y, Fl_Color bg) {
 #endif
       if (!fl_parse_color((const char*)p, c[0], c[1], c[2])) {
         // assume "None" or "#transparent" for any errors
-	// "bg" should be transparent...
-	Fl::get_color(bg, c[0], c[1], c[2]);
-	transparent_index = ind;
+        // "bg" should be transparent...
+        Fl::get_color(bg, c[0], c[1], c[2]);
+        transparent_index = ind;
       }
     }
   }
   d.data = data;
 
-  // build the mask bitmap used by Fl_Pixmap:
-  if (fl_mask_bitmap && transparent_index >= 0) {
-    int W = (d.w+7)/8;
-    uchar* bitmap = new uchar[W * d.h];
-    *fl_mask_bitmap = bitmap;
+  //let's go
+  if (1) {
+    int W = d.w;
     for (int Y = 0; Y < d.h; Y++) {
+      uchar* new_ptr = buf + Y * 4 * d.w;
       const uchar* p = data[Y];
       if (chars_per_pixel <= 1) {
-	for (int X = 0; X < W; X++) {
-	  uchar b = (*p++ != transparent_index);
-	  if (*p++ != transparent_index) b |= 2;
-	  if (*p++ != transparent_index) b |= 4;
-	  if (*p++ != transparent_index) b |= 8;
-	  if (*p++ != transparent_index) b |= 16;
-	  if (*p++ != transparent_index) b |= 32;
-	  if (*p++ != transparent_index) b |= 64;
-	  if (*p++ != transparent_index) b |= 128;
-	  *bitmap++ = b;
-	}
+        for (int X = 0; X < W; X++) {
+          *(new_ptr++) = ((uchar*)&d.colors[*p])[0];
+          *(new_ptr++) = ((uchar*)&d.colors[*p])[1];
+          *(new_ptr++) = ((uchar*)&d.colors[*p])[2];
+          if ((int)*p++ == transparent_index) *(new_ptr++) = 0;
+          else *(new_ptr++) = 255;
+        }
       } else {
-	for (int X = 0; X < W; X++) {
-	  uchar b = 0;
-	  for (int i = 0; i < 8; i++) {
-	    int ind = *p++;
-	    ind = (ind<<8) | (*p++);
-	    if (ind != transparent_index) b |= (1<<i);
-	  }
-	  *bitmap++ = b;
-	}
+        for (int X = 0; X < W; X++) {
+          int ind = *p;
+          U32 *color = d.byte1[*p++];
+          ind = (ind<<8) | (*p);
+          *(new_ptr++) = ((uchar*)&color[*p])[0];
+          *(new_ptr++) = ((uchar*)&color[*p])[1];
+          *(new_ptr++) = ((uchar*)&color[*p])[2];
+          if (ind == transparent_index) *(new_ptr++) = 0;
+          else *(new_ptr++) = 255;
+          p++;
+        }
       }
     }
   }
-  if (fl->type == FL_PS_DEVICE) {
-	fl->draw_image(chars_per_pixel==1 ? cb1 : cb2, &d, x, y, d.w, d.h, 4);
-  } else {
-	fltk.draw_image(chars_per_pixel==1 ? cb1 : cb2, &d, x, y, d.w, d.h, 4);
-  }
-  if (chars_per_pixel > 1) for (int i = 0; i < 256; i++) delete[] d.byte1[i];
   return 1;
 }
 
+
 //
-// End of "$Id: fl_draw_pixmap.cxx,v 1.4.2.8.2.12 2003/01/30 21:43:43 easysw Exp $".
+// End of "$Id: fl_draw_pixmap.cxx,v 1.4.2.8.2.16 2004/09/11 19:32:43 easysw Exp $".
 //

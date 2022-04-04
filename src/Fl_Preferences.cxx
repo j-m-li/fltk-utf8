@@ -1,9 +1,9 @@
 //
-// "$Id: Fl_Preferences.cxx,v 1.1.2.21 2002/10/03 15:23:46 easysw Exp $"
+// "$Id: Fl_Preferences.cxx,v 1.1.2.27 2004/04/11 04:38:58 easysw Exp $"
 //
 // Preferences methods for the Fast Light Tool Kit (FLTK).
 //
-// Copyright 2002 by Matthias Melcher.
+// Copyright 2002-2004 by Matthias Melcher.
 //
 // This library is free software; you can redistribute it and/or
 // modify it under the terms of the GNU Library General Public
@@ -27,18 +27,19 @@
 #include <FL/Fl.H>
 #include <FL/Fl_Preferences.H>
 #include <FL/filename.H>
-#include <FL/fl_utf8.H>
 
 #include <stdio.h>
 #include <stdlib.h>
 #include <stdarg.h>
+#include <FL/fl_utf8.H>
 #include "flstring.h"
 #include <sys/stat.h>
 
 #if defined(WIN32) && !defined(__CYGWIN__)
 #  include <direct.h>
 #  include <io.h>
-#elif defined (__MACOS__)
+#elif defined (__APPLE__)
+#  include <Carbon/Carbon.H>
 #  include <unistd.h>
 #else
 #  include <unistd.h>
@@ -60,9 +61,7 @@ char Fl_Preferences::nameBuffer[128];
  */
 Fl_Preferences::Fl_Preferences( Root root, const char *vendor, const char *application )
 {
-free(malloc(1)); // FIXME
   node = new Node( "." );
-  free(malloc(1)); // FIXME
   rootNode = new RootNode( this, root, vendor, application );
 }
 
@@ -556,18 +555,14 @@ Fl_Preferences::Name::~Name()
 
 int Fl_Preferences::Node::lastEntrySet = -1;
 
-
-
 // create the root node
 // - construct the name of the file that will hold our preferences
 Fl_Preferences::RootNode::RootNode( Fl_Preferences *prefs, Root root, const char *vendor, const char *application )
 {
-  char filename[ FL_PATH_MAX * 2]; filename[0] = 0;
-
+  char filename[ FL_PATH_MAX * 5]; filename[0] = 0;
 #ifdef WIN32
 #  define FLPREFS_RESOURCE	"Software\\Microsoft\\Windows\\CurrentVersion\\Explorer\\Shell Folders"
 #  define FLPREFS_RESOURCEW	L"Software\\Microsoft\\Windows\\CurrentVersion\\Explorer\\Shell Folders"
-
   int appDataLen = strlen(vendor) + strlen(application) + 8;
   DWORD type, nn;
   LONG err;
@@ -575,51 +570,59 @@ Fl_Preferences::RootNode::RootNode( Fl_Preferences *prefs, Root root, const char
 
   switch (root) {
     case SYSTEM:
-	  if (fl_is_nt4()) {
-		err = RegOpenKeyW( HKEY_LOCAL_MACHINE, FLPREFS_RESOURCEW, &key );
-	  } else {
+      if (fl_is_nt4()) {
+        err = RegOpenKeyW( HKEY_LOCAL_MACHINE, FLPREFS_RESOURCEW, &key );
+      } else {
         err = RegOpenKeyA( HKEY_LOCAL_MACHINE, FLPREFS_RESOURCE, &key );
       }
-	  if (err == ERROR_SUCCESS) {
-      nn = FL_PATH_MAX - appDataLen;
-      if (fl_is_nt4()) {
-        err = RegQueryValueExW( key, L"Common AppData", 0L, &type, (BYTE*)filename, &nn );
-	  } else {
-	    err = RegQueryValueExA( key, "Common AppData", 0L, &type, (BYTE*)filename, &nn );
-	  }
-	  if ( ( err != ERROR_SUCCESS ) && ( type == REG_SZ ) )
-	    filename[0] = 0;
-	    if (fl_is_nt4()) filename[1] = 0;
+      if (err == ERROR_SUCCESS) {
+        nn = FL_PATH_MAX - appDataLen;
+        if (fl_is_nt4()) {
+          err = RegQueryValueExW( key, L"Common AppData", 0L, &type, 
+                                 (BYTE*)filename, &nn );
+        } else {
+          err = RegQueryValueExA( key, "Common AppData", 0L, &type, 
+                                 (BYTE*)filename, &nn );
+        }
+        if ( ( err != ERROR_SUCCESS ) && ( type == REG_SZ ) ) {
+          filename[0] = 0;
+          if (fl_is_nt4()) filename[1] = 0;
+        }
         RegCloseKey(key);
       }
       break;
     case USER:
-	  if (fl_is_nt4()) {
-		err = RegOpenKeyW( HKEY_CURRENT_USER, FLPREFS_RESOURCEW, &key );
-	  } else {
+      if (fl_is_nt4()) {
+        err = RegOpenKeyW( HKEY_CURRENT_USER, FLPREFS_RESOURCEW, &key );
+      } else {
         err = RegOpenKeyA( HKEY_CURRENT_USER, FLPREFS_RESOURCE, &key );
       }
+
       if (err == ERROR_SUCCESS) {
-      nn = FL_PATH_MAX - appDataLen;
-      if (fl_is_nt4()) {
-        err = RegQueryValueExW( key, L"AppData", 0L, &type, (BYTE*)filename, &nn );
-	  } else {
-	    err = RegQueryValueExA( key, "AppData", 0L, &type, (BYTE*)filename, &nn );
-	  }
-	  if ( ( err != ERROR_SUCCESS ) && ( type == REG_SZ ) )
-	    filename[0] = 0;
+        nn = FL_PATH_MAX - appDataLen;
+        if (fl_is_nt4()) {
+          err = RegQueryValueExW( key, L"AppData", 0L, &type, 
+                                 (BYTE*)filename, &nn );
+        } else {
+          err = RegQueryValueExA( key, "AppData", 0L, &type, 
+                                  (BYTE*)filename, &nn );
+        }
+        if ( ( err != ERROR_SUCCESS ) && ( type == REG_SZ ) ) {
+          filename[0] = 0;
+          if (fl_is_nt4()) filename[1] = 0;
+        }
         RegCloseKey(key);
       }
       break;
   }
 
   if (fl_is_nt4()) {
-	if (!filename[1] && !filename[0]) {
-		strcpy(filename, "C:\\xd640");
-	} else {
-		xchar*b = (xchar*)_wcsdup((xchar*)filename);
-		filename[fl_unicode2utf(b, wcslen((xchar*)b), filename)] = 0;
-		free(b);
+    if (!filename[1] && !filename[0]) {
+      strcpy(filename, "C:\\xd640");
+    } else {
+      xchar*b = (xchar*)_wcsdup((xchar*)filename);
+      filename[fl_unicode2utf(b, wcslen((xchar*)b), filename)] = 0;
+      free(b);
     }
   } else if (!filename[0]) {
     strcpy(filename, "C:\\xd640");
@@ -628,7 +631,7 @@ Fl_Preferences::RootNode::RootNode( Fl_Preferences *prefs, Root root, const char
   snprintf(filename + strlen(filename), sizeof(filename) - strlen(filename),
            "/%s/%s.prefs", vendor, application);
   for (char *s = filename; *s; s++) if (*s == '\\') *s = '/';
-#elif defined ( __MACOS__ )
+#elif defined ( __APPLE__ )
   FSSpec spec = { 0 };
   FSRef ref;
   OSErr err = fnfErr;
@@ -669,8 +672,6 @@ Fl_Preferences::RootNode::RootNode( Fl_Preferences *prefs, Root root, const char
   snprintf(filename + strlen(filename), sizeof(filename) - strlen(filename),
            "%s/%s.prefs", vendor, application);
 #endif
- 
-  fl_make_path_for_file(filename);
 
   prefs_       = prefs;
   filename_    = strdup(filename);
@@ -687,8 +688,6 @@ Fl_Preferences::RootNode::RootNode( Fl_Preferences *prefs, const char *path, con
   char filename[ FL_PATH_MAX ]; filename[0] = 0;
 
   snprintf(filename, sizeof(filename), "%s/%s.prefs", path, application);
-
-  fl_make_path_for_file(filename);
 
   prefs_       = prefs;
   filename_    = strdup(filename);
@@ -716,7 +715,7 @@ Fl_Preferences::RootNode::~RootNode()
 int Fl_Preferences::RootNode::read()
 {
   char buf[1024];
-  FILE *f = fl_fopen(filename_, "rb" );
+  FILE *f = fl_fopen( filename_, "rb" );
   if ( !f ) return 0;
   fgets( buf, 1024, f );
   fgets( buf, 1024, f );
@@ -757,7 +756,8 @@ int Fl_Preferences::RootNode::read()
 // write the group tree and all entry leafs
 int Fl_Preferences::RootNode::write()
 {
-  FILE *f = fl_fopen(filename_, "wb" );
+  fl_make_path_for_file(filename_);
+  FILE *f = fl_fopen( filename_, "wb" );
   if ( !f ) return 1;
   fprintf( f, "; FLTK preferences file format 1.0\n" );
   fprintf( f, "; vendor: %s\n", vendor_ );
@@ -1115,5 +1115,5 @@ char Fl_Preferences::Node::remove()
 
 
 //
-// End of "$Id: Fl_Preferences.cxx,v 1.1.2.21 2002/10/03 15:23:46 easysw Exp $".
+// End of "$Id: Fl_Preferences.cxx,v 1.1.2.27 2004/04/11 04:38:58 easysw Exp $".
 //

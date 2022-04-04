@@ -1,9 +1,9 @@
 //
-// "$Id: Fl_Input.cxx,v 1.10.2.15.2.13 2002/08/09 01:09:49 easysw Exp $"
+// "$Id: Fl_Input.cxx,v 1.10.2.15.2.19 2004/04/11 04:38:57 easysw Exp $"
 //
 // Input widget for the Fast Light Tool Kit (FLTK).
 //
-// Copyright 1998-2002 by Bill Spitzak and others.
+// Copyright 1998-2004 by Bill Spitzak and others.
 //
 // This library is free software; you can redistribute it and/or
 // modify it under the terms of the GNU Library General Public
@@ -64,17 +64,8 @@ int Fl_Input::handle_key() {
 
   char ascii = Fl::event_text()[0];
 
-  if (Fl::minimal_shortcuts()) {
-    switch (ascii) {
-    case ctrl('C'):
-    case ctrl('V'):
-    case ctrl('X'):
-      break;
-    default:
-      if (ascii < 32) ascii = 0;
-    }
-  }
   int repeat_num=1;
+
   int del;
   if (Fl::compose(del)) {
 
@@ -155,7 +146,7 @@ int Fl_Input::handle_key() {
   case FL_Tab:
     if (Fl::event_state(FL_CTRL|FL_SHIFT) || input_type()!=FL_MULTILINE_INPUT || readonly()) return 0;
     return replace(position(), mark(), &ascii, 1);
-#ifdef __MACOS__
+#ifdef __APPLE__
   case 'c' :
   case 'v' :
   case 'x' :
@@ -168,7 +159,7 @@ int Fl_Input::handle_key() {
     if (Fl::event_state(FL_META)) ascii -= 0x60;
 //    printf("using '%c' (0x%02x)...\n", ascii, ascii);
     break;
-#endif // __MACOS__
+#endif // __APPLE__
   }
 
   int i;
@@ -423,5 +414,5 @@ Fl_Input::Fl_Input(int X, int Y, int W, int H, const char *l)
 }
 
 //
-// End of "$Id: Fl_Input.cxx,v 1.10.2.15.2.13 2002/08/09 01:09:49 easysw Exp $".
+// End of "$Id: Fl_Input.cxx,v 1.10.2.15.2.19 2004/04/11 04:38:57 easysw Exp $".
 //

@@ -1,9 +1,9 @@
 //
-// "$Id: filename_list.cxx,v 1.10.2.11.2.6 2003/01/30 21:43:21 easysw Exp $"
+// "$Id: filename_list.cxx,v 1.10.2.11.2.8 2004/11/20 03:44:18 easysw Exp $"
 //
 // Filename list routines for the Fast Light Tool Kit (FLTK).
 //
-// Copyright 1998-2003 by Bill Spitzak and others.
+// Copyright 1998-2004 by Bill Spitzak and others.
 //
 // This library is free software; you can redistribute it and/or
 // modify it under the terms of the GNU Library General Public
@@ -29,19 +29,14 @@
 #include "flstring.h"
 #include <FL/fl_utf8.H>
 
-#if MSDOS
-#define strcasecmp stricmp
-#endif
-
-
-#if !defined(HAVE_SCANDIR) || __MACOS__
 extern "C" {
-  extern int fl_scandir (const char *dir, dirent ***namelist,
+#ifndef HAVE_SCANDIR
+  int fl_scandir (const char *dir, dirent ***namelist,
 	          int (*select)(dirent *),
 	          int (*compar)(dirent **, dirent **));
-#  define scandir(a,b,c,d)	fl_scandir(a,b,c,d)
-}
+#  define scandir	fl_scandir
 #endif
+}
 
 int fl_alphasort(struct dirent **a, struct dirent **b) {
   return strcmp((*a)->d_name, (*b)->d_name);
@@ -54,7 +49,9 @@ int fl_casealphasort(struct dirent **a, struct dirent **b) {
 
 int fl_filename_list(const char *d, dirent ***list,
                      Fl_File_Sort_F *sort) {
-#if defined(__hpux) || defined(__CYGWIN__)
+#ifndef HAVE_SCANDIR
+  return scandir(d, list, 0, sort);
+#elif defined(__hpux) || defined(__CYGWIN__)
   // HP-UX, Cygwin define the comparison function like this:
   return scandir(d, list, 0, (int(*)(const dirent **, const dirent **))sort);
 #elif defined(__osf__)
@@ -63,7 +60,7 @@ int fl_filename_list(const char *d, dirent ***list,
 #elif defined(_AIX)
   // AIX is almost standard...
   return scandir(d, list, 0, (int(*)(void*, void*))sort);
-#elif HAVE_SCANDIR && !defined(__sgi) && !__MACOS__
+#elif !defined(__sgi)
   // The vast majority of UNIX systems want the sort function to have this
   // prototype, most likely so that it can be passed to qsort without any
   // changes:
@@ -76,5 +73,5 @@ int fl_filename_list(const char *d, dirent ***list,
 }
 
 //
-// End of "$Id: filename_list.cxx,v 1.10.2.11.2.6 2003/01/30 21:43:21 easysw Exp $".
+// End of "$Id: filename_list.cxx,v 1.10.2.11.2.8 2004/11/20 03:44:18 easysw Exp $".
 //

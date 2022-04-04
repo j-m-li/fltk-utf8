@@ -1,9 +1,9 @@
 //
-// "$Id: Fl_Color_Chooser.cxx,v 1.7.2.4.2.6 2003/01/30 21:41:36 easysw Exp $"
+// "$Id: Fl_Color_Chooser.cxx,v 1.7.2.4.2.8 2004/07/27 16:02:20 easysw Exp $"
 //
 // Color chooser for the Fast Light Tool Kit (FLTK).
 //
-// Copyright 1998-2003 by Bill Spitzak and others.
+// Copyright 1998-2004 by Bill Spitzak and others.
 //
 // This library is free software; you can redistribute it and/or
 // modify it under the terms of the GNU Library General Public
@@ -26,7 +26,7 @@
 #include <FL/Fl.H>
 #include <FL/Fl_Color_Chooser.H>
 #include <FL/fl_draw.H>
-#include <FL/fl_math.h>
+#include <FL/math.h>
 #include <stdio.h>
 
 // Besides being a useful object on it's own, the Fl_Color_Chooser was
@@ -125,6 +125,7 @@ int Fl_Color_Chooser::rgb(double R, double G, double B) {
   double pv = value_;
   rgb2hsv(R,G,B,hue_,saturation_,value_);
   set_valuators();
+  set_changed();
   if (value_ != pv) {
 #ifdef UPDATE_HUE_BOX
     huebox.damage(FL_DAMAGE_SCROLL);
@@ -157,6 +158,7 @@ int Fl_Color_Chooser::hsv(double H, double S, double V) {
   }
   hsv2rgb(H,S,V,r_,g_,b_);
   set_valuators();
+  set_changed();
   return 1;
 }
 
@@ -470,19 +472,16 @@ static void chooser_cb(Fl_Object* o, void* vv) {
   v->damage(FL_DAMAGE_EXPOSE);
 }
 
-extern const char* fl_ok;
-extern const char* fl_cancel;
-
 int fl_color_chooser(const char* name, double& r, double& g, double& b) {
   Fl_Window window(215,200,name);
   Fl_Color_Chooser chooser(10, 10, 195, 115);
   ColorChip ok_color(10, 130, 95, 25);
-  Fl_Return_Button ok_button(10, 165, 95, 25, fl_ok);
+  Fl_Return_Button ok_button(10, 165, 95, 25, Fl::txt_ok);
   ColorChip cancel_color(110, 130, 95, 25);
   cancel_color.r = uchar(255*r+.5); ok_color.r = cancel_color.r;
   ok_color.g = cancel_color.g = uchar(255*g+.5);
   ok_color.b = cancel_color.b = uchar(255*b+.5);
-  Fl_Button cancel_button(110, 165, 95, 25, fl_cancel);
+  Fl_Button cancel_button(110, 165, 95, 25, Fl::txt_cancel);
   window.resizable(chooser);
   chooser.rgb(r,g,b);
   chooser.callback(chooser_cb, &ok_color);
@@ -521,5 +520,5 @@ int fl_color_chooser(const char* name, uchar& r, uchar& g, uchar& b) {
 }
 
 //
-// End of "$Id: Fl_Color_Chooser.cxx,v 1.7.2.4.2.6 2003/01/30 21:41:36 easysw Exp $".
+// End of "$Id: Fl_Color_Chooser.cxx,v 1.7.2.4.2.8 2004/07/27 16:02:20 easysw Exp $".
 //

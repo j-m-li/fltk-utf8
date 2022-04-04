@@ -1,9 +1,9 @@
 //
-// "$Id: Fl_BMP_Image.cxx,v 1.1.2.10 2002/08/30 16:58:16 easysw Exp $"
+// "$Id: Fl_BMP_Image.cxx,v 1.1.2.14 2004/04/11 04:38:57 easysw Exp $"
 //
 // Fl_BMP_Image routines.
 //
-// Copyright 1997-2002 by Easy Software Products.
+// Copyright 1997-2004 by Easy Software Products.
 // Image support donated by Matthias Melcher, Copyright 2000.
 //
 // This library is free software; you can redistribute it and/or
@@ -36,7 +36,7 @@
 #include <config.h>
 #include <stdio.h>
 #include <stdlib.h>
-#include <FL/fl_utf8.H>
+
 
 //
 // BMP definitions...
@@ -68,7 +68,7 @@ Fl_BMP_Image::Fl_BMP_Image(const char *bmp) // I - File to read
   FILE		*fp;		// File pointer
   int		info_size,	// Size of info header
 		depth,		// Depth of image (bits)
-                bDepth = 3,     // Depth of image (bytes)
+		bDepth = 3,	// Depth of image (bytes)
 		compression,	// Type of compression
 		colors_used,	// Number of colors used
 		x, y,		// Looping vars
@@ -85,7 +85,7 @@ Fl_BMP_Image::Fl_BMP_Image(const char *bmp) // I - File to read
   uchar		mask = 0;	// single bit mask follows image data
 
   // Open the file...
-  if ((fp = fl_fopen(bmp, "rb")) == NULL) return;
+  if ((fp = fopen(bmp, "rb")) == NULL) return;
 
   // Get the header...
   byte = (uchar)getc(fp);	// Check "BM" sync chars
@@ -135,11 +135,10 @@ Fl_BMP_Image::Fl_BMP_Image(const char *bmp) // I - File to read
       int maskSize = (((w()*Bpp+3)&~3)*h()) + (((((w()+7)/8)+3)&~3)*h());
       if (maskSize==2*dataSize) {
         mask = 1;
-       h(h()/2);
-       bDepth = 4;
+	h(h()/2);
+	bDepth = 4;
       }
     }
-
   }
 
 //  printf("w() = %d, h() = %d, depth = %d, compression = %d, colors_used = %d, repcount = %d\n",
@@ -330,7 +329,7 @@ Fl_BMP_Image::Fl_BMP_Image(const char *bmp) // I - File to read
 	    *ptr++ = colormap[temp][2];
 	    *ptr++ = colormap[temp][1];
 	    *ptr++ = colormap[temp][0];
-            if (mask) ptr++;
+	    if (mask) ptr++;
 	  }
 
 	  if (!compression) {
@@ -340,26 +339,26 @@ Fl_BMP_Image::Fl_BMP_Image(const char *bmp) // I - File to read
 	    }
 	  }
           break;
+
       case 16 : // 16-bit 5:5:5 RGB
           for (x = w(); x > 0; x --, ptr += bDepth) {
-           uchar b = getc(fp), a = getc(fp) ;
-           #ifdef USE_5_6_5 // Green as the brightes color should ahve one bit more 5:6:5
-           ptr[0] = (uchar)(( b << 3 ) & 0xf8);
-           ptr[1] = (uchar)((( a << 5 ) & 0xe0 ) | ( ( b >> 3) & 0x1c ));
-           ptr[2] = (uchar)(a & 0xf8) ;
-           #else // this is the default wasting one bit: 5:5:5
-           ptr[2] = (uchar)(( b << 3 ) & 0xf8) ;
-           ptr[1] = (uchar)(( ( a << 6 ) & 0xc0 ) | ( ( b >> 2) & 0x38 ));
-           ptr[0] = (uchar)((a<<1) & 0xf8 );
-           #endif
-         }
+	    uchar b = getc(fp), a = getc(fp) ;
+#ifdef USE_5_6_5 // Green as the brightest color should have one bit more 5:6:5
+	    ptr[0] = (uchar)(( b << 3 ) & 0xf8);
+	    ptr[1] = (uchar)(((a << 5) & 0xe0) | ((b >> 3) & 0x1c));
+	    ptr[2] = (uchar)(a & 0xf8);
+#else // this is the default wasting one bit: 5:5:5
+	    ptr[2] = (uchar)((b << 3) & 0xf8);
+	    ptr[1] = (uchar)(((a << 6) & 0xc0) | ((b >> 2) & 0x38));
+	    ptr[0] = (uchar)((a<<1) & 0xf8);
+#endif
+	  }
 
           // Read remaining bytes to align to 32 bits...
-         for (temp = w() * 3; temp & 3; temp ++) {
-           getc(fp);
-         }
+	  for (temp = w() * 3; temp & 3; temp ++) {
+	    getc(fp);
+	  }
           break;
-
 
       case 24 : // 24-bit RGB
           for (x = w(); x > 0; x --, ptr += bDepth) {
@@ -375,24 +374,24 @@ Fl_BMP_Image::Fl_BMP_Image(const char *bmp) // I - File to read
           break;
     }
   }
-
+  
   if (mask) {
     for (y = h() - 1; y >= 0; y --) {
       ptr = (uchar *)array + y * w() * d() + 3;
       for (x = w(), bit = 128; x > 0; x --, ptr+=bDepth) {
-       if (bit == 128) byte = (uchar)getc(fp);
-       if (byte & bit)
-         *ptr = 0;
-       else
-         *ptr = 255;
-       if (bit > 1)
-         bit >>= 1;
-       else
-         bit = 128;
+	if (bit == 128) byte = (uchar)getc(fp);
+	if (byte & bit)
+	  *ptr = 0;
+	else
+	  *ptr = 255;
+	if (bit > 1)
+	  bit >>= 1;
+	else
+	  bit = 128;
       }
       // Read remaining bytes to align to 32 bits...
       for (temp = (w() + 7) / 8; temp & 3; temp ++)
-       getc(fp);
+	getc(fp);
     }
   }
 
@@ -451,5 +450,5 @@ read_long(FILE *fp) {		// I - File to read from
 
 
 //
-// End of "$Id: Fl_BMP_Image.cxx,v 1.1.2.10 2002/08/30 16:58:16 easysw Exp $".
+// End of "$Id: Fl_BMP_Image.cxx,v 1.1.2.14 2004/04/11 04:38:57 easysw Exp $".
 //

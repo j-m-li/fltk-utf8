@@ -25,12 +25,8 @@
 
 #ifdef WIN32
 #  include "Fl_win32.cxx"
-#elif defined(__MACOS__)
+#elif defined(__APPLE__)
 #  include "Fl_mac.cxx"
-#elif defined(NANO_X)
-#  include "Fl_nx.cxx"
-#elif defined(DJGPP)
-#  include "Fl_dj2.cxx"
 #else
 
 #  define CONSOLIDATE_MOTION 1
@@ -51,8 +47,8 @@
 #  include <X11/Xlocale.h>
 #  include <X11/Xlib.h>
 
-const char* fl_xio_error = "X I/O error";
-const char* fl_cannot_open_display = "Can't open display: %s";
+const char* Fl::txt_xio_error = "X I/O error";
+const char* Fl::txt_cannot_open_display = "Can't open display: %s";
 
 ////////////////////////////////////////////////////////////////
 // interface to poll/select call:
@@ -310,7 +306,7 @@ static void fd_callback(int,void *) {
 
 extern "C" {
   static int io_error_handler(Display*) {
-    Fl::fatal(fl_xio_error);
+    Fl::fatal(Fl::txt_xio_error);
     return 0;
   }
 
@@ -328,8 +324,8 @@ extern char *fl_get_font_xfld(int fnum, int size);
 
 void fl_new_ic()
 {
-	XVaNestedList preedit_attr;
-	XVaNestedList status_attr;
+	XVaNestedList preedit_attr = NULL;
+	XVaNestedList status_attr = NULL;
 	static XFontSet   fs = NULL;
 	char *fnt;
 	char          **missing_list;
@@ -342,6 +338,7 @@ void fl_new_ic()
 
 	if (!fs) { 
 		fnt = fl_get_font_xfld(0, 14);
+		if (!fnt) fnt = "-misc-fixed-*"; 
 		fs = XCreateFontSet(fl_display,	fnt, &missing_list,
 			&missing_count, &def_string);
 	}
@@ -394,7 +391,7 @@ void fl_new_ic()
                         NULL);
 	} else {
 		fl_is_over_the_spot = 1;
-		XVaNestedList status_attr;
+		XVaNestedList status_attr = NULL;
 		status_attr = XVaCreateNestedList(0, XNAreaNeeded, &status_area, NULL);
 
 		XGetICValues(fl_xim_ic, XNStatusAttributes, status_attr, NULL);
@@ -442,6 +439,7 @@ void fl_set_spot(int font, int size, int x, int y, int w, int h)
 			XFreeFontSet(fl_display, fs);
 		}
 		fnt = fl_get_font_xfld(font, size);
+		if (!fnt) fnt = "-misc-fixed-*";
 		fs = XCreateFontSet(fl_display,	fnt, &missing_list,
 			&missing_count, &def_string);
 		free(fnt);
@@ -521,7 +519,7 @@ void fl_open_display() {
   XSetErrorHandler(xerror_handler);
 
   Display *d = XOpenDisplay(0);
-  if (!d) Fl::fatal(fl_cannot_open_display,XDisplayName(0));
+  if (!d) Fl::fatal(Fl::txt_cannot_open_display,XDisplayName(0));
 
   fl_open_display(d);
 }
@@ -751,6 +749,21 @@ int fl_handle(const XEvent &thisevent)
 
   if (fl_xim_ic && (xevent.type == FocusIn)) 
   {
+#define POOR_XIM
+#ifdef POOR_XIM
+        if (xim_win != xid)
+	{
+		xim_win  = xid;
+		XDestroyIC(fl_xim_ic);
+		fl_xim_ic = NULL;
+		fl_new_ic();
+		XSetICValues(fl_xim_ic,
+				XNFocusWindow, xevent.xclient.window,
+				XNClientWindow, xid,
+				NULL);
+	}
+	fl_set_spot(spotf, spots, spot.x, spot.y, spot.width, spot.height);
+#else
     if (Fl::first_window() && Fl::first_window()->modal()) {
       Window x  = fl_xid(Fl::first_window());
       if (x != xim_win) {
@@ -764,11 +777,14 @@ int fl_handle(const XEvent &thisevent)
     } else if (xim_win != xid && xid) {
       xim_win = xid;
       XSetICValues(fl_xim_ic,
-                        XNFocusWindow, xim_win,
-                        XNClientWindow, xim_win, 
+                        XNFocusWindow, xevent.xclient.window,
+                        XNClientWindow, xid,
+                        //XNFocusWindow, xim_win,
+                        //XNClientWindow, xim_win, 
                         NULL);
       fl_set_spot(spotf, spots, spot.x, spot.y, spot.width, spot.height);
     }
+#endif
   }
 
   filtered = XFilterEvent((XEvent *)&xevent, 0);
@@ -1054,7 +1070,9 @@ int fl_handle(const XEvent &thisevent)
           keysym = XKeycodeToKeysym(fl_display, keycode, 0);
         }
       }
-      if (Fl::event_state(FL_CTRL) && keysym == '-') buffer[0] = 0x1f; // ^_
+      // MRS: Can't use Fl::event_state(FL_CTRL) since the state is not
+      //      set until set_event_xy() is called later...
+      if ((xevent.xkey.state & ControlMask) && keysym == '-') buffer[0] = 0x1f; 
       buffer[len] = 0;
       Fl::e_text = buffer;
       Fl::e_length = len;
@@ -1101,13 +1119,14 @@ int fl_handle(const XEvent &thisevent)
       // behavior of the translator in Fl_win32.cxx, and IMHO is the
       // user-friendly result:
       unsigned long keysym1 = XKeycodeToKeysym(fl_display, keycode, 1);
-      if (keysym1 <= 0x7f || keysym1 > 0xff9f && keysym1 <= FL_KP_Last) {
+      if ((xevent.xkey.state & Mod2Mask) &&
+          (keysym1 <= 0x7f || (keysym1 > 0xff9f && keysym1 <= FL_KP_Last))) {
+       // Store ASCII numeric keypad value...
 	keysym = keysym1 | FL_KP;
 	buffer[0] = char(keysym1) & 0x7F;
 	len = 1;
       } else {
-	// If that failed to work, just translate them to the matching
-	// normal function keys:
+        // Map keypad to special key...
 	static const unsigned short table[15] = {
 	  FL_F+1, FL_F+2, FL_F+3, FL_F+4,
 	  FL_Home, FL_Left, FL_Up, FL_Right,
@@ -1217,6 +1236,22 @@ int fl_handle(const XEvent &thisevent)
     window->resize(X, Y, W, H);
     break; // allow add_handler to do something too
     }
+  case ReparentNotify: {
+    int xpos, ypos;
+    Window junk;
+
+    //ReparentNotify gives the new position of the window relative to
+    //the new parent. FLTK cares about the position on the root window.
+    XTranslateCoordinates(fl_display, xevent.xreparent.parent,
+                         XRootWindow(fl_display, fl_screen),
+                         xevent.xreparent.x, xevent.xreparent.y,
+                         &xpos, &ypos, &junk);
+
+    // tell Fl_Window about it and set flag to prevent echoing:
+    resize_bug_fix = window;
+    window->position(xpos, ypos);
+    break;
+    }
   }
   return Fl::handle(event, window);
 }
@@ -1224,21 +1259,31 @@ int fl_handle(const XEvent &thisevent)
 ////////////////////////////////////////////////////////////////
 
 void Fl_Window::resize(int X,int Y,int W,int H) {
+  int is_a_move = (X != x() || Y != y());
   int is_a_resize = (W != w() || H != h());
   int resize_from_program = (this != resize_bug_fix);
   if (!resize_from_program) resize_bug_fix = 0;
-  if (X != x() || Y != y()) set_flag(FL_FORCE_POSITION);
-  else if (!is_a_resize) return;
+  if (is_a_move && resize_from_program) set_flag(FL_FORCE_POSITION);
+  else if (!is_a_resize && !is_a_move) return;
   if (is_a_resize) {
     Fl_Group::resize(X,Y,W,H);
     if (shown()) {redraw(); i->wait_for_expose = 1;}
   } else {
     x(X); y(Y);
   }
+
+  if (resize_from_program && is_a_resize && !resizable()) {
+    size_range(w(), h(), w(), h());
+  }
+
   if (resize_from_program && shown()) {
     if (is_a_resize) {
       if (!resizable()) size_range(w(),h(),w(),h());
-      XMoveResizeWindow(fl_display, i->xid, X, Y, W>0 ? W : 1, H>0 ? H : 1);
+      if (is_a_move) {
+       XMoveResizeWindow(fl_display, i->xid, X, Y, W>0 ? W : 1, H>0 ? H : 1);
+      } else {
+       XResizeWindow(fl_display, i->xid, W>0 ? W : 1, H>0 ? H : 1);
+      }
     } else
       XMoveWindow(fl_display, i->xid, X, Y);
   }
@@ -1296,11 +1341,14 @@ void Fl_X::make_xid(Fl_Window* win, XVisualInfo *visual, Colormap colormap)
   int H = win->h();
   if (H <= 0) H = 1; // X don't like zero...
   if (!win->parent() && !Fl::grab()) {
+#ifdef FL_CENTER_WINDOWS
     // center windows in case window manager does not do anything:
     if (!(win->flags() & Fl_Window::FL_FORCE_POSITION)) {
       win->x(X = (Fl::w()-W)/2);
       win->y(Y = (Fl::h()-H)/2);
     }
+#endif // FL_CENTER_WINDOWS
+
     // force the window to be on-screen.  Usually the X window manager
     // does this, but a few don't, so we do it here for consistency:
     if (win->border()) {
@@ -1365,7 +1413,7 @@ void Fl_X::make_xid(Fl_Window* win, XVisualInfo *visual, Colormap colormap)
  		    XA_ATOM, 32, 0, (uchar*)&WM_DELETE_WINDOW, 1);
 
     // Make it receptive to DnD:
-    int version = 4;
+    long version = 4;
     XChangeProperty(fl_display, xp->xid, fl_XdndAware,
                     XA_ATOM, sizeof(int)*8, 0, (unsigned char*)&version, 1);
 

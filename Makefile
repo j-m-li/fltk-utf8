@@ -1,9 +1,9 @@
 #
-# "$Id: Makefile,v 1.12.2.6.2.10 2002/01/06 13:40:27 easysw Exp $"
+# "$Id: Makefile,v 1.12.2.6.2.19 2004/10/18 20:22:21 easysw Exp $"
 #
 # Top-level makefile for the Fast Light Tool Kit (FLTK).
 #
-# Copyright 1998-2002 by Bill Spitzak and others.
+# Copyright 1998-2004 by Bill Spitzak and others.
 #
 # This library is free software; you can redistribute it and/or
 # modify it under the terms of the GNU Library General Public
@@ -20,12 +20,12 @@
 # Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307
 # USA.
 #
-# Please report all bugs and problems to "fltk-bugs@fltk.org".
+# Please report all bugs and problems to "fltk-utf8-bugs@fltk-utf8.org".
 #
 
 include makeinclude
 
-DIRS	=	src fluid test documentation
+DIRS	=	xutf8 $(IMAGEDIRS) src fluid test documentation
 
 all: makeinclude
 	for dir in $(DIRS); do\
@@ -34,17 +34,17 @@ all: makeinclude
 	done
 
 install: makeinclude
-	-mkdir -p $(bindir)
-	$(RM) $(bindir)/fltk-config
-	-cp fltk-config $(bindir)
-	-chmod 755 $(bindir)/fltk-config
+	-mkdir -p $(DESTDIR)$(bindir)
+	$(RM) $(DESTDIR)$(bindir)/fltk-utf8-config
+	-cp fltk-utf8-config $(DESTDIR)$(bindir)
+	-chmod 755 $(DESTDIR)$(bindir)/fltk-utf8-config
 	for dir in FL $(DIRS); do\
 		echo "=== installing $$dir ===";\
 		(cd $$dir; $(MAKE) $(MFLAGS) install) || break;\
 	done
 
 uninstall: makeinclude
-	$(RM) $(bindir)/fltk-config
+	$(RM) $(DESTDIR)$(bindir)/fltk-utf8-config
 	for dir in FL $(DIRS); do\
 		echo "=== uninstalling $$dir ===";\
 		(cd $$dir; $(MAKE) $(MFLAGS) uninstall) || break;\
@@ -57,23 +57,25 @@ depend: makeinclude
 	done
 
 clean:
-	$(RM) core *.o
+	-$(RM) core *.o
 	for dir in $(DIRS); do\
 		echo "=== cleaning $$dir ===";\
 		(cd $$dir; $(MAKE) $(MFLAGS) clean) || break;\
 	done
-	(cd lib ;rm -f *.lib *.dll *.exp)
-	(rm -f `find . -name .DS_Store -print`)
-	(rm -f `find . -name '*~' -print`)
-	(cd visualc; rm -rf `find -name '*' -type d  -print`)
-	(chmod 0664 `find -name '*' -type f  -print` 2> /dev/null)
-	(chmod 775 configure fluid/tounix debian/rules 2>/dev/null)
 
 distclean: clean
-	$(RM) config.* makeinclude
-	(cd visualc; rm -fr *_; rm -fr Debug fltkdlld; \
-		rm -f *.plg *.ncb *.opt *.dll *.ilk *.pdb)
-	(cd lib; rm -f fltkd.lib  fltkdlld.exp  fltkdlld.lib *.a st*)
+	$(RM) config.*
+	$(RM) fltk-utf8-config fltk-utf8.list makeinclude
+	$(RM) FL/Makefile
+	$(RM) documentation/*.$(CAT1EXT)
+	$(RM) documentation/*.$(CAT3EXT)
+	$(RM) documentation/fltk-utf8.pdf
+	$(RM) documentation/fltk-utf8.ps
+	$(RM) -r documentation/fltk-utf8.d
+	for file in test/*.fl; do\
+		$(RM) test/`basename $file .fl`.cxx; \
+		$(RM) test/`basename $file .fl`.h; \
+	done
 
 makeinclude: configure configh.in makeinclude.in
 	if test -f config.status; then \
@@ -88,12 +90,12 @@ configure: configure.in
 	autoconf
 
 portable-dist:
-	epm -v -s fltk.xpm fltk-utf8
+	epm -v -s fltk-utf8.xpm fltk-utf8
 
 native-dist:
 	epm -v -f native fltk-utf8
 
 
 #
-# End of "$Id: Makefile,v 1.12.2.6.2.10 2002/01/06 13:40:27 easysw Exp $".
+# End of "$Id: Makefile,v 1.12.2.6.2.19 2004/10/18 20:22:21 easysw Exp $".
 #

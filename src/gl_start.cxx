@@ -1,9 +1,9 @@
 //
-// "$Id: gl_start.cxx,v 1.6.2.5.2.8 2003/01/30 21:44:33 easysw Exp $"
+// "$Id: gl_start.cxx,v 1.6.2.5.2.11 2004/09/09 21:34:48 matthiaswm Exp $"
 //
 // OpenGL context routines for the Fast Light Tool Kit (FLTK).
 //
-// Copyright 1998-2003 by Bill Spitzak and others.
+// Copyright 1998-2004 by Bill Spitzak and others.
 //
 // This library is free software; you can redistribute it and/or
 // modify it under the terms of the GNU Library General Public
@@ -54,7 +54,7 @@ static int pw, ph;
 static Fl_Gl_Choice* gl_choice;
 #endif
 
-#ifdef __MACOS__
+#ifdef __APPLE__
 static Fl_Gl_Choice* gl_choice;
 #endif
 
@@ -65,15 +65,18 @@ void gl_start() {
 #ifdef WIN32
     if (!gl_choice) Fl::gl_visual(0);
     context = fl_create_gl_context(Fl_Window::current(), gl_choice);
-#elif defined(__MACOS__)
+#elif defined(__APPLE_QD__)
     // \todo Mac : We need to check the code and verify it with Apple Sample code. The 'shiny'-test should at least work with the software OpenGL emulator
+    context = fl_create_gl_context(Fl_Window::current(), gl_choice);
+#elif defined(__APPLE_QUARTZ__)
+    // warning: the Quartz version should probably use Core GL (CGL) instead of AGL
     context = fl_create_gl_context(Fl_Window::current(), gl_choice);
 #else
     context = fl_create_gl_context(fl_visual);
 #endif
   }
   fl_set_gl_context(Fl_Window::current(), context);
-#if !defined(WIN32) && !defined(__MACOS__)
+#if !defined(WIN32) && !defined(__APPLE__)
   glXWaitX();
 #endif
   if (pw != Fl_Window::current()->w() || ph != Fl_Window::current()->h()) {
@@ -100,7 +103,7 @@ void gl_start() {
 
 void gl_finish() {
   glFlush();
-#if !defined(WIN32) && !defined(__MACOS__)
+#if !defined(WIN32) && !defined(__APPLE__)
   glXWaitGL();
 #endif
 }
@@ -110,7 +113,10 @@ int Fl::gl_visual(int mode, int *alist) {
   if (!c) return 0;
 #ifdef WIN32
   gl_choice = c;
-#elif defined(__MACOS__)
+#elif defined(__APPLE_QD__)
+  gl_choice = c;
+#elif defined(__APPLE_QUARTZ__)
+  // warning: the Quartz version should probably use Core GL (CGL) instead of AGL
   gl_choice = c;
 #else
   fl_visual = c->vis;
@@ -122,5 +128,5 @@ int Fl::gl_visual(int mode, int *alist) {
 #endif
 
 //
-// End of "$Id: gl_start.cxx,v 1.6.2.5.2.8 2003/01/30 21:44:33 easysw Exp $".
+// End of "$Id: gl_start.cxx,v 1.6.2.5.2.11 2004/09/09 21:34:48 matthiaswm Exp $".
 //

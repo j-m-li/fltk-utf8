@@ -1,9 +1,9 @@
 //
-// "$Id: mac.H,v 1.1.2.10 2003/05/30 07:03:08 easysw Exp $"
+// "$Id: mac.H,v 1.1.2.16 2004/09/09 00:55:41 matthiaswm Exp $"
 //
 // Mac header file for the Fast Light Tool Kit (FLTK).
 //
-// Copyright 1998-2003 by Bill Spitzak and others.
+// Copyright 1998-2004 by Bill Spitzak and others.
 //
 // This library is free software; you can redistribute it and/or
 // modify it under the terms of the GNU Library General Public
@@ -31,11 +31,11 @@
 #  error "Never use <FL/mac.H> directly; include <FL/x.H> instead."
 #endif // !Fl_X_H
 
+// Standard MacOS Carbon API includes...
+#include <Carbon/Carbon.h>
+
 // Now make some fixes to the headers...
 #undef check			// Dunno where this comes from...
-
-enum { kEventClassFLTK = 'fltk' };
-enum { kEventFLTKBreakLoop = 1, kEventFLTKDataReady };
 
 // Some random X equivalents
 typedef WindowPtr Window;
@@ -77,6 +77,15 @@ public:
   static int fake_X_wm(const Fl_Window*,int&,int&,int&,int&,int&);
   static void make(Fl_Window*);
   void flush();
+  // Quartz additions:
+  CGContextRef gc;                 // graphics context (NULL when using QD)
+  static ATSUTextLayout atsu_layout; // windows share a global font
+  static ATSUStyle      atsu_style;
+  static void q_fill_context();    // fill a Quartz context with current FLTK state
+  static void q_clear_clipping();  // remove all clipping from a Quartz context
+  static void q_release_context(Fl_X *x=0); // free all resources associated with fl_gc
+  static void q_begin_image(CGRect&, int x, int y, int w, int h);
+  static void q_end_image();
 };
 
 inline Window fl_xid(const Fl_Window*w) 
@@ -93,6 +102,7 @@ extern struct Fl_XMap {
 
 extern FL_EXPORT void *fl_display;
 extern FL_EXPORT Window fl_window;
+extern FL_EXPORT CGContextRef fl_gc;
 extern FL_EXPORT Handle fl_system_menu;
 extern FL_EXPORT class Fl_Sys_Menu_Bar *fl_sys_menu_bar;
 
@@ -118,6 +128,6 @@ extern void fl_open_callback(void (*cb)(const char *));
 extern FL_EXPORT int fl_parse_color(const char* p, uchar& r, uchar& g, uchar& b);
 
 //
-// End of "$Id: mac.H,v 1.1.2.10 2003/05/30 07:03:08 easysw Exp $".
+// End of "$Id: mac.H,v 1.1.2.16 2004/09/09 00:55:41 matthiaswm Exp $".
 //
 

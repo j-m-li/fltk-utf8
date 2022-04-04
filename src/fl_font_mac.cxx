@@ -1,9 +1,9 @@
 //
-// "$Id: fl_font_mac.cxx,v 1.1.2.14 2003/05/26 14:19:50 easysw Exp $"
+// "$Id: fl_font_mac.cxx,v 1.1.2.23 2004/09/13 00:30:08 easysw Exp $"
 //
 // MacOS font selection routines for the Fast Light Tool Kit (FLTK).
 //
-// Copyright 1998-2003 by Bill Spitzak and others.
+// Copyright 1998-2004 by Bill Spitzak and others.
 //
 // This library is free software; you can redistribute it and/or
 // modify it under the terms of the GNU Library General Public
@@ -23,6 +23,8 @@
 // Please report all bugs and problems to "fltk-bugs@fltk.org".
 //
 
+#include <config.h>
+
 //: MeasureText, FontMetrics, WidthTabHandle, GetSysFont, SysFontSize
 //: TextSize, TextFont
 //: GetFNum (theName: Str255; VAR familyID: Integer);
@@ -30,37 +32,48 @@
 //: SetFractEnable
 
 Fl_FontSize::Fl_FontSize(const char* name, int Size) {
-  xchar b[2048];
-  bold = italic = false;
-  switch (*name++) {
-  case 'I': italic = true; break;
-  case 'P': italic = bold = true; break;
-  case 'B': bold = true; break;
-  default: break;
-  }
-  const char *out;
-  unsigned long l;
-  if (name[0] == ':') {
-    l = fl_utf2unicode((unsigned char*)name + 1, strlen(name + 1), b);
-    out = (char*) b;
-    l *= 2;
-  } else {
-    out = name;
-    l = strlen(out);
-  }
-  ATSUFindFontFromName((char*)out, l,  4,
-                       kFontNoPlatform, kFontNoScript, kFontNoLanguage,
-                       &font);
-  size = Size;
-  knowMetrics = 0;
-  ascent = Size * 4 / 5;	
-  descent = Size / 5;
-#if HAVE_GL
+  next = 0;
+#  if HAVE_GL
   listbase = 0;
-  for (int u = 0; u < 64; u++) glok[u] = 0;
-#endif
-  for (int i = 0; i < 64; i++) width[i] = NULL;
+#  endif
+#ifdef __APPLE_QD__
+  knowMetrics = 0;
+  switch (*name++) {
+  case 'I': face = italic; break;
+  case 'P': face = italic | bold; break;
+  case 'B': face = bold; break;
+  default: face = 0; break;
+  }
+  unsigned char fn[80]; 
+  fn[0] = strlen(name); strcpy((char*)(fn+1), name);
+  GetFNum(fn, &font);
+  size = Size;
+  FMInput fIn = { font, size, face, 0, 0, { 1, 1}, { 1, 1} };
+  FMOutput *fOut = FMSwapFont(&fIn);
+  ascent = fOut->ascent;	//: the following three lines give only temporary aproimations
+  descent = fOut->descent;
+  for (int i=0; i<256; i++) width[i] = fOut->widMax;
   minsize = maxsize = size;
+#elif defined(__APPLE_QUARTZ__)
+  q_name = strdup(name);
+  size = Size;
+  ascent = Size*3/4;
+  descent = Size-ascent;
+  q_width = Size*2/3;
+  minsize = maxsize = Size;
+  // Using ATS to get the genral Glyph size information
+  CFStringRef cfname = CFStringCreateWithCString(0L, q_name, kCFStringEncodingASCII);
+  ATSFontRef font = ATSFontFindFromName(cfname, kATSOptionFlagsDefault);
+  if (font) {
+    ATSFontMetrics m = { 0 };
+    ATSFontGetHorizontalMetrics(font, kATSOptionFlagsDefault, &m);
+    if (m.avgAdvanceWidth) q_width = int(m.avgAdvanceWidth*size);
+    // playing with the offsets a little to make standard sizes fit
+    if (m.ascent) ascent  = int(m.ascent*size-0.5f);
+    if (m.descent) descent = -int(m.descent*size-1.5f);
+  }
+  CFRelease(cfname);
+#endif
 }
 
 Fl_FontSize* fl_fontsize = 0L;
@@ -81,11 +94,15 @@ Fl_FontSize::~Fl_FontSize() {
 #endif
   */
   if (this == fl_fontsize) fl_fontsize = 0;
+#ifdef __APPLE_QUARTZ__
+  free(q_name);
+#endif
 }
 
 ////////////////////////////////////////////////////////////////
 
 static Fl_Fontdesc built_in_table[] = {
+#ifdef __APPLE_QD__
 {" Arial"},
 {"BArial"},
 {"IArial"},
@@ -102,106 +119,52 @@ static Fl_Fontdesc built_in_table[] = {
 {" Chicago"},
 {"BChicago"},
 {" Webdings"},
+#elif defined(__APPLE_QUARTZ__)
+{"Arial"},
+{"Arial Bold"},
+{"Arial Italic"},
+{"Arial Bold Italic"},
+{"Courier New"},
+{"Courier New Bold"},
+{"Courier New Italic"},
+{"Courier New Bold Italic"},
+{"Times New Roman"},
+{"Times New Roman Bold"},
+{"Times New Roman Italic"},
+{"Times New Roman Bold Italic"},
+{"Symbol"},
+{"Monaco"},
+{"Andale Mono"}, // there is no bold Monaco font on standard Mac
+{"Webdings"},
+#endif
 };
 
 Fl_Fontdesc* fl_fonts = built_in_table;
-static int atsu_init = 0;
-ATSUStyle fl_atsu_style;
-ATSUTextLayout fl_text_layout;
-
-extern unsigned fl_cmap[256];
-
-static void set_color()
-{
-  ATSUAttributeTag iTag[] = { kATSUColorTag};
-  ByteCount iValueSize[] = { sizeof(RGBColor)};
-  ATSUAttributeValuePtr iValue[sizeof(iTag) / sizeof(ATSUAttributeTag)];
-  RGBColor rgb;
-  uchar r, g, b;
-  if (fl_color_ & 0xFFFFFF00) {
-      r = fl_color_>>24;
-      g = fl_color_>>16;
-      b = fl_color_>> 8;
-  } else {
-      unsigned c = fl_cmap[fl_color_ & 0xff];
-      r = c>>24;
-      g = c>>16;
-      b = c>> 8;
-  }
-  rgb.red   = (r<<8)|r;
-  rgb.green = (g<<8)|g;
-  rgb.blue  = (b<<8)|b;
-  iValue[0] = &rgb;
-  ATSUSetAttributes(fl_atsu_style, 1, iTag,  iValueSize, iValue);
-}
 
 void fl_font(Fl_FontSize* s) {
-  if (!atsu_init) {
-    atsu_init = 1;
-    ATSUCreateStyle(&fl_atsu_style);
-    ATSUCreateTextLayout(&fl_text_layout);
-  }
   fl_fontsize = s;
-  ATSUAttributeTag iTag[] = { kATSUFontTag, kATSUSizeTag, 
-	kATSUQDBoldfaceTag, kATSUQDItalicTag, kATSUColorTag,
-       kATSULineDirectionTag, kATSULanguageTag, kATSULineLanguageTag};
-  ByteCount iValueSize[] = { sizeof(ATSUFontID),
-	sizeof(Fixed), sizeof(Boolean), sizeof(Boolean), 
-        sizeof(RGBColor), sizeof(Boolean), sizeof(RegionCode), 
-        sizeof(RegionCode)};
-  ATSUAttributeValuePtr iValue[sizeof(iTag) / sizeof(ATSUAttributeTag)];
-  RGBColor rgb;
-  uchar r, g, b;
-  if (fl_color_ & 0xFFFFFF00) {
-      r = fl_color_>>24;
-      g = fl_color_>>16;
-      b = fl_color_>> 8;
-  } else {
-      unsigned c = fl_cmap[fl_color_ & 0xff];
-      r = c>>24;
-      g = c>>16;
-      b = c>> 8;
-  }
-  rgb.red   = (r<<8)|r;
-  rgb.green = (g<<8)|g;
-  rgb.blue  = (b<<8)|b;
-  Boolean text_dir = false;
-  RegionCode reg = verUS;
-  Fixed size = fl_fontsize->size << 16;
-  iValue[0] = &(fl_fontsize->font);
-  iValue[1] = &size;
-  iValue[2] = &(fl_fontsize->bold);
-  iValue[3] = &(fl_fontsize->italic);
-  iValue[4] = &rgb;
-  iValue[5] = &text_dir;
-  iValue[6] = &reg;
-  iValue[7] = &reg;
-  ATSUSetAttributes(fl_atsu_style, 5, iTag,  iValueSize, iValue);
-  
-  if (!fl_fontsize->knowMetrics) {	
-    unsigned short wstr[80];
-    wstr[0] = 'p'; wstr[1] = '|'; wstr[2] = 'M'; wstr[3] = 'j';
-    wstr[4] = 'H'; wstr[5] = 'g'; wstr[6] = 0xa6; wstr[7] = 0xbc;
-    wstr[8] = '_'; wstr[9] = 0xbf; wstr[10] = 'y'; wstr[11] = 0xca;
-    wstr[12] = 0x3b2; wstr[13] = 0x46e; wstr[14] = 0x569; wstr[15] = 0x5df;
-    wstr[16] = 0x63a; wstr[17] = 0x722; wstr[18] = 0xe42; wstr[19] = 0xe0f;
-    wstr[20] = 0x10f0; wstr[21] = 0x10da; wstr[22] = 0x264d;
-    wstr[23] = 0x2758; wstr[24] = 0x3070; wstr[25] = 0x30c0;
-    wstr[26] = 0x2ef0; wstr[27] = 0x3010; wstr[28] = 0xf900;
-    wstr[29] = 0xf967; wstr[30] = 0xfe33; wstr[31] = 0xff51;
-    wstr[32] = 0xff2d; wstr[33] = 0;
-    Rect rect;
-    ATSUSetTextPointerLocation(fl_text_layout, wstr, kATSUFromTextBeginning, 
-                             kATSUToTextEnd, 33);
-    ATSUSetRunStyle(fl_text_layout, fl_atsu_style, kATSUFromTextBeginning,
-                    kATSUToTextEnd);
-    ATSUMeasureTextImage(fl_text_layout, kATSUFromTextBeginning, 
-	kATSUToTextEnd, 0, 0, &rect);
-    fl_fontsize->descent = rect.bottom;
-    fl_fontsize->ascent = fl_fontsize->size - fl_fontsize->descent;
-    if (-rect.top > fl_fontsize->ascent) fl_fontsize->ascent = -rect.top;
+#ifdef __APPLE_QD__
+  if (fl_window) SetPort( GetWindowPort(fl_window) );
+  TextFont(fl_fontsize->font);	//: select font into current QuickDraw GC
+  TextFace(fl_fontsize->face);
+  TextSize(fl_fontsize->size);
+  if (!fl_fontsize->knowMetrics) {	//: get the true metrics for the currnet GC 
+                                        //: (fails on multiple monitors with different dpi's!)
+    FontInfo fi; GetFontInfo(&fi);
+    fl_fontsize->ascent = fi.ascent;
+    fl_fontsize->descent = fi.descent;
+    FMetricRec mr; FontMetrics(&mr);
+    short *f = (short*)*mr.wTabHandle; //: get the char size table
+    for (int i=0; i<256; i++) fl_fontsize->width[i] = f[2*i];
     fl_fontsize->knowMetrics = 1;
   }
+#elif defined(__APPLE_QUARTZ__)
+  if (!s) return;
+  if (!fl_gc) return; // no worries, we will assign the font to the context later
+  CGContextSelectFont(fl_gc, s->q_name, (float)s->size, kCGEncodingMacRoman);
+#else
+# error : need to defined either Quartz or Quickdraw
+#endif
 }
 
 static Fl_FontSize* find(int fnum, int size) {
@@ -218,147 +181,120 @@ static Fl_FontSize* find(int fnum, int size) {
 
 ////////////////////////////////////////////////////////////////
 // Public interface:
-FL_EXPORT int fl_font_ = 0;
-FL_EXPORT int fl_size_ = 0;
-// Unicode string buffer 
-static unsigned short *wstr = NULL;
-static int wstr_len     = 0;
-static ATSUGlyphInfoArray *array = NULL;
 
-void Fl_Fltk::font(int fnum, int size) {
-  fl_font_ = fnum; fl_size_ = size;
+int fl_font_ = 0;
+int fl_size_ = 0;
+
+void fl_font(int fnum, int size) {
+  fl_font_ = fnum;
+  fl_size_ = size;
   fl_font(find(fnum, size));
 }
 
-int Fl_Fltk::height() {
-  return fl_fontsize->ascent+fl_fontsize->descent;
+int fl_height() {
+  if (fl_fontsize) return fl_fontsize->ascent+fl_fontsize->descent;
+  else return -1;
 }
 
-int Fl_Fltk::descent() {
-  return fl_fontsize->descent;
+int fl_descent() {
+  if (fl_fontsize) return fl_fontsize->descent;
+  else return -1;
 }
 
-double Fl_Fltk::width(const char* c, int n) {
-  int wn;
-  Rect rect;
-  if (n > wstr_len) {
-     wstr = (unsigned short*) realloc(wstr, sizeof(short) * (n+1));
-     array = (ATSUGlyphInfoArray*)  realloc(array, 
-		sizeof(ATSUGlyphInfoArray) + n * sizeof(ATSUGlyphInfo));
-     wstr_len = n;
+// MRS: The default character set is MacRoman, which is different from
+//      ISO-8859-1; in FLTK 2.0 we'll use UTF-8 with Quartz...
+
+static uchar macroman_lut[256] = {
+  0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15,
+  16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31,
+  32, 33, 34, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 47,
+  48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 58, 59, 60, 61, 62, 63,
+  64, 65, 66, 67, 68, 69, 70, 71, 72, 73, 74, 75, 76, 77, 78, 79,
+  80, 81, 82, 83, 84, 85, 86, 87, 88, 89, 90, 91, 92, 93, 94, 95,
+  96, 97, 98, 99, 100, 101, 102, 103, 104, 105, 106, 107, 108, 109, 110, 111,
+  112, 113, 114, 115, 116, 117, 118, 119, 120, 121, 122, 123, 124, 125, 126, 127,
+  128, 129, 130, 131, 132, 133, 134, 135, 136, 137, 138, 139, 140, 141, 142, 143,
+  144, 145, 146, 147, 148, 149, 150, 151, 152, 153, 154, 155, 156, 157, 158, 159,
+  202, 193, 162, 163, 164, 180, 166, 164, 172, 169, 187, 199, 194, 173, 168, 248,
+  161, 177, 178, 179, 171, 181, 166, 225, 252, 185, 188, 200, 188, 189, 190, 192,
+  203, 231, 229, 204, 128, 129, 174, 130, 233, 131, 230, 232, 237, 234, 235, 236,
+  208, 132, 241, 238, 239, 205, 133, 215, 175, 244, 242, 243, 134, 221, 222, 167,
+  136, 135, 137, 139, 138, 140, 190, 141, 143, 142, 144, 145, 147, 146, 148, 149,
+  240, 150, 152, 151, 153, 155, 154, 214, 191, 157, 156, 158, 159, 253, 254, 216
+};
+
+static char *iso_buf = 0;
+static int n_iso_buf = 0;
+
+// this function must be available for OpenGL character drawing as well
+const char *fl_iso2macRoman(const char *s, int n) {
+  if (n>n_iso_buf) {
+    if (iso_buf) free(iso_buf);
+    iso_buf = (char*)malloc(n+500);
+    n_iso_buf = n;
   }
-  wn = fl_utf2unicode((const unsigned char *)c, n, (xchar*)wstr);
-  if (wn < 1) return 0.0;
-  double x = 0;
-  for (int i = 0; i < wn; i++) {
-    if (!fl_nonspacing(wstr[i])) {
-      int w = Fl_Fltk::width(wstr[i]);
-      x += w;
-    }
+  uchar *src = (uchar*)s;
+  uchar *dst = (uchar*)iso_buf;
+  for (;n--;) {
+    *dst++ = macroman_lut[*src++];
   }
-  return x;
+  return iso_buf;
 }
 
-double Fl_Fltk::width(unsigned int c) {
-  unsigned short cc = c;
-  unsigned int r;
-  ATSTrapezoid t; 
-  ItemCount ct;
-  r = (c & 0xFC00) >> 10;
-  if (!fl_fontsize->width[r]) {
-    fl_fontsize->width[r] = (short*) malloc(sizeof(short) * 0x0400);
-    unsigned short i = 0, cc = r * 0x400;
-    for (; i < 0x400; i++) {
-      ATSUSetTextPointerLocation(fl_text_layout, &cc, 
-          kATSUFromTextBeginning, kATSUToTextEnd, 1);
-      ATSUSetRunStyle(fl_text_layout, fl_atsu_style, kATSUFromTextBeginning,
-                    kATSUToTextEnd);
-      ATSUGetGlyphBounds(fl_text_layout, 0, 0, 0, 1, 
-                    kATSUseCaretOrigins, 1, &t, &ct);
-      Fixed x;
-      x = (t.lowerRight.x - t.lowerLeft.x) >> 16;
-      fl_fontsize->width[r][i] = x;
-      cc++;
-    }
+double fl_width(const char* c, int n) {
+  const char *txt = fl_iso2macRoman(c, n);
+#ifdef __APPLE_QD__
+  return (double)TextWidth( txt, 0, n );
+#else
+  if (!fl_gc) {
+    Fl_Window *w = Fl::first_window();
+    if (w) w->make_current();
+    if (!fl_gc) return -1;
   }
-  return (double) fl_fontsize->width[r][c & 0x03FF];
+  // according to the Apple developer docs, this is the correct way to
+  // find the length of a rendered text...
+  CGContextSetTextPosition(fl_gc, 0, 0);
+  CGContextSetTextDrawingMode(fl_gc, kCGTextInvisible);
+  CGContextShowText(fl_gc, txt, n);
+  CGContextSetTextDrawingMode(fl_gc, kCGTextFill);
+  CGPoint p = CGContextGetTextPosition(fl_gc);
+  return p.x;
+#endif
 }
 
-void Fl_Fltk::draw(const char* str, int n, int x, int y) {
-  int wn;
-  if (n > wstr_len) {
-     wstr = (unsigned short*) realloc(wstr, sizeof(short) * (n+1));
-     array = (ATSUGlyphInfoArray*)  realloc(array, 
-		sizeof(ATSUGlyphInfoArray) + n * sizeof(ATSUGlyphInfo));
-     wstr_len = n;
-  }
-  wn = fl_utf2unicode((const unsigned char *)str, n, (xchar*)wstr);
-  if (wn < 1) return;
-  set_color();
-  long yy = y << 16;
-  wstr[wn] = 0;
-  int lx = 0;
-  Float32Point p;
-  p.x = x;
-  p.y = y;
- 
-  ATSUSetTextPointerLocation(fl_text_layout, wstr, 
-          kATSUFromTextBeginning, kATSUToTextEnd, wn);
-             
-  ATSUSetRunStyle(fl_text_layout, fl_atsu_style, kATSUFromTextBeginning,
-                    kATSUToTextEnd);
-              
-  ByteCount bc = sizeof(ATSUGlyphInfoArray) + n * sizeof(ATSUGlyphInfo);
-  ATSUGetGlyphInfo(fl_text_layout, 0, wn, &bc, array);
-  x = 0;
-       
-  for (int i = 0; i < wn; i++) {
-    if (fl_nonspacing(wstr[i])) {
-      x -= lx;
-    } else {
-      lx = Fl_Fltk::width(wstr[i]);
-    }
-    array->glyphs[i].screenX = x;  
-    x += lx;
-  }       
-  ATSUDrawGlyphInfo(array, p);
+double fl_width(uchar c) {
+#ifdef __APPLE_QD__
+  return (double)TextWidth((const char*)(macroman_lut + c), 0, 1 );
+#else
+  return fl_width((const char*)(&c), 1);
+#endif
 }
 
-void Fl_Fltk::rtl_draw(const char* str, int n, int x, int y) {
-  int wn;
-  if (n > wstr_len) {
-     wstr = (unsigned short*) realloc(wstr, sizeof(short) * (n+1));
-     array = (ATSUGlyphInfoArray*)  realloc(array, 
-		sizeof(ATSUGlyphInfoArray) + n * sizeof(ATSUGlyphInfo));
-     wstr_len = n;
-  }
-  wn = fl_utf2unicode((const unsigned char *)str, n, (xchar*)wstr);
-  if (wn < 1) return;
-  Float32Point p;
-  p.x = x;
-  p.y = y;
-  set_color();
-  long yy = y << 16;
-  
-  int lx = 0;
-  ATSUSetTextPointerLocation(fl_text_layout, wstr, 
-          kATSUFromTextBeginning, kATSUToTextEnd, wn);
-  ATSUSetRunStyle(fl_text_layout, fl_atsu_style, kATSUFromTextBeginning,
-                    kATSUToTextEnd);
-  ByteCount bc = sizeof(ATSUGlyphInfoArray) + n * sizeof(ATSUGlyphInfo);
-  ATSUGetGlyphInfo(fl_text_layout, 0, wn, &bc, array);
-  x = 0;
-  for (int i = 0; i < wn; i++) {
-    lx = Fl_Fltk::width(wstr[i]);
-    x -= lx;
-    array->glyphs[i].screenX = x;  
-    if (fl_nonspacing(wstr[i])) {
-      x += lx;
-    }
-  }
-  ATSUDrawGlyphInfo(array, p);
+void fl_draw(const char *str, int n, float x, float y);
+
+void fl_draw(const char* str, int n, int x, int y) {
+#ifdef __APPLE_QD__
+  const char *txt = fl_iso2macRoman(str, n);
+  MoveTo(x, y);
+  DrawText((const char *)txt, 0, n);
+#elif defined(__APPLE_QUARTZ__)
+  fl_draw(str, n, (float)x, (float)y);
+#else
+#  error : neither Quartz no Quickdraw chosen
+#endif
+}
+
+void fl_draw(const char *str, int n, float x, float y) {
+#ifdef __APPLE_QD__
+  fl_draw(str, n, (int)x, (int)y);
+#elif defined(__APPLE_QUARTZ__)
+  const char *txt = fl_iso2macRoman(str, n);
+  CGContextShowTextAtPoint(fl_gc, x, y, txt, n);
+#else
+#  error : neither Quartz no Quickdraw chosen
+#endif
 }
 
 //
-// End of "$Id: fl_font_mac.cxx,v 1.1.2.11 2003/01/30 21:43:48 easysw Exp $".
+// End of "$Id: fl_font_mac.cxx,v 1.1.2.23 2004/09/13 00:30:08 easysw Exp $".
 //

@@ -1,9 +1,9 @@
 #
-# "$Id: Makefile,v 1.10.2.6.2.24 2003/08/02 21:17:30 easysw Exp $"
+# "$Id: Makefile,v 1.10.2.6.2.27 2004/10/18 20:22:22 easysw Exp $"
 #
 # FLUID makefile for the Fast Light Tool Kit (FLTK).
 #
-# Copyright 1998-2003 by Bill Spitzak and others.
+# Copyright 1998-2004 by Bill Spitzak and others.
 #
 # This library is free software; you can redistribute it and/or
 # modify it under the terms of the GNU Library General Public
@@ -20,7 +20,7 @@
 # Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307
 # USA.
 #
-# Please report all bugs and problems to "fltk-bugs@fltk.org".
+# Please report all bugs and problems to "fltk-uf8-bugs@fltk-uf8.org".
 #
 
 CPPFILES = \
@@ -54,7 +54,7 @@ all:	$(FLUID) fluid$(EXEEXT)
 fluid$(EXEEXT):		$(OBJECTS) ../lib/$(LIBNAME) ../lib/$(FLLIBNAME) \
 			../lib/$(IMGLIBNAME)
 	echo Linking $@...
-	$(CXX) $(CXXFLAGS) -o $@ $(OBJECTS) $(LINKFLTKFORMS) -lfltk-utf8_images $(IMAGELIBS) $(LDLIBS)
+	$(CXX) $(CXXFLAGS) -o $@ $(OBJECTS) $(LINKFLTKIMG) $(LDLIBS) $(LINKFLTKFORMS)
 	$(POSTBUILD) $@ ../FL/mac.r
 
 fluid-shared$(EXEEXT):	$(OBJECTS) ../src/$(DSONAME) ../src/$(FLDSONAME) \
@@ -65,7 +65,6 @@ fluid-shared$(EXEEXT):	$(OBJECTS) ../src/$(DSONAME) ../src/$(FLDSONAME) \
 
 clean :
 	-@ $(RM) *.o fluid$(EXEEXT) fluid-shared$(EXEEXT) $(CLEAN)
-	-@ $(RM) fluid.exe
 
 depend:	$(CPPFILES)
 	makedepend -Y -I.. -f makedepend $(CPPFILES)
@@ -74,15 +73,15 @@ depend:	$(CPPFILES)
 include makedepend
 
 install: all
-	echo "Installing FLUID in $(bindir)..."
-	-$(MKDIR) $(bindir)
-	$(CP) $(FLUID) $(bindir)/fluid$(EXEEXT)
-	$(STRIP) $(bindir)/fluid$(EXEEXT)
-	$(bindir)/fltk-config --post $(bindir)/fluid$(EXEEXT)
-	$(CHMOD) 755 $(bindir)/fluid$(EXEEXT)
+	echo "Installing FLUID in $(DESTDIR)$(bindir)..."
+	-$(MKDIR) $(DESTDIR)$(bindir)
+	$(CP) $(FLUID) $(DESTDIR)$(bindir)/fluid$(EXEEXT)
+	$(STRIP) $(DESTDIR)$(bindir)/fluid$(EXEEXT)
+	$(DESTDIR)$(bindir)/fltk-utf8-config --post $(DESTDIR)$(bindir)/fluid$(EXEEXT)
+	$(CHMOD) 755 $(DESTDIR)$(bindir)/fluid$(EXEEXT)
 
 uninstall:
-	$(RM) $(bindir)/fluid
+	$(RM) $(DESTDIR)$(bindir)/fluid$(EXEEXT)
 
 #
 # Note: The rebuild target can only be used if you have the original .fl
@@ -96,5 +95,5 @@ rebuild:
 	./fluid -c widget_panel.fl
 
 #
-# End of "$Id: Makefile,v 1.10.2.6.2.24 2003/08/02 21:17:30 easysw Exp $".
+# End of "$Id: Makefile,v 1.10.2.6.2.27 2004/10/18 20:22:22 easysw Exp $".
 #

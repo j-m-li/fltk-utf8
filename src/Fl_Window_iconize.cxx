@@ -1,9 +1,9 @@
 //
-// "$Id: Fl_Window_iconize.cxx,v 1.5.2.3.2.5 2003/01/30 21:43:00 easysw Exp $"
+// "$Id: Fl_Window_iconize.cxx,v 1.5.2.3.2.6 2004/04/11 04:38:58 easysw Exp $"
 //
 // Window minification code for the Fast Light Tool Kit (FLTK).
 //
-// Copyright 1998-2003 by Bill Spitzak and others.
+// Copyright 1998-2004 by Bill Spitzak and others.
 //
 // This library is free software; you can redistribute it and/or
 // modify it under the terms of the GNU Library General Public
@@ -34,12 +34,8 @@ void Fl_Window::iconize() {
   } else {
 #ifdef WIN32
     ShowWindow(i->xid, SW_SHOWMINNOACTIVE);
-#elif defined(__MACOS__)
+#elif defined(__APPLE__)
     CollapseWindow( i->xid, true );
-#elif defined(NANO_X)
-
-#elif DJGPP
-
 #else
     XIconifyWindow(fl_display, i->xid, fl_screen);
 #endif
@@ -47,5 +43,5 @@ void Fl_Window::iconize() {
 }
 
 //
-// End of "$Id: Fl_Window_iconize.cxx,v 1.5.2.3.2.5 2003/01/30 21:43:00 easysw Exp $".
+// End of "$Id: Fl_Window_iconize.cxx,v 1.5.2.3.2.6 2004/04/11 04:38:58 easysw Exp $".
 //

@@ -1,0 +1,84 @@
+FL/Enumerations.H
+FL/fl_ask.H *
+FL/Fl.H
+FL/fl_draw.H
+FL/Fl_Group.H
+FL/Fl.H
+FL/Fl_Widget.H
+new: FL/Fl_Shaped_Window.H
+new: FL/Fl_Table.H
+new: FL/Fl_Tree.H
+new: FL/fl_utf8.H
+FL/x.H
+FL/Xutf8.h * HAVE_LIB_ICONV
+new_win32: src/aimm.h
+src/filename_absolute.cxx
+src/filename_expand.cxx
+src/filename_isdir.cxx
+src/Fl_abort.cxx
+src/Fl_Browser_load.cxx
+src/fl_call_main.c
+src/fl_color.cxx
+src/Fl_compose.cxx
+src/Fl.cxx
+src/fl_dnd_win32.cxx
+src/fl_dnd_x.cxx FIXME!
+src/fl_draw.cxx
+src/fl_draw_image.cxx
+src/fl_draw_pixmap.cxx
+src/fl_draw_image_win32.cxx
+src/fl_draw_image_mac.cxx
+src/Fl_File_Browser.cxx
+src/Fl_File_Chooser2.cxx
+src/Fl_File_Chooser.cxx
+src/fl_file_dir.cxx 
+src/Fl_File_Icon2.cxx
+src/Fl_File_Icon.cxx
+src/fl_font.cxx
+src/Fl_Font.H
+src/fl_font_win32.cxx
+src/fl_font_x.cxx
+src/Fl_get_system_colors.cxx
+src/Fl_GIF_Image.cxx
+src/Fl_Gl_Choice.cxx
+src/Fl_Gl_Window.cxx
+src/Fl_Group.cxx 
+src/Fl_Help_Dialog.cxx
+src/Fl_Help_View.cxx
+src/Fl_Input_.cxx
+src/Fl_JPEG_Image.cxx
+src/fl_line_style.cxx
+src/Fl_Menu_add.cxx
+src/Fl_Menu.cxx
+src/Fl_Pixmap.cxx
+src/Fl_PNG_Image.cxx
+src/Fl_PNM_Image.cxx
+src/Fl_Preferences.cxx
+src/fl_set_fonts_win32.cxx
+src/fl_set_fonts_x.cxx
+new: src/Fl_Shaped_Window.cxx
+src/Fl_Shared_Image.cxx
+new: src/Fl_Table.cxx
+src/Fl_Tabs.cxx
+src/Fl_Text_Buffer.cxx
+src/Fl_Text_Display.cxx
+src/Fl_Text_Editor.cxx
+src/Fl_Tile.cxx
+new: src/Fl_Tree.cxx
+new: src/fl_utf8.cxx
+src/fl_vertex.cxx
+src/Fl_win32.cxx *
+src/Fl_XBM_Image.cxx
+src/Fl_x.cxx *
+src/Fl_XPM_Image.cxx
+src/gl_draw.cxx
+src/scandir.c
+src/scandir_win32.c
+
+
+
+
+
+
+
+

@@ -1,9 +1,9 @@
 //
-// "$Id: Fl_JPEG_Image.cxx,v 1.1.2.7 2003/01/30 21:42:02 easysw Exp $"
+// "$Id: Fl_JPEG_Image.cxx,v 1.1.2.10 2004/04/11 04:38:57 easysw Exp $"
 //
 // Fl_JPEG_Image routines.
 //
-// Copyright 1997-2003 by Easy Software Products.
+// Copyright 1997-2004 by Easy Software Products.
 // Image support donated by Matthias Melcher, Copyright 2000.
 //
 // This library is free software; you can redistribute it and/or
@@ -56,6 +56,19 @@ extern "C"
 
 
 //
+// Error handler for JPEG files...
+//
+
+#ifdef HAVE_LIBJPEG
+static void
+jpeg_error_handler(j_common_ptr)
+{
+  return;
+}
+#endif // HAVE_LIBJPEG
+
+
+//
 // 'Fl_JPEG_Image::Fl_JPEG_Image()' - Load a JPEG image file.
 //
 
@@ -71,6 +84,8 @@ Fl_JPEG_Image::Fl_JPEG_Image(const char *jpeg)	// I - File to load
   if ((fp = fl_fopen(jpeg, "rb")) == NULL) return;
 
   cinfo.err = jpeg_std_error(&jerr);
+  jerr.error_exit = jpeg_error_handler;
+
   jpeg_create_decompress(&cinfo);
   jpeg_stdio_src(&cinfo, fp);
   jpeg_read_header(&cinfo, 1);
@@ -107,5 +122,5 @@ Fl_JPEG_Image::Fl_JPEG_Image(const char *jpeg)	// I - File to load
 }
 
 //
-// End of "$Id: Fl_JPEG_Image.cxx,v 1.1.2.7 2003/01/30 21:42:02 easysw Exp $".
+// End of "$Id: Fl_JPEG_Image.cxx,v 1.1.2.10 2004/04/11 04:38:57 easysw Exp $".
 //

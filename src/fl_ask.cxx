@@ -1,9 +1,9 @@
 //
-// "$Id: fl_ask.cxx,v 1.8.2.8.2.12 2003/01/30 21:43:26 easysw Exp $"
+// "$Id: fl_ask.cxx,v 1.8.2.8.2.14 2004/10/18 20:22:25 easysw Exp $"
 //
 // Standard dialog functions for the Fast Light Tool Kit (FLTK).
 //
-// Copyright 1998-2003 by Bill Spitzak and others.
+// Copyright 1998-2004 by Bill Spitzak and others.
 //
 // This library is free software; you can redistribute it and/or
 // modify it under the terms of the GNU Library General Public
@@ -207,11 +207,11 @@ static int innards(const char* fmt, va_list ap,
 }
 
 // pointers you can use to change FLTK to a foreign language:
-const char* fl_no = "No";
-const char* fl_yes= "Yes";
-const char* fl_ok = "OK";
-const char* fl_cancel= "Cancel";
-const char* fl_close= "Close";
+const char* Fl::txt_no = "No";
+const char* Fl::txt_yes= "Yes";
+const char* Fl::txt_ok = "OK";
+const char* Fl::txt_cancel= "Cancel";
+const char* Fl::txt_close= "Close";
 
 // fltk functions:
 void fl_beep(int type) {
@@ -234,7 +234,7 @@ void fl_beep(int type) {
       MessageBeep(0xFFFFFFFF);
       break;
   }
-#elif defined(__MACOS__)
+#elif defined(__APPLE__)
   switch (type) {
     case FL_BEEP_DEFAULT :
     case FL_BEEP_ERROR :
@@ -243,9 +243,6 @@ void fl_beep(int type) {
     default :
       break;
   }
-#elif NANO_X
-#elif DJGPP
-  // FIXME_DJGPP
 #else
   switch (type) {
     case FL_BEEP_DEFAULT :
@@ -270,7 +267,7 @@ void fl_message(const char *fmt, ...) {
 
   va_start(ap, fmt);
   iconlabel = "i";
-  innards(fmt, ap, 0, fl_ok, 0);
+  innards(fmt, ap, 0, Fl::txt_ok, 0);
   va_end(ap);
   iconlabel = "?";
 }
@@ -282,7 +279,7 @@ void fl_alert(const char *fmt, ...) {
 
   va_start(ap, fmt);
   iconlabel = "!";
-  innards(fmt, ap, 0, fl_ok, 0);
+  innards(fmt, ap, 0, Fl::txt_ok, 0);
   va_end(ap);
   iconlabel = "?";
 }
@@ -293,7 +290,7 @@ int fl_ask(const char *fmt, ...) {
   fl_beep(FL_BEEP_QUESTION);
 
   va_start(ap, fmt);
-  int r = innards(fmt, ap, fl_no, fl_yes, 0);
+  int r = innards(fmt, ap, Fl::txt_no, Fl::txt_yes, 0);
   va_end(ap);
 
   return r;
@@ -319,8 +316,9 @@ static const char* input_innards(const char* fmt, va_list ap,
   input->type(type);
   input->show();
   input->value(defstr);
+  input->take_focus();
 
-  int r = innards(fmt, ap, fl_cancel, fl_ok, 0);
+  int r = innards(fmt, ap, Fl::txt_cancel, Fl::txt_ok, 0);
   input->hide();
   message->position(60,25);
   return r ? input->value() : 0;
@@ -347,5 +345,5 @@ const char *fl_password(const char *fmt, const char *defstr, ...) {
 }
 
 //
-// End of "$Id: fl_ask.cxx,v 1.8.2.8.2.12 2003/01/30 21:43:26 easysw Exp $".
+// End of "$Id: fl_ask.cxx,v 1.8.2.8.2.14 2004/10/18 20:22:25 easysw Exp $".
 //

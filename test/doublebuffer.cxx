@@ -40,7 +40,7 @@
 #include <FL/fl_draw.H>
 #include <FL/Fl_Hor_Slider.H>
 #include <stdlib.h>
-#include <FL/fl_math.h>
+#include <FL/math.h>
 #include <stdio.h>
 
 // this purposely draws each line 10 times to be slow:

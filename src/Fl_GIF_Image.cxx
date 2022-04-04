@@ -1,9 +1,9 @@
 //
-// "$Id: Fl_GIF_Image.cxx,v 1.1.2.15 2003/01/30 21:41:46 easysw Exp $"
+// "$Id: Fl_GIF_Image.cxx,v 1.1.2.16 2004/04/11 04:38:57 easysw Exp $"
 //
 // Fl_GIF_Image routines.
 //
-// Copyright 1997-2003 by Bill Spitzak and others.
+// Copyright 1997-2004 by Bill Spitzak and others.
 //
 // This library is free software; you can redistribute it and/or
 // modify it under the terms of the GNU Library General Public
@@ -34,8 +34,8 @@
 #include <FL/Fl_GIF_Image.H>
 #include <stdio.h>
 #include <stdlib.h>
-#include "flstring.h"
 #include <FL/fl_utf8.H>
+#include "flstring.h"
 
 // Read a .gif file and convert it to a "xpm" format (actually my
 // modified one with compressed colormaps).
@@ -77,21 +77,21 @@ typedef unsigned char uchar;
 #define NEXTBYTE (uchar)getc(GifFile)
 #define GETSHORT(var) var = NEXTBYTE; var += NEXTBYTE << 8
 
-const char* fl_gif_unable_to_open = "Fl_GIF_Image: Unable to open %s!";
-const char* fl_gif_is_not_gif = "Fl_GIF_Image: %s is not a GIF file.\n";
-const char* fl_gif_is_version = "%s is version %c%c%c.";
-const char* fl_gif_no_colormap = "%s does not have a colormap.";
-const char* fl_gif_unexpected_eof = "Fl_GIF_Image: %s - unexpected EOF";
-const char* fl_gif_unknown_extension = "%s: unknown gif extension 0x%02x.";
-const char* fl_gif_unknown_code = "%s: unknown gif code 0x%02x";
-const char* fl_gif_lzw_barf = "Fl_GIF_Image: %s - LZW Barf!";
+const char* Fl::txt_gif_unable_to_open = "Fl_GIF_Image: Unable to open %s!";
+const char* Fl::txt_gif_is_not_gif = "Fl_GIF_Image: %s is not a GIF file.\n";
+const char* Fl::txt_gif_is_version = "%s is version %c%c%c.";
+const char* Fl::txt_gif_no_colormap = "%s does not have a colormap.";
+const char* Fl::txt_gif_unexpected_eof = "Fl_GIF_Image: %s - unexpected EOF";
+const char* Fl::txt_gif_unknown_extension = "%s: unknown gif extension 0x%02x.";
+const char* Fl::txt_gif_unknown_code = "%s: unknown gif code 0x%02x";
+const char* Fl::txt_gif_lzw_barf = "Fl_GIF_Image: %s - LZW Barf!";
 
 Fl_GIF_Image::Fl_GIF_Image(const char *infname) : Fl_Pixmap((char *const*)0) {
   FILE *GifFile;	// File to read
   char **new_data;	// Data array
 
   if ((GifFile = fl_fopen(infname, "rb")) == NULL) {
-    Fl::error(fl_gif_unable_to_open, infname);
+    Fl::error(Fl::txt_gif_unable_to_open, infname);
     return;
   }
 
@@ -102,11 +102,11 @@ Fl_GIF_Image::Fl_GIF_Image(const char *infname) : Fl_Pixmap((char *const*)0) {
   }
   if (b[0]!='G' || b[1]!='I' || b[2] != 'F') {
     fclose(GifFile);
-    Fl::error(fl_gif_is_not_gif, infname);
+    Fl::error(Fl::txt_gif_is_not_gif, infname);
     return;
   }
   if (b[3]!='8' || b[4]>'9' || b[5]!= 'a')
-    Fl::warning(fl_gif_is_version,infname,b[3],b[4],b[5]);
+    Fl::warning(Fl::txt_gif_is_version,infname,b[3],b[4],b[5]);
   }
 
   int Width; GETSHORT(Width);
@@ -132,7 +132,7 @@ Fl_GIF_Image::Fl_GIF_Image(const char *infname) : Fl_Pixmap((char *const*)0) {
       Blue[i] = NEXTBYTE;
     }
   } else {
-    Fl::warning(fl_gif_no_colormap, infname);
+    Fl::warning(Fl::txt_gif_no_colormap, infname);
     for (int i = 0; i < ColorMapSize; i++)
       Red[i] = Green[i] = Blue[i] = (uchar)(255 * i / (ColorMapSize-1));
   }
@@ -145,7 +145,7 @@ Fl_GIF_Image::Fl_GIF_Image(const char *infname) : Fl_Pixmap((char *const*)0) {
     int i = NEXTBYTE;
     if (i<0) {
       fclose(GifFile);
-      Fl::error(fl_gif_unexpected_eof,infname); 
+      Fl::error(Fl::txt_gif_unexpected_eof,infname); 
       return;
     }
     int blocklen;
@@ -170,7 +170,7 @@ Fl_GIF_Image::Fl_GIF_Image(const char *infname) : Fl_Pixmap((char *const*)0) {
 	;
 
       } else if (ch != 0xFE) { //Gif Comment
-	Fl::warning(fl_gif_unknown_extension, infname, ch);
+	Fl::warning(Fl::txt_gif_unknown_extension, infname, ch);
       }
     } else if (i == 0x2c) {	// an image
 
@@ -194,7 +194,7 @@ Fl_GIF_Image::Fl_GIF_Image(const char *infname) : Fl_Pixmap((char *const*)0) {
 
       break; // okay, this is the image we want
     } else {
-      Fl::warning(fl_gif_unknown_code, infname, i);
+      Fl::warning(Fl::txt_gif_unknown_code, infname, i);
       blocklen = 0;
     }
 
@@ -267,7 +267,7 @@ Fl_GIF_Image::Fl_GIF_Image(const char *infname) : Fl_Pixmap((char *const*)0) {
     int i;
     if (CurCode < FreeCode) i = CurCode;
     else if (CurCode == FreeCode) {*tp++ = (uchar)FinChar; i = OldCode;}
-    else {Fl::error(fl_gif_lzw_barf, infname); break;}
+    else {Fl::error(Fl::txt_gif_lzw_barf, infname); break;}
 
     while (i >= ColorMapSize) {*tp++ = Suffix[i]; i = Prefix[i];}
     *tp++ = FinChar = i;
@@ -383,5 +383,5 @@ Fl_GIF_Image::Fl_GIF_Image(const char *infname) : Fl_Pixmap((char *const*)0) {
 
 
 //
-// End of "$Id: Fl_GIF_Image.cxx,v 1.1.2.15 2003/01/30 21:41:46 easysw Exp $".
+// End of "$Id: Fl_GIF_Image.cxx,v 1.1.2.16 2004/04/11 04:38:57 easysw Exp $".
 //

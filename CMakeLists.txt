@@ -1,0 +1,311 @@
+# Main CMakeLists.txt to build the FLTK project using CMake (www.cmake.org)
+# Written by Andy Cedilnik and Julien Jomier
+
+PROJECT(FLTK)
+
+SET(EXECUTABLE_OUTPUT_PATH ${FLTK_BINARY_DIR}/bin CACHE INTERNAL 
+  "Where to put the executables for FLTK"
+  )
+SET(LIBRARY_OUTPUT_PATH "${FLTK_BINARY_DIR}/lib" CACHE INTERNAL 
+  "Where to put the libraries for FLTK"
+  )
+
+#-----------------------------------------------------------------------------
+# Test for some required system information.
+INCLUDE (${CMAKE_ROOT}/Modules/FindThreads.cmake)
+SET (CMAKE_USE_PTHREADS       "${CMAKE_USE_PTHREADS_INIT}" CACHE BOOL "Use the pthreads library.")
+
+
+SET(FLTK_DATADIR "${CMAKE_INSTALL_PREFIX}/share/FLTK")
+SET(FLTK_DOCDIR  "${CMAKE_INSTALL_PREFIX}/share/doc/FLTK")
+
+CONFIGURE_FILE(${FLTK_SOURCE_DIR}/configh.cmake.in
+  ${FLTK_BINARY_DIR}/config.h)
+
+IF(WIN32)
+  IF(NOT CYGWIN)
+    IF(BORLAND)
+      SET( FLTK_PLATFORM_DEPENDENT_LIBS import32 )
+    ELSE(BORLAND)
+      SET( FLTK_PLATFORM_DEPENDENT_LIBS wsock32 comctl32 )
+    ENDIF(BORLAND)
+  ENDIF(NOT CYGWIN)
+ENDIF(WIN32)
+
+SET(FLTK_X11 1)
+SET(FLTK_APPLE 0)
+IF(APPLE)
+  OPTION(FLTK_APPLE_X11 "Use X11 on Mac instead of Carbon" OFF)
+  MARK_AS_ADVANCED(FLTK_APPLE_X11)
+  IF(NOT FLTK_APPLE_X11)
+    SET(FLTK_APPLE 1)
+    SET(FLTK_X11 0)
+    OPTION(FLTK_QUARTZ "Use Quartz instead of Quickdraw" OFF)
+  ENDIF(NOT FLTK_APPLE_X11)
+ENDIF(APPLE)
+
+IF(UNIX)
+  INCLUDE(${CMAKE_ROOT}/Modules/FindX11.cmake)
+  SET( FLTK_PLATFORM_DEPENDENT_LIBS ${X11_LIBRARIES} -lm)
+ENDIF(UNIX)
+
+IF(APPLE)
+  SET( FLTK_PLATFORM_DEPENDENT_LIBS  "-framework Carbon -framework Cocoa -framework ApplicationServices -lz")
+ENDIF(APPLE)
+
+IF(CYGWIN)
+  ADD_DEFINITIONS(-DWIN32)  
+  SET( FLTK_PLATFORM_DEPENDENT_LIBS ole32 uuid comctl32 wsock32 supc++ -lm -lgdi32)
+ENDIF(CYGWIN)
+
+
+INCLUDE_DIRECTORIES(
+  ${FLTK_BINARY_DIR}
+  ${FLTK_SOURCE_DIR}
+  )
+
+INCLUDE (${CMAKE_ROOT}/Modules/CheckIncludeFiles.cmake)
+# Check if header file exists and add it to the list.
+MACRO(CHECK_INCLUDE_FILE_CONCAT FILE VARIABLE)
+  CHECK_INCLUDE_FILES("${PROJECT_INCLUDES};${FILE}" ${VARIABLE})
+  IF(${VARIABLE})
+    SET(PROJECT_INCLUDES ${PROJECT_INCLUDES} ${FILE})
+  ENDIF(${VARIABLE})
+ENDMACRO(CHECK_INCLUDE_FILE_CONCAT)
+CHECK_INCLUDE_FILE_CONCAT("GL/glu.h"       HAVE_GL_GLU_H)
+CHECK_INCLUDE_FILE_CONCAT("OpenGL/glu.h"   HAVE_OPENGL_GLU_H)
+CHECK_INCLUDE_FILE_CONCAT("dirent.h"       HAVE_DIRENT_H)
+CHECK_INCLUDE_FILE_CONCAT("stdio.h"        HAVE_STDIO_H)
+CHECK_INCLUDE_FILE_CONCAT("strings.h"      HAVE_STRINGS_H)
+CHECK_INCLUDE_FILE_CONCAT("sys/dir.h"      HAVE_SYS_DIR_H)
+CHECK_INCLUDE_FILE_CONCAT("sys/ndir.h"     HAVE_SYS_NDIR_H)
+CHECK_INCLUDE_FILE_CONCAT("sys/select.h"   HAVE_SYS_SELECT_H)
+CHECK_INCLUDE_FILE_CONCAT("sys/stdtypes.h" HAVE_SYS_STDTYPES_H)
+CHECK_INCLUDE_FILE("pthread.h"      CMAKE_HAVE_PTHREAD_H)
+
+INCLUDE(${CMAKE_ROOT}/Modules/FindZLIB.cmake)
+INCLUDE(${CMAKE_ROOT}/Modules/FindPNG.cmake)
+INCLUDE(${CMAKE_ROOT}/Modules/FindJPEG.cmake)
+
+INCLUDE(${CMAKE_ROOT}/Modules/CheckSymbolExists.cmake)
+INCLUDE(${FLTK_SOURCE_DIR}/CMake/CheckFunctionWithHeaderExists.cmake)
+
+CHECK_FUNCTIONWITHHEADER_EXISTS("int strcasecmp()"  "${PROJECT_INCLUDES}" HAVE_STRCASECMP)
+
+CHECK_SYMBOL_EXISTS(strlcat       "${PROJECT_INCLUDES}" HAVE_STRLCAT)
+CHECK_SYMBOL_EXISTS(strlcpy       "${PROJECT_INCLUDES}" HAVE_STRLCPY)
+CHECK_SYMBOL_EXISTS(vsnprintf     "${PROJECT_INCLUDES}" HAVE_VSNPRINTF)
+CHECK_SYMBOL_EXISTS(snprintf      "${PROJECT_INCLUDES}" HAVE_SNPRINTF)
+CHECK_SYMBOL_EXISTS(scandir       "${PROJECT_INCLUDES}" HAVE_SCANDIR)
+
+INCLUDE(${CMAKE_ROOT}/Modules/CheckTypeSize.cmake)
+
+CHECK_TYPE_SIZE(short SIZEOF_SHORT)
+CHECK_TYPE_SIZE(int   SIZEOF_INT)
+CHECK_TYPE_SIZE(long  SIZEOF_LONG)
+
+IF(${SIZEOF_SHORT} MATCHES "^2$")
+  SET(U16 "unsigned short")
+ENDIF(${SIZEOF_SHORT} MATCHES "^2$")
+
+IF(${SIZEOF_INT} MATCHES "^4$")
+  SET(U32 "unsigned")
+ELSE(${SIZEOF_INT} MATCHES "^4$")
+  IF(${SIZEOF_LONG} MATCHES "^4$")
+    SET(U32 "unsigned long")
+  ENDIF(${SIZEOF_LONG} MATCHES "^4$")
+ENDIF(${SIZEOF_INT} MATCHES "^4$")
+
+IF(${SIZEOF_INT} MATCHES "^8$")
+  SET(U64 "unsigned")
+ELSE(${SIZEOF_INT} MATCHES "^8$")
+  INCLUDE_DIRECTORIES(${OPENGL_INCLUDE_DIR})
+  IF(${SIZEOF_LONG} MATCHES "^8$")
+    SET(U64 "unsigned long")
+  ENDIF(${SIZEOF_LONG} MATCHES "^8$")
+ENDIF(${SIZEOF_INT} MATCHES "^8$")
+
+SET(HAVE_GL 0)
+
+# Set an option to build FLTK with OpenGL support
+OPTION(USE_OPENGL "OpenGL Support" ON)
+IF(USE_OPENGL)
+  INCLUDE(${CMAKE_ROOT}/Modules/FindOpenGL.cmake)
+  IF(OPENGL_FOUND)
+    SET(HAVE_GL 1)
+  ENDIF(OPENGL_FOUND)
+ENDIF(USE_OPENGL)
+
+#
+# Perform the FLTK specific test with status output
+#
+MACRO(PERFORM_CMAKE_TEST FILE TEST)
+  IF("${TEST}" MATCHES "^${TEST}$")
+    # Perform test
+    SET(MACRO_CHECK_FUNCTION_DEFINITIONS 
+      "-D${TEST} ${CMAKE_REQUIRED_FLAGS}")
+    IF(CMAKE_REQUIRED_LIBRARIES)
+      SET(TEST_ADD_LIBRARIES
+        "-DLINK_LIBRARIES:STRING=${CMAKE_REQUIRED_LIBRARIES}")
+    ENDIF(CMAKE_REQUIRED_LIBRARIES)
+    MESSAGE(STATUS "Performing Test ${TEST}")
+
+    TRY_COMPILE(${TEST}
+      ${CMAKE_BINARY_DIR}
+      ${CMAKE_CURRENT_SOURCE_DIR}/${FILE}
+      CMAKE_FLAGS -DCOMPILE_DEFINITIONS:STRING=${MACRO_CHECK_FUNCTION_DEFINITIONS}
+      -DLINK_LIBRARIES:STRING=${CMAKE_TEST_SPECIAL_LIBRARIES}
+      "${TEST_ADD_LIBRARIES}"
+      OUTPUT_VARIABLE OUTPUT)
+    IF(${TEST})
+      SET(${TEST} 1 CACHE INTERNAL "CMake test ${FUNCTION}")
+      MESSAGE(STATUS "Performing Test ${TEST} - Success")
+    ELSE(${TEST})
+      MESSAGE(STATUS "Performing Test ${TEST} - Failed")
+      SET(${TEST} 0 CACHE INTERNAL "Test ${FUNCTION}")
+      WRITE_FILE(${CMAKE_BINARY_DIR}/CMakeError.log 
+        "Performing Test ${TEST} failed with the following output:\n"
+        "${OUTPUT}\n" APPEND)
+    ENDIF(${TEST})
+  ELSE("${TEST}" MATCHES "^${TEST}$")
+    # Have result
+    #FOREACH(tst ${TEST})
+    #  MESSAGE("Test ${TEST} resulted in ${${tst}}")
+    #ENDFOREACH(tst ${TEST})
+  ENDIF("${TEST}" MATCHES "^${TEST}$")
+ENDMACRO(PERFORM_CMAKE_TEST FILE TEST)
+
+# Set an option to build the zlib library or not
+OPTION(FLTK_USE_SYSTEM_ZLIB "Use's system zlib" ON)
+IF(FLTK_USE_SYSTEM_ZLIB)
+  IF(ZLIB_FOUND)
+    SET(CMAKE_TEST_SPECIAL_LIBRARIES ${ZLIB_LIBRARIES})
+    PERFORM_CMAKE_TEST(CMake/PlatformTests.cxx HAVE_LIBZ)
+  ENDIF(ZLIB_FOUND)
+  # We build the fltk zlib
+ELSE(FLTK_USE_SYSTEM_ZLIB)
+  MARK_AS_ADVANCED(ZLIB_INCLUDE_DIR)
+  MARK_AS_ADVANCED(ZLIB_LIBRARY)
+  SUBDIRS(zlib)
+ENDIF(FLTK_USE_SYSTEM_ZLIB)
+
+# Set an option to build the jpeg library or not
+OPTION(FLTK_USE_SYSTEM_JPEG "Use's system jpeg" ON)
+IF(FLTK_USE_SYSTEM_JPEG)
+  IF(JPEG_FOUND)
+    SET(CMAKE_TEST_SPECIAL_LIBRARIES ${JPEG_LIBRARIES})
+    PERFORM_CMAKE_TEST(CMake/PlatformTests.cxx HAVE_LIBJPEG)
+  ENDIF(JPEG_FOUND)
+  # We build the fltk png
+ELSE(FLTK_USE_SYSTEM_JPEG)
+  MARK_AS_ADVANCED(JPEG_INCLUDE_DIR)
+  MARK_AS_ADVANCED(JPEG_LIBRARY)
+  SUBDIRS(jpeg)
+ENDIF(FLTK_USE_SYSTEM_JPEG)
+
+# Set an option to build the png library or not
+OPTION(FLTK_USE_SYSTEM_PNG "Use's system png" ON)
+IF(FLTK_USE_SYSTEM_PNG)
+  IF(PNG_FOUND)
+    SET(CMAKE_TEST_SPECIAL_LIBRARIES ${PNG_LIBRARIES})
+    PERFORM_CMAKE_TEST(CMake/PlatformTests.cxx HAVE_LIBPNG)
+    PERFORM_CMAKE_TEST(CMake/PlatformTests.cxx HAVE_PNG_GET_VALID)
+    PERFORM_CMAKE_TEST(CMake/PlatformTests.cxx HAVE_PNG_SET_TRNS_TO_ALPHA)
+    SET(HAVE_PNG_H 1)
+  ENDIF(PNG_FOUND)
+  # We build the fltk png
+ELSE(FLTK_USE_SYSTEM_PNG)
+  MARK_AS_ADVANCED(PNG_INCLUDE_DIR)
+  MARK_AS_ADVANCED(PNG_LIBRARY)
+  SUBDIRS(png)
+ENDIF(FLTK_USE_SYSTEM_PNG)
+
+SUBDIRS(src)
+SUBDIRS(fluid)
+
+SET(FLTK_CREATE_SYMLINKS 1)
+IF(WIN32)
+  IF(NOT UNIX)
+    SET(FLTK_CREATE_SYMLINKS 0)
+  ENDIF(NOT UNIX)
+ENDIF(WIN32)
+
+MACRO(SAFE_CREATE_SYMLINK SOURCE DESTINATION)
+  IF(EXISTS "${DESTINATION}")
+  ELSE(EXISTS "${DESTINATION}")
+    EXEC_PROGRAM(ln ARGS -s
+      "${SOURCE}"
+      "${DESTINATION}" OUTPUT_VARIABLE ln_output
+      RETURN_VALUE ln_retval)
+    IF("${ln_retval}" GREATER 0)
+      MESSAGE(FATAL_ERROR "Problem creatin symlink from \"${SOURCE}\" to \"${DESTINATION}\":\n${ln_output}")
+    ENDIF("${ln_retval}" GREATER 0)
+  ENDIF(EXISTS "${DESTINATION}")
+ENDMACRO(SAFE_CREATE_SYMLINK SOURCE DESTINATION)
+
+# If this is out-of-source build, then copy FL directory
+FILE(GLOB FLTK_HEADER_FILES "${FLTK_SOURCE_DIR}/FL/*")
+FOREACH(file ${FLTK_HEADER_FILES})
+  GET_FILENAME_COMPONENT(ext "${file}" EXT)
+  GET_FILENAME_COMPONENT(namewe "${file}" NAME_WE)
+  GET_FILENAME_COMPONENT(name "${file}" NAME)
+  STRING(COMPARE EQUAL "${ext}" ".h" lower_case_h)
+  STRING(COMPARE EQUAL "${ext}" ".H" upper_case_h)
+  IF(lower_case_h OR upper_case_h)
+    SET(outfile_h "${FLTK_BINARY_DIR}/FL/${namewe}.h")
+    SET(outfile_H "${FLTK_BINARY_DIR}/FL/${namewe}.H")
+    CONFIGURE_FILE("${file}" "${outfile_H}" COPYONLY IMMEDIATE)
+#    IF(FLTK_CREATE_SYMLINKS)
+#      SAFE_CREATE_SYMLINK("${outfile_H}" "${outfile_h}")
+#    ENDIF(FLTK_CREATE_SYMLINKS)
+  ELSE(lower_case_h OR upper_case_h)
+    STRING(COMPARE EQUAL "${ext}" ".r" mac_resource_file)
+    IF(mac_resource_file)
+      SET(outfile "${FLTK_BINARY_DIR}/FL/${name}")
+      CONFIGURE_FILE("${file}" "${outfile}" COPYONLY IMMEDIATE)
+    ENDIF(mac_resource_file)
+  ENDIF(lower_case_h OR upper_case_h)
+ENDFOREACH(file)
+
+IF(FLTK_CREATE_SYMLINKS)
+  SAFE_CREATE_SYMLINK(
+    "${FLTK_BINARY_DIR}/FL"
+    "${FLTK_BINARY_DIR}/Fl")
+
+  SAFE_CREATE_SYMLINK(
+    "${FLTK_BINARY_DIR}/FL/gl.H"
+    "${FLTK_BINARY_DIR}/FL/gl.h")
+
+  # Create the symlinks
+  FILE(READ ${FLTK_SOURCE_DIR}/fltk.list.in SYMLINKSFILE)
+  STRING(REGEX MATCHALL "(l 0000 root sys .includedir/)([^(\n)])+"
+  SYMLINKS ${SYMLINKSFILE})
+  FOREACH(var ${SYMLINKS} )
+    IF("${var}" MATCHES ".H")
+      STRING(REGEX MATCH "(/F)([^(\n)])+" tmp ${var})
+      STRING(REGEX MATCH "(/F)([^( )])+" in ${tmp})
+      STRING(REGEX MATCH "( )([^(\n)])+" out ${tmp}) 
+      STRING(REGEX REPLACE "( )" "" out ${out})
+      SAFE_CREATE_SYMLINK("${FLTK_BINARY_DIR}/FL/${out}" "${FLTK_BINARY_DIR}/${in}")
+    ENDIF("${var}" MATCHES ".H")
+  ENDFOREACH(var)
+ENDIF(FLTK_CREATE_SYMLINKS)
+
+
+# Set the fluid executable path
+SET(FLUID_COMMAND ${EXECUTABLE_OUTPUT_PATH}/${CMAKE_CFG_INTDIR}/fluid)
+
+# Set an option to build the tests
+OPTION(BUILD_TESTS "Build the tests" ON)
+IF(BUILD_TESTS)
+  SUBDIRS(test)
+  ENABLE_TESTING()
+  INCLUDE(${CMAKE_ROOT}/Modules/Dart.cmake)
+ENDIF(BUILD_TESTS )
+
+#Genereate the configuration file
+SET(FLTK_EXECUTABLE_DIRS ${EXECUTABLE_OUTPUT_PATH})
+SET(FLTK_LIBRARY_DIRS ${LIBRARY_OUTPUT_PATH})
+
+CONFIGURE_FILE(${FLTK_SOURCE_DIR}/CMake/FLTKConfig.cmake.in
+  ${FLTK_BINARY_DIR}/FLTKConfig.cmake)

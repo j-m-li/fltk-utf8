@@ -1,9 +1,9 @@
 //
-// "$Id: Fl_Input_.cxx,v 1.21.2.8 2000/06/20 07:56:09 bill Exp $"
+// "$Id: Fl_Input_.cxx,v 1.21.2.11.2.32 2004/09/21 13:35:39 easysw Exp $"
 //
 // Common input widget routines for the Fast Light Tool Kit (FLTK).
 //
-// Copyright 1998-2002 by Bill Spitzak and others.
+// Copyright 1998-2004 by Bill Spitzak and others.
 //
 // This library is free software; you can redistribute it and/or
 // modify it under the terms of the GNU Library General Public
@@ -34,16 +34,14 @@
 #include <FL/fl_draw.H>
 #include <FL/fl_ask.H>
 #include <math.h>
+#include <FL/fl_utf8.H>
 #include "flstring.h"
 #include <stdlib.h>
-#include <stdio.h>
 #include <ctype.h>
-#include <FL/fl_utf8.H>
 
 #define MAXBUF 1024
 
-extern void fl_set_spot(int font, int size, int x, int y, int w, int h);
-extern void fl_reset_spot(void);
+extern void fl_draw(const char*, int, float, float);
 
 ////////////////////////////////////////////////////////////////
 
@@ -58,12 +56,14 @@ const char* Fl_Input_::expand(const char* p, char* buf) const {
   int width_to_lastspace = 0;
   int word_count = 0;
   int word_wrap;
+  const char *pe = p + strlen(p);
 
   if (input_type()==FL_SECRET_INPUT) {
     while (o<e && p < value_+size_) {
-      if (fl_utflen((unsigned char*)p, value_+size_-p) >= 0) *o++ = '*'; 
+      if (fl_utflen((unsigned char*)p, pe - p) >= 1) *o++ = '*';
       p++;
     }
+
   } else while (o<e) {
     if (wrap() && (p >= value_+size_ || isspace(*p))) {
       word_wrap = w() - Fl::box_dw(box()) - 2;
@@ -77,12 +77,15 @@ const char* Fl_Input_::expand(const char* p, char* buf) const {
       lastspace = p;
       lastspace_out = o;
     }
+
     if (p >= value_+size_) break;
     int c = *p++ & 255;
     if (c < ' ' || c == 127) {
       if (c=='\n' && input_type()==FL_MULTILINE_INPUT) {p--; break;}
       if (c == '\t' && input_type()==FL_MULTILINE_INPUT) {
-	for (c = (o-buf)%8; c<8 && o<e; c++) *o++ = ' ';
+        for (c = fl_utf_nb_char((uchar*)buf, o-buf)%8; c<8 && o<e; c++) {
+          *o++ = ' ';
+        }
       } else {
 	*o++ = '^';
 	*o++ = c ^ 0x40;
@@ -103,20 +106,24 @@ double Fl_Input_::expandpos(
   int* returnn		// return offset into buf here
 ) const {
   int n = 0;
+  int chr = 0;
   if (input_type()==FL_SECRET_INPUT) {
     while (p<e) {
-      if (fl_utflen((unsigned char*)p, value_+size_-p) >= 0) n++; 
+      if (fl_utflen((unsigned char*)p, e-p) >= 1) n++;
       p++;
     }
-  
   } else while (p<e) {
-    int c = *p++ & 255;
+    int c = *p & 255;
     if (c < ' ' || c == 127) {
-      if (c == '\t' && input_type()==FL_MULTILINE_INPUT) n += 8-(n%8);
-      else n += 2;
+      if (c == '\t' && input_type()==FL_MULTILINE_INPUT) {
+         n += 8-(chr%8);
+         chr += 8-(chr%8);
+      } else n += 2;
     } else {
       n++;
     }
+    chr += fl_utflen((unsigned char*)p, e-p) >= 1;
+    p++;
   }
   if (returnn) *returnn = n;
   return fl_width(buf, n);
@@ -230,7 +237,7 @@ void Fl_Input_::drawtext(int X, int Y, int W, int H) {
   p = value();
   // visit each line and draw it:
   int desc = height-fl_descent();
-  int xpos = X - xscroll_ + 1;
+  float xpos = X - xscroll_ + 1;
   int ypos = -yscroll_;
   for (; ypos < H;) {
 
@@ -245,19 +252,19 @@ void Fl_Input_::drawtext(int X, int Y, int W, int H) {
       if (readonly()) erase_cursor_only = 0; // this isn't the most efficient way
       if (erase_cursor_only && p > pp) goto CONTINUE2; // this line is after
       // calculate area to erase:
-      int r = X+W;
-      int xx;
+      float r = X+W;
+      float xx;
       if (p >= pp) {
 	xx = X;
 	if (erase_cursor_only) r = xpos+2;
 	else if (readonly()) xx -= 3;
       } else {
-	xx = xpos+(int)expandpos(p, pp, buf, 0);
+	xx = xpos+expandpos(p, pp, buf, 0);
 	if (erase_cursor_only) r = xx+2;
 	else if (readonly()) xx -= 3;
       }
       // clip to and erase it:
-      fl_push_clip(xx, Y+ypos, r-xx, height);
+      fl_push_clip((int)xx, Y+ypos, (int)(r-xx+1), height);
       draw_box(box(), X-Fl::box_dx(box()), Y-Fl::box_dy(box()),
                W+Fl::box_dw(box()), H+Fl::box_dh(box()), color());
       // it now draws entire line over it
@@ -268,30 +275,30 @@ void Fl_Input_::drawtext(int X, int Y, int W, int H) {
     // Draw selection area if required:
     if (selstart < selend && selstart <= e-value() && selend > p-value()) {
       const char* pp = value()+selstart;
-      int x1 = xpos;
+      float x1 = xpos;
       int offset1 = 0;
       if (pp > p) {
 	fl_color(tc);
-	x1 += int(expandpos(p, pp, buf, &offset1));
-	fl_draw(buf, offset1, xpos, Y+ypos+desc);
+	x1 += expandpos(p, pp, buf, &offset1);
+	fl_draw(buf, offset1, xpos, (float)(Y+ypos+desc));
       }
       pp = value()+selend;
-      int x2 = X+W;
+      float x2 = X+W;
       int offset2;
-      if (pp <= e) x2 = xpos+int(expandpos(p, pp, buf, &offset2));
+      if (pp <= e) x2 = xpos+expandpos(p, pp, buf, &offset2);
       else offset2 = strlen(buf);
       fl_color(selection_color());
-      fl_rectf(x1, Y+ypos, x2-x1, height);
+      fl_rectf((int)(x1+0.5), Y+ypos, (int)(x2-x1+0.5), height);
       fl_color(fl_contrast(textcolor(), selection_color()));
-      fl_draw(buf+offset1, offset2-offset1, x1, Y+ypos+desc);
+      fl_draw(buf+offset1, offset2-offset1, x1, (float)(Y+ypos+desc));
       if (pp < e) {
 	fl_color(tc);
-	fl_draw(buf+offset2, x2, Y+ypos+desc);
+	fl_draw(buf+offset2, strlen(buf+offset2), x2, (float)(Y+ypos+desc));
       }
     } else {
       // draw unselected text
       fl_color(tc);
-      fl_draw(buf, xpos, Y+ypos+desc);
+      fl_draw(buf, strlen(buf), xpos, (float)(Y+ypos+desc));
     }
 
     if (do_mu) fl_pop_clip();
@@ -302,11 +309,11 @@ void Fl_Input_::drawtext(int X, int Y, int W, int H) {
 	position() >= p-value() && position() <= e-value()) {
       fl_color(cursor_color());
       if (readonly()) {
-        fl_line(xpos+curx-3, Y+ypos+height-1,
-	        xpos+curx, Y+ypos+height-4,
-	        xpos+curx+3, Y+ypos+height-1);
+        fl_line((int)(xpos+curx-2.5f), Y+ypos+height-1,
+	        (int)(xpos+curx+0.5f), Y+ypos+height-4,
+	        (int)(xpos+curx+3.5f), Y+ypos+height-1);
       } else {
-        fl_rectf(xpos+curx, Y+ypos, 2, height);
+        fl_rectf((int)(xpos+curx+0.5), Y+ypos, 2, height);
       }
     }
 
@@ -329,8 +336,8 @@ void Fl_Input_::drawtext(int X, int Y, int W, int H) {
 
   fl_pop_clip();
   if (Fl::focus() == this) {
-	fl_set_spot(textfont(), textsize(), 
-		xpos+curx, Y+ypos-fl_descent(), W, H);
+       fl_set_spot(textfont(), textsize(),
+               (int)xpos+curx, Y+ypos-fl_descent(), W, H);
   }
 }
 
@@ -418,7 +425,6 @@ void Fl_Input_::handle_mouse(int X, int Y, int /*W*/, int /*H*/, int drag) {
     if (f <= Fl::event_x()) {l = t; f0 = Fl::event_x()-f;}
     else r = t-cw;
   }
-
   if (l < e) { // see if closer to character on right:
     double f1;
     int cw = fl_utflen((unsigned char*)l, e-l);
@@ -427,7 +433,6 @@ void Fl_Input_::handle_mouse(int X, int Y, int /*W*/, int /*H*/, int drag) {
       if (f1 < f0) l = l+cw;
     }
   }
-
   newpos = l-value();
 
   int newmark = drag ? mark() : newpos;
@@ -472,26 +477,26 @@ int Fl_Input_::position(int p, int m) {
   if (p>size()) p = size();
   if (m<0) m = 0;
   if (m>size()) m = size();
-  if (p == position_ && m == mark_) return 0;
   if (p == m) is_same = 1;
 
-  while (p < position_ && p > 0 && (size() - p) > 0 && 
-	(fl_utflen((unsigned char *)value() + p, size() - p) < 1)) { p--; }
+  while (p < position_ && p > 0 && (size() - p) > 0 &&
+       (fl_utflen((unsigned char *)value() + p, size() - p) < 1)) { p--; }
   int ul = fl_utflen((unsigned char *)value() + p, size() - p);
   while (p < size() && p > position_ && ul < 0) {
-	p++; 
-	ul = fl_utflen((unsigned char *)value() + p, size() - p); 
+       p++;
+       ul = fl_utflen((unsigned char *)value() + p, size() - p);
   }
 
-  while (m < mark_ && m > 0 && (size() - m) > 0 && 
-	(fl_utflen((unsigned char *)value() + m, size() - m) < 1)) { m--; }
+  while (m < mark_ && m > 0 && (size() - m) > 0 &&
+       (fl_utflen((unsigned char *)value() + m, size() - m) < 1)) { m--; }
   ul = fl_utflen((unsigned char *)value() + m, size() - m);
   while (m < size() && m > mark_ && ul < 0) {
-	m++; 
-	ul = fl_utflen((unsigned char *)value() + m, size() - m); 
+       m++;
+       ul = fl_utflen((unsigned char *)value() + m, size() - m);
   }
   if (is_same) m = p;
   if (p == position_ && m == mark_) return 0;
+
 
   //if (Fl::selection_owner() == this) Fl::selection_owner(0);
   if (p != m) {
@@ -568,25 +573,21 @@ static void undobuffersize(int n) {
 
 // all changes go through here, delete characters b-e and insert text:
 int Fl_Input_::replace(int b, int e, const char* text, int ilen) {
-
   int ul, om, op;
   was_up_down = 0;
 
-  
   if (b<0) b = 0;
   if (e<0) e = 0;
   if (b>size_) b = size_;
   if (e>size_) e = size_;
   if (e<b) {int t=b; b=e; e=t;}
-
-  while (b != e && b > 0 && (size_ - b) > 0 && 
-	(fl_utflen((unsigned char *)value_ + b, size_ - b) < 1)) { b--; }
+  while (b != e && b > 0 && (size_ - b) > 0 &&
+       (fl_utflen((unsigned char *)value_ + b, size_ - b) < 1)) { b--; }
   ul = fl_utflen((unsigned char *)value_ + e, size_ - e);
-  while (e < size_ && e > 0 && ul < 0) { 
-	e++;
-	ul = fl_utflen((unsigned char *)value_ + e, size_ - e ); 
+  while (e < size_ && e > 0 && ul < 0) {
+       e++;
+       ul = fl_utflen((unsigned char *)value_ + e, size_ - e );
   }
-
   if (text && !ilen) ilen = strlen(text);
   if (e<=b && !ilen) return 0; // don't clobber undo for a null operation
   if (size_+ilen-(e-b) > maximum_size_) {
@@ -651,7 +652,10 @@ int Fl_Input_::replace(int b, int e, const char* text, int ilen) {
 
   minimal_update(b);
 
-  if (when()&FL_WHEN_CHANGED) do_callback(); else set_changed();
+  mark_ = position_ = undoat;
+
+  set_changed();
+  if (when()&FL_WHEN_CHANGED) do_callback();
   return 1;
 }
 
@@ -688,7 +692,8 @@ int Fl_Input_::undo() {
   position_ = b;
 
   minimal_update(b1);
-  if (when()&FL_WHEN_CHANGED) do_callback(); else set_changed();
+  set_changed();
+  if (when()&FL_WHEN_CHANGED) do_callback();
   return 1;
 }
 
@@ -701,18 +706,19 @@ int Fl_Input_::copy_cuts() {
 
 void Fl_Input_::maybe_do_callback() {
   if (changed() || (when()&FL_WHEN_NOT_CHANGED)) {
-    clear_changed(); do_callback();}
+    do_callback();
+  }
 }
 
 int Fl_Input_::handletext(int event, int X, int Y, int W, int H) {
   switch (event) {
 
   case FL_ENTER:
-    if (active_r()) window()->cursor(FL_CURSOR_INSERT);
+    if (active_r() && window()) window()->cursor(FL_CURSOR_INSERT);
     return 1;
 
   case FL_LEAVE:
-    if (active_r()) window()->cursor(FL_CURSOR_DEFAULT);
+    if (active_r() && window()) window()->cursor(FL_CURSOR_DEFAULT);
     return 1;
 
   case FL_FOCUS:
@@ -724,11 +730,12 @@ int Fl_Input_::handletext(int event, int X, int Y, int W, int H) {
     return 1;
 
   case FL_UNFOCUS:
-    fl_reset_spot();
     if (mark_ == position_) {
       if (!(damage()&FL_DAMAGE_EXPOSE)) {minimal_update(position_); erase_cursor_only = 1;}
     } else //if (Fl::selection_owner() != this)
       minimal_update(mark_, position_);
+  case FL_HIDE:
+    fl_reset_spot();
     if (when() & FL_WHEN_RELEASE) maybe_do_callback();
     return 1;
 
@@ -786,18 +793,17 @@ int Fl_Input_::handletext(int event, int X, int Y, int W, int H) {
       if (*p == '.') {
         p ++;
         while (isdigit(*p) && p < e) p ++;
-       if (*p == 'e' || *p == 'E') {
-         p ++;
-         if (*p == '+' || *p == '-') p ++;
-         while (isdigit(*p) && p < e) p ++;
-       }
+	if (*p == 'e' || *p == 'E') {
+	  p ++;
+	  if (*p == '+' || *p == '-') p ++;
+	  while (isdigit(*p) && p < e) p ++;
+	}
       }
       if (p < e) {
         fl_beep(FL_BEEP_ERROR);
         return 1;
       } else return replace(0, size(), t, e - t);
     }
-
     return replace(position(), mark(), t, e-t);}
 
   default:
@@ -842,6 +848,15 @@ void Fl_Input_::put_in_buffer(int len) {
     } else {
       bufsize = len+1;
     }
+    // Note: the following code is equivalent to:
+    //
+    //   if (moveit) value_ = value_ - buffer;
+    //   char* nbuffer = (char*)realloc(buffer, bufsize);
+    //   if (moveit) value_ = value_ + nbuffer;
+    //   buffer = nbuffer;
+    //
+    // We just optimized the pointer arithmetic for value_...
+    //
     char* nbuffer = (char*)realloc(buffer, bufsize);
     if (moveit) value_ += (nbuffer-buffer);
     buffer = nbuffer;
@@ -906,5 +921,5 @@ Fl_Input_::~Fl_Input_() {
 }
 
 //
-// End of "$Id: Fl_Input_.cxx,v 1.21.2.8 2000/06/20 07:56:09 bill Exp $".
+// End of "$Id: Fl_Input_.cxx,v 1.21.2.11.2.32 2004/09/21 13:35:39 easysw Exp $".
 //

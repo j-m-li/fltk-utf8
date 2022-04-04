@@ -178,7 +178,7 @@ void push_menu(const char* nnn)
     if (menus[men].icommand[i][0] != '@') but[bn]->tooltip(menus[men].icommand[i]);
     else but[bn]->tooltip(0);
   }
-  strcpy(stack[stsize],nnn);
+  strcpy(stack[(int)stsize],nnn);
   stsize++;
 }
 
@@ -187,7 +187,7 @@ void pop_menu()
 {
   if (stsize<=1) return;
   stsize -= 2;
-  push_menu(stack[stsize]);
+  push_menu(stack[(int)stsize]);
 }
 
 /* The callback Routines */

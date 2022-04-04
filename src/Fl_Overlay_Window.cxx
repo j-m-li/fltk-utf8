@@ -1,9 +1,9 @@
 //
-// "$Id: Fl_Overlay_Window.cxx,v 1.7.2.6.2.3 2003/01/30 21:42:23 easysw Exp $"
+// "$Id: Fl_Overlay_Window.cxx,v 1.7.2.6.2.4 2004/04/11 04:38:58 easysw Exp $"
 //
 // Overlay window code for the Fast Light Tool Kit (FLTK).
 //
-// Copyright 1998-2003 by Bill Spitzak and others.
+// Copyright 1998-2004 by Bill Spitzak and others.
 //
 // This library is free software; you can redistribute it and/or
 // modify it under the terms of the GNU Library General Public
@@ -32,7 +32,6 @@
 #include <FL/Fl_Overlay_Window.H>
 #include <FL/fl_draw.H>
 #include <FL/x.H>
-#include <FL/Fl_Fltk.H>
 
 void Fl_Overlay_Window::show() {
   Fl_Double_Window::show();
@@ -114,7 +113,6 @@ void _Fl_Overlay::show() {
 
 void _Fl_Overlay::flush() {
   fl_window = fl_xid(this);
-  if (fl->type == FL_GDI_DEVICE) return;
   if (!gc) gc = XCreateGC(fl_display, fl_xid(this), 0, 0);
   fl_gc = gc;
   fl_overlay = 1;
@@ -151,5 +149,5 @@ void Fl_Overlay_Window::redraw_overlay() {
 #endif
 
 //
-// End of "$Id: Fl_Overlay_Window.cxx,v 1.7.2.6.2.3 2003/01/30 21:42:23 easysw Exp $".
+// End of "$Id: Fl_Overlay_Window.cxx,v 1.7.2.6.2.4 2004/04/11 04:38:58 easysw Exp $".
 //

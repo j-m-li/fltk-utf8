@@ -35,7 +35,7 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <FL/fl_draw.H>
-#include <FL/fl_math.h>
+#include <FL/math.h>
 #include <FL/fl_utf8.H>
 
 
@@ -43,18 +43,17 @@ Fl_Scroll* thescroll;
 
 void set_foreign(void)
 {
-  fl_no = "No";
-  fl_yes= "Yes";
-  fl_ok = "OK";
-  fl_cancel= "Cancel";
-  fl_close= "Close";
-  fl_choose_file = "Choose File";
-  fl_show = "Show";
-  fl_favorites = "Favorites";
-  fl_create_a_new_directory = "Create a new directory.";
-  fl_preview = "Preview";
-  fl_file_name = "Filename:";
-  fl_manage_favorites = "Manage Favorites";
+  Fl::txt_no = "No";
+  Fl::txt_yes= "Yes";
+  Fl::txt_ok = "OK";
+  Fl::txt_cancel= "Cancel";
+  Fl::txt_close= "Close";
+  Fl::txt_choose_file = "Choose File";
+  Fl::txt_show = "Show";
+  Fl::txt_favorites = "Favorites";
+  Fl::txt_preview = "Preview";
+  Fl::txt_file_name = "Filename:";
+  Fl::txt_manage_favorites = "Manage Favorites";
   Fl_File_Chooser::add_favorites_label = "Add to Favorites";
   Fl_File_Chooser::all_files_label = "All Files ( *)";
   Fl_File_Chooser::custom_filter_label = "Custom Filter";
@@ -87,35 +86,25 @@ void set_foreign(void)
   // fl_make_the_help_text_smaller = "Make the help text smaller.";
   // fl_make_the_help_text_larger = "Make the help text larger.";
   // fl_help_dialog = "Help Dialog";
-  fl_untitled = "Untitled";
-  fl_no_uri ="<HTML><HEAD><TITLE>Error</TITLE></HEAD>"
-             "<BODY><H1>Error</H1>"
-             "<P>Unable to follow the link \"%s\" - "
-             "no handler exists for this URI scheme.</P></BODY>";
-  fl_unable_to_follow =  "<HTML><HEAD><TITLE>Error</TITLE></HEAD>"
-               "<BODY><H1>Error</H1>"
-               "<P>Unable to follow the link \"%s\" - "
-               "%s.</P></BODY>";
 
   // fl_pnm_early_eof = "Early end-of-file in PNM file \"%s\"!";
-  fl_ins1_failed = "Fl_Text_Buffer::insert_column(): internal consistency check ins1 failed";
-  fl_ovly1_failed = "Fl_Text_Buffer::overlay_rectangle(): internal consistency check ovly1 failed";
-  fl_repl1_failed = "Fl_Text_Buffer::replace_rectangular(): internal consistency check repl1 failed";
-  fl_cannot_modify_cb = "Fl_Text_Buffer::remove_modify_callback(): Can't find modify CB to remove";
-  fl_cannot_find_pre = "Fl_Text_Buffer::remove_predelete_callback(): Can't find pre-delete CB to remove";
-  fl_ptvl_failed = "Fl_Text_Display::position_to_line(): Consistency check ptvl failed";
-  fl_bad_measurement = "Fl_Text_Display::draw_vline(): bad font measurement";
-  fl_error = "Error";
-  fl_unknown_color = "Unknown color: %s";
+  Fl::txt_ins1_failed = "Fl_Text_Buffer::insert_column(): internal consistency check ins1 failed";
+  Fl::txt_ovly1_failed = "Fl_Text_Buffer::overlay_rectangle(): internal consistency check ovly1 failed";
+  Fl::txt_repl1_failed = "Fl_Text_Buffer::replace_rectangular(): internal consistency check repl1 failed";
+  Fl::txt_cannot_modify_cb = "Fl_Text_Buffer::remove_modify_callback(): Can't find modify CB to remove";
+  Fl::txt_cannot_find_pre = "Fl_Text_Buffer::remove_predelete_callback(): Can't find pre-delete CB to remove";
+  Fl::txt_ptvl_failed = "Fl_Text_Display::position_to_line(): Consistency check ptvl failed";
+  Fl::txt_bad_measurement = "Fl_Text_Display::draw_vline(): bad font measurement";
+  Fl::txt_error = "Error";
+  Fl::txt_unknown_color = "Unknown color: %s";
   // fl_xio_error = "X I/O error";
   // fl_cannot_open_display = "Can't open display: %s";
   // fl_requires_true_color = "Requires true color visual";
-  fl_cannot_do_scanline = "Can't do scanline_pad of %d";
-  fl_cannot_bits_per_pixel = "Can't do %d bits_per_pixel colormap";
-  fl_cannot_24bit = "Can't do arbitrary 24bit color";
-  fl_cannot_do_bits_per_pixel = "Can't do %d bits_per_pixel";
-  fl_cannot_do_delta = "Can't do a delta value of %d";
-  fl_cannot_create_pen = "fl_line_style(): Could not create GDI pen object.";
+  Fl::txt_cannot_do_scanline = "Can't do scanline_pad of %d";
+  Fl::txt_cannot_bits_per_pixel = "Can't do %d bits_per_pixel colormap";
+  Fl::txt_cannot_24bit = "Can't do arbitrary 24bit color";
+  Fl::txt_cannot_do_bits_per_pixel = "Can't do %d bits_per_pixel";
+  Fl::txt_cannot_create_pen = "fl_line_style(): Could not create GDI pen object.";
 
 }
 
@@ -170,6 +159,12 @@ void i7_cb(Fl_Widget *w, void *d)
 
 int main(int argc, char** argv) {
   int l;
+/* WIN32 disable anti-aliasing
+  SystemParametersInfo(SPI_SETFONTSMOOTHING,
+                     FALSE,
+                     0,
+                     SPIF_UPDATEINIFILE | SPIF_SENDCHANGE);
+*/
   Fl_Window window(200 + 5*75,400);
   char *latin1 = "ABCabc‡ËÈÔ‚Óˆ¸„123";
   char *utf8 = (char*) malloc(strlen(latin1) * 5 + 1);
@@ -226,14 +221,14 @@ int main(int argc, char** argv) {
   /* setup an extra font */
   Fl::set_font((Fl_Font)(FL_FREE_FONT),
 #ifdef _WIN32
-	" MS Gothic"
+	" Arial Unicode MS"
 #elif __APPLE__
 	" Arial"
 #else
 //	"-*jisx0201.1976-0"
 
 
-	"-*-courier-medium-r-normal--*,"
+/*	"-*-courier-medium-r-normal--*,"
 	"-*-fixed-medium-*-*--*-*-*-*-*-*-iso8859-15,"
 	"-*-symbol-*-*-*--*-*-*-*-*-*-adobe-fontspecific,"
 	"-*-*dingbats-*-*-*--*-*-*-*-*-*-adobe-fontspecific,"
@@ -267,7 +262,8 @@ int main(int argc, char** argv) {
 	//"-*-fixed-*-*-*--*-*-*-*-*-*-muleipa-*,"
 	//"-*-fixed-*-*-*--*-*-*-*-*-*-viscii1.1-*,"
 	//"-*-fixed-*-*-*--*-*-*-*-*-*-gost19768.74-*,"
-	"-*-fixed-*-iso10646-1"
+	"-*-fixed-*-iso10646-1"*/
+	"-*-unifont-*-*-*-*-*-*-*-*-*-*-iso10646-1"
 
 #endif	
   );
@@ -327,23 +323,22 @@ int main(int argc, char** argv) {
   abuf[l] = 0;
   My_Input i5(5, 115, 190, 50);
   i5.textfont((Fl_Font)(FL_FREE_FONT));
-  i5.textsize(36);
+  i5.textsize(30);
   i5.value(abuf);
- xchar arabic1[] ={/*8238,*/ 0x5c, 1610, 0x20, 1608, 0x20, 1606, 0x20,  1616, 0x20, 1603, 0x20, 1608, 0x20, 1583, 0};
  
-  l = fl_unicode2utf(arabic1, 15, abuf);  
-  abuf[l] = 0;
-  My_Input i6(5, 175, 190, 50);
-  i6.textfont((Fl_Font)(FL_FREE_FONT));
-  i6.textsize(30);
-  i6.value(abuf);
-
   Fl_Input i7(5, 230, 190, 25);
   Fl_Input i8(5, 260, 190, 25);
   i7.callback(i7_cb, &i8);
   i7.value(abuf);
   i7.when(FL_WHEN_CHANGED);
 
+  xchar arabic1[] ={/*8238,*/ 1610, 0x20, 1608, 0x20, 1606, 0x20,  1616, 0x20, 1603, 0x20, 1608, 0x20, 1583, 0};
+  l = fl_unicode2utf(arabic1, 14, abuf);  
+  abuf[l] = 0;
+  My_Input i6(5, 175, 190, 50);
+  i6.textfont((Fl_Font)(FL_FREE_FONT));
+  i6.textsize(30);
+  i6.value(abuf);
 
   window.end();
   fl_set_status(0, 370, 100, 30); 

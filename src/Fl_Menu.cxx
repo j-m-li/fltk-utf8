@@ -1,9 +1,9 @@
 //
-// "$Id: Fl_Menu.cxx,v 1.18.2.12.2.18 2002/10/02 20:09:12 easysw Exp $"
+// "$Id: Fl_Menu.cxx,v 1.18.2.12.2.35 2004/11/23 01:48:25 matthiaswm Exp $"
 //
 // Menu code for the Fast Light Tool Kit (FLTK).
 //
-// Copyright 1998-2002 by Bill Spitzak and others.
+// Copyright 1998-2004 by Bill Spitzak and others.
 //
 // This library is free software; you can redistribute it and/or
 // modify it under the terms of the GNU Library General Public
@@ -34,7 +34,10 @@
 #include <FL/Fl_Menu_.H>
 #include <FL/fl_draw.H>
 #include <stdio.h>
-#include <stdlib.h>
+
+#ifdef __APPLE__
+#  include <Carbon/Carbon.H>
+#endif
 
 int Fl_Menu_Item::size() const {
   const Fl_Menu_Item* m = this;
@@ -54,6 +57,7 @@ const Fl_Menu_Item* Fl_Menu_Item::next(int n) const {
   if (n < 0) return 0; // this is so selected==-1 returns NULL
   const Fl_Menu_Item* m = this;
   int nest = 0;
+  if (!m->visible()) n++;
   while (n>0) {
     if (!m->text) {
       if (!nest) return m;
@@ -199,16 +203,16 @@ void Fl_Menu_Item::draw(int x, int y, int w, int h, const Fl_Menu_* m,
     } else {
       fl_draw_box(FL_DOWN_BOX, x+2, y+d, W, W, FL_BACKGROUND2_COLOR);
       if (value()) {
-       fl_color(labelcolor_);
-       int tx = x + 5;
-       int tw = W - 6;
-       int d1 = tw/3;
-       int d2 = tw-d1;
-       int ty = y + d + (W+d2)/2-d1-2;
-       for (int n = 0; n < 3; n++, ty++) {
-         fl_line(tx, ty, tx+d1, ty+d1);
-         fl_line(tx+d1, ty+d1, tx+tw-1, ty+d1-d2+1);
-       }
+	fl_color(labelcolor_);
+        int tx = x + 5;
+        int tw = W - 6;
+        int d1 = tw/3;
+        int d2 = tw-d1;
+        int ty = y + d + (W+d2)/2-d1-2;
+        for (int n = 0; n < 3; n++, ty++) {
+          fl_line(tx, ty, tx+d1, ty+d1);
+          fl_line(tx+d1, ty+d1, tx+tw-1, ty+d1-d2+1);
+        }
       }
     }
     x += W + 3;
@@ -234,12 +238,33 @@ menuwindow::menuwindow(const Fl_Menu_Item* m, int X, int Y, int Wp, int Hp,
 		       int menubar, int menubar_title, int right_edge)
   : Fl_Menu_Window(X, Y, Wp, Hp, 0)
 {
-  if (!right_edge) right_edge = Fl::w();
+  int scr_right = Fl::x() + Fl::w();
+  int scr_x = Fl::x();
+#ifdef __APPLE__
+  GDHandle gd = 0L;
+  for ( gd = GetDeviceList(); gd; gd = GetNextDevice(gd) ) {
+    GDPtr gp = *gd;
+    if (    X >= gp->gdRect.left && X <= gp->gdRect.right
+         && Y >= gp->gdRect.top  && Y <= gp->gdRect.bottom)
+      break;
+  }
+  if ( !gd ) gd = GetMainDevice();
+  if ( gd ) {
+    // since the menu pops over everything, we use the screen
+    // bounds, right across the dock and menu bar
+    GDPtr gp = *gd;
+    scr_right = gp->gdRect.right;
+    scr_x = gp->gdRect.left;
+  }
+#endif
+
+  if (!right_edge) right_edge = scr_right;
 
   end();
   set_modal();
   clear_border();
   menu = m;
+  if (m) m = m->first(); // find the first item that needs to be rendered
   drawn_selected = -1;
   if (button) {
     box(button->box());
@@ -289,7 +314,7 @@ menuwindow::menuwindow(const Fl_Menu_Item* m, int X, int Y, int Wp, int Hp,
   if (Wp > W) W = Wp;
   if (Wtitle > W) W = Wtitle;
 
-  if (!Wp) {if (X < 0) X = 0; if (X > Fl::w()-W) X= right_edge-W;}
+  if (!Wp) {if (X < scr_x) X = scr_x; if (X > scr_right-W) X= right_edge-W;}
   x(X); w(W);
   h((numitems ? itemheight*numitems-LEADING : 0)+2*BW+3);
   if (selected >= 0)
@@ -318,10 +343,27 @@ void menuwindow::position(int X, int Y) {
 
 // scroll so item i is visible on screen
 void menuwindow::autoscroll(int n) {
+  int scr_y = Fl::y(), scr_h = Fl::h();
   int Y = y()+Fl::box_dx(box())+2+n*itemheight;
-  if (Y <= Fl::y()) Y = Fl::y()-Y+10;
+#ifdef __APPLE__
+  GDHandle gd = 0L;
+  for ( gd = GetDeviceList(); gd; gd = GetNextDevice(gd) ) {
+    GDPtr gp = *gd;
+    if (    x() >= gp->gdRect.left && x() <= gp->gdRect.right
+         && Y >= gp->gdRect.top    && Y <= gp->gdRect.bottom)
+      break;
+  }
+  if ( !gd ) gd = GetMainDevice();
+  if ( gd ) {
+    // since the menu pops over everything, we use the screen
+    // bounds, right across the dock and menu bar
+    GDPtr gp = *gd;
+    scr_y = gp->gdRect.top; scr_h = gp->gdRect.bottom - gp->gdRect.top + 1;
+  }
+#endif
+  if (Y <= scr_y) Y = scr_y-Y+10;
   else {
-    Y = Y+itemheight-Fl::h()-Fl::y();
+    Y = Y+itemheight-scr_h-scr_y;
     if (Y < 0) return;
     Y = -Y-10;
   }
@@ -342,14 +384,9 @@ void menuwindow::drawentry(const Fl_Menu_Item* m, int n, int eraseit) {
   int hh = itemheight - LEADING;
 
   if (eraseit && n != selected) {
-    if (Fl::scheme()) {
-      fl_push_clip(xx+1, yy-(LEADING-2)/2, ww-2, hh+(LEADING-2));
-      draw_box(box(), 0, 0, w(), h(), color());
-      fl_pop_clip();
-    } else {
-      fl_color(button ? button->color() : FL_GRAY);
-      fl_rectf(xx+1, yy-(LEADING-2)/2, ww-2, hh+(LEADING-2));
-    }
+    fl_push_clip(xx+1, yy-(LEADING-2)/2, ww-2, hh+(LEADING-2));
+    draw_box(box(), 0, 0, w(), h(), button ? button->color() : color());
+    fl_pop_clip();
   }
 
   m->draw(xx, yy, ww, hh, button, n==selected);
@@ -382,10 +419,10 @@ void menutitle::draw() {
 
 void menuwindow::draw() {
   if (damage() != FL_DAMAGE_CHILD) {	// complete redraw
-    fl_draw_box(box(), 0, 0, w(), h(), color());
+    fl_draw_box(box(), 0, 0, w(), h(), button ? button->color() : color());
     if (menu) {
       const Fl_Menu_Item* m; int j;
-      for (m=menu, j=0; m->text; j++, m = m->next()) drawentry(m, j, 0);
+      for (m=menu->first(), j=0; m->text; j++, m = m->next()) drawentry(m, j, 0);
     }
   } else {
     if (damage() & FL_DAMAGE_CHILD && selected!=drawn_selected) { // change selection
@@ -409,7 +446,7 @@ int menuwindow::find_selected(int mx, int my) {
   if (my < 0 || my >= h()) return -1;
   if (!itemheight) { // menubar
     int xx = 3; int n = 0;
-    const Fl_Menu_Item* m = menu;
+    const Fl_Menu_Item* m = menu ? menu->first() : 0;
     for (; ; m = m->next(), n++) {
       if (!m->text) return -1;
       xx += m->measure(0, button) + 16;
@@ -427,7 +464,7 @@ int menuwindow::find_selected(int mx, int my) {
 int menuwindow::titlex(int n) {
   const Fl_Menu_Item* m;
   int xx = 3;
-  for (m=menu; n--; m = m->next()) xx += m->measure(0, button) + 16;
+  for (m=menu->first(); n--; m = m->next()) xx += m->measure(0, button) + 16;
   return xx;
 }
 
@@ -536,6 +573,7 @@ int menuwindow::handle(int e) {
 	setitem(pp.menu_number-1, pp.p[pp.menu_number-1]->selected);
       return 1;
     case FL_Enter:
+    case FL_KP_Enter:
     case ' ':
       pp.state = DONE_STATE;
       return 1;
@@ -641,15 +679,15 @@ const Fl_Menu_Item* Fl_Menu_Item::pulldown(
 
   // the main loop, runs until p.state goes to DONE_STATE:
   for (;;) {
-	
-	
+
     // make sure all the menus are shown:
-	  {for (int k = menubar; k < pp.nummenus; k++)
+    {for (int k = menubar; k < pp.nummenus; k++)
       if (!pp.p[k]->shown()) {
 	if (pp.p[k]->title) pp.p[k]->title->show();
 	pp.p[k]->show();
       }
     }
+
     // get events:
     {const Fl_Menu_Item* oldi = pp.current_item;
     Fl::wait();
@@ -759,7 +797,7 @@ Fl_Menu_Item::popup(
 // Search only the top level menu for a shortcut.  Either &x in the
 // label or the shortcut fields are used:
 const Fl_Menu_Item* Fl_Menu_Item::find_shortcut(int* ip) const {
-  const Fl_Menu_Item* m = this;
+  const Fl_Menu_Item* m = first();
   if (m) for (int ii = 0; m->text; m = m->next(), ii++) {
     if (m->activevisible()) {
       if (Fl::test_shortcut(m->shortcut_)
@@ -775,7 +813,7 @@ const Fl_Menu_Item* Fl_Menu_Item::find_shortcut(int* ip) const {
 // Recursive search of all submenus for anything with this key as a
 // shortcut.  Only uses the shortcut field, ignores &x in the labels:
 const Fl_Menu_Item* Fl_Menu_Item::test_shortcut() const {
-  const Fl_Menu_Item* m = this;
+  const Fl_Menu_Item* m = first();
   const Fl_Menu_Item* ret = 0;
   if (m) for (; m->text; m = m->next()) {
     if (m->activevisible()) {
@@ -794,5 +832,5 @@ const Fl_Menu_Item* Fl_Menu_Item::test_shortcut() const {
 }
 
 //
-// End of "$Id: Fl_Menu.cxx,v 1.18.2.12.2.18 2002/10/02 20:09:12 easysw Exp $".
+// End of "$Id: Fl_Menu.cxx,v 1.18.2.12.2.35 2004/11/23 01:48:25 matthiaswm Exp $".
 //

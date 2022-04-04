@@ -1,9 +1,9 @@
 //
-// "$Id: Fl_Browser_.cxx,v 1.10.2.16.2.18 2003/01/30 21:41:27 easysw Exp $"
+// "$Id: Fl_Browser_.cxx,v 1.10.2.16.2.21 2004/07/27 16:02:19 easysw Exp $"
 //
 // Base Browser widget class for the Fast Light Tool Kit (FLTK).
 //
-// Copyright 1998-2003 by Bill Spitzak and others.
+// Copyright 1998-2004 by Bill Spitzak and others.
 //
 // This library is free software; you can redistribute it and/or
 // modify it under the terms of the GNU Library General Public
@@ -510,7 +510,10 @@ int Fl_Browser_::select(void* l, int i, int docallbacks) {
       display(l);
     }
   }	    
-  if (docallbacks) do_callback();
+  if (docallbacks) {
+    set_changed();
+    do_callback();
+  }
   return 1;
 }
 
@@ -559,6 +562,7 @@ int Fl_Browser_::handle(int event) {
 	return 1;
       } else switch (Fl::event_key()) {
       case FL_Enter:
+      case FL_KP_Enter:
 	select_only(l, 1);
 	return 1;
       case ' ':
@@ -686,8 +690,8 @@ int Fl_Browser_::handle(int event) {
       void* t = selection_; deselect(); selection_ = t;
     }
     if (change) {
+      set_changed();
       if (when() & FL_WHEN_RELEASE) do_callback();
-      else if (!(when()&FL_WHEN_CHANGED)) set_changed();
     } else {
       if (when() & FL_WHEN_NOT_CHANGED) do_callback();
     }
@@ -757,5 +761,5 @@ void Fl_Browser_::item_select(void*, int) {}
 int Fl_Browser_::item_selected(void* l) const {return l==selection_;}
 
 //
-// End of "$Id: Fl_Browser_.cxx,v 1.10.2.16.2.18 2003/01/30 21:41:27 easysw Exp $".
+// End of "$Id: Fl_Browser_.cxx,v 1.10.2.16.2.21 2004/07/27 16:02:19 easysw Exp $".
 //

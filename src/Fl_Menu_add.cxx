@@ -1,9 +1,9 @@
 //
-// "$Id: Fl_Menu_add.cxx,v 1.9.2.13.2.7 2003/01/30 21:42:21 easysw Exp $"
+// "$Id: Fl_Menu_add.cxx,v 1.9.2.13.2.8 2004/04/11 04:38:58 easysw Exp $"
 //
 // Menu utilities for the Fast Light Tool Kit (FLTK).
 //
-// Copyright 1998-2003 by Bill Spitzak and others.
+// Copyright 1998-2004 by Bill Spitzak and others.
 //
 // This library is free software; you can redistribute it and/or
 // modify it under the terms of the GNU Library General Public
@@ -37,7 +37,6 @@
 #include "flstring.h"
 #include <stdio.h>
 #include <stdlib.h>
-#include <FL/fl_utf8.H>
 
 // If the array is this, we will double-reallocate as necessary:
 static Fl_Menu_Item* local_array = 0;
@@ -178,13 +177,18 @@ int Fl_Menu_::add(const char *t, int s, Fl_Callback *c,void *v,int f) {
   // make this widget own the local array:
   if (this != fl_menu_array_owner) {
     if (fl_menu_array_owner) {
-      Fl_Menu_* o = fl_menu_array_owner;
-      // the previous owner get's its own correctly-sized array:
-      int value_offset = o->value_-local_array;
-      int n = local_array_size;
-      Fl_Menu_Item* newMenu = o->menu_ = new Fl_Menu_Item[n];
-      memcpy(newMenu, local_array, n*sizeof(Fl_Menu_Item));
-      if (o->value_) o->value_ = newMenu+value_offset;
+/*
+*      Fl_Menu_* o = fl_menu_array_owner;
+*      // the previous owner get's its own correctly-sized array:
+*      int value_offset = o->value_-local_array;
+*      int n = local_array_size;
+*      Fl_Menu_Item* newMenu = o->menu_ = new Fl_Menu_Item[n];
+*      memcpy(newMenu, local_array, n*sizeof(Fl_Menu_Item));
+*      if (o->value_) o->value_ = newMenu+value_offset;
+*/
+      local_array_size = 0;
+      local_array_alloc = 0;
+      local_array = NULL;
     }
     if (menu_) {
       // this already has a menu array, use it as the local one:
@@ -263,5 +267,5 @@ void Fl_Menu_::remove(int i) {
 }
 
 //
-// End of "$Id: Fl_Menu_add.cxx,v 1.9.2.13.2.7 2003/01/30 21:42:21 easysw Exp $".
+// End of "$Id: Fl_Menu_add.cxx,v 1.9.2.13.2.8 2004/04/11 04:38:58 easysw Exp $".
 //

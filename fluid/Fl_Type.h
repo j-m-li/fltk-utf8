@@ -1,5 +1,5 @@
 //
-// "$Id: Fl_Type.h,v 1.5.2.11.2.10 2003/09/03 19:50:54 easysw Exp $"
+// "$Id: Fl_Type.h,v 1.5.2.11.2.13 2004/04/11 04:38:55 easysw Exp $"
 //
 // Widget type header file for the Fast Light Tool Kit (FLTK).
 //
@@ -11,7 +11,7 @@
 // instance of this object.  It could also have a "copy()" function,
 // but it was easier to implement this by using the file read/write
 // that is needed to save the setup anyways.
-// Copyright 1998-2003 by Bill Spitzak and others.
+// Copyright 1998-2004 by Bill Spitzak and others.
 //
 // This library is free software; you can redistribute it and/or
 // modify it under the terms of the GNU Library General Public
@@ -197,6 +197,7 @@ public:
 
 class Fl_DeclBlock_Type : public Fl_Type {
   const char* after;
+  char public_;
 public:
   Fl_Type *make();
   void write_code1();
@@ -207,6 +208,7 @@ public:
   void read_property(const char *);
   int is_parent() const {return 1;}
   int is_decl_block() const {return 1;}
+  virtual int is_public() const;
   int pixmapID() { return 11; }
 };
 
@@ -313,18 +315,21 @@ public:
 class igroup : public Fl_Group {
 public:
   void resize(int,int,int,int);
+  void full_resize(int X, int Y, int W, int H) { Fl_Group::resize(X, Y, W, H); }
   igroup(int X,int Y,int W,int H) : Fl_Group(X,Y,W,H) {Fl_Group::current(0);}
 };
 
 class itabs : public Fl_Tabs {
 public:
   void resize(int,int,int,int);
+  void full_resize(int X, int Y, int W, int H) { Fl_Group::resize(X, Y, W, H); }
   itabs(int X,int Y,int W,int H) : Fl_Tabs(X,Y,W,H) {}
 };
 
 class iwizard : public Fl_Wizard {
 public:
   void resize(int,int,int,int);
+  void full_resize(int X, int Y, int W, int H) { Fl_Group::resize(X, Y, W, H); }
   iwizard(int X,int Y,int W,int H) : Fl_Wizard(X,Y,W,H) {}
 };
 
@@ -594,5 +599,5 @@ int storestring(const char *n, const char * & p, int nostrip=0);
 extern int include_H_from_C;
 
 //
-// End of "$Id: Fl_Type.h,v 1.5.2.11.2.10 2003/09/03 19:50:54 easysw Exp $".
+// End of "$Id: Fl_Type.h,v 1.5.2.11.2.13 2004/04/11 04:38:55 easysw Exp $".
 //

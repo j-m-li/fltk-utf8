@@ -1,9 +1,9 @@
 //
-// "$Id: Fl_Choice.cxx,v 1.10.2.5.2.14 2003/08/24 13:09:06 easysw Exp $"
+// "$Id: Fl_Choice.cxx,v 1.10.2.5.2.17 2004/04/29 02:47:09 easysw Exp $"
 //
 // Choice widget for the Fast Light Tool Kit (FLTK).
 //
-// Copyright 1998-2003 by Bill Spitzak and others.
+// Copyright 1998-2004 by Bill Spitzak and others.
 //
 // This library is free software; you can redistribute it and/or
 // modify it under the terms of the GNU Library General Public
@@ -66,30 +66,31 @@ void Fl_Choice::draw() {
 
     // ERCO
     int xx = x() + dx, yy = y() + dy + 1, ww = w() - W, hh = H - 2;
-    if ( Fl::scheme() )
-    {
-        Fl_Label l;
-	l.value = m.text;
-	l.image = 0;
-	l.deimage = 0;
-	l.type = m.labeltype_;
-	l.font = m.labelsize_ || m.labelfont_ ? m.labelfont_ : uchar(textfont());
-	l.size = m.labelsize_ ? m.labelsize_ : textsize();
-	l.color= m.labelcolor_ ? m.labelcolor_ : textcolor();
-	if (!m.active()) l.color = fl_inactive((Fl_Color)l.color);
-	fl_draw_shortcut = 2; // hack value to make '&' disappear
-	l.draw(xx+3, yy, ww>6 ? ww-6 : 0, hh, FL_ALIGN_LEFT);
-	fl_draw_shortcut = 0;
-	if ( Fl::focus() == this ) draw_focus(box(), xx, yy, ww, hh);
+
+    fl_clip(xx, yy, ww, hh);
+
+    if ( Fl::scheme()) {
+      Fl_Label l;
+      l.value = m.text;
+      l.image = 0;
+      l.deimage = 0;
+      l.type = m.labeltype_;
+      l.font = m.labelsize_ || m.labelfont_ ? m.labelfont_ : uchar(textfont());
+      l.size = m.labelsize_ ? m.labelsize_ : textsize();
+      l.color= m.labelcolor_ ? m.labelcolor_ : textcolor();
+      if (!m.active()) l.color = fl_inactive((Fl_Color)l.color);
+      fl_draw_shortcut = 2; // hack value to make '&' disappear
+      l.draw(xx+3, yy, ww>6 ? ww-6 : 0, hh, FL_ALIGN_LEFT);
+      fl_draw_shortcut = 0;
+      if ( Fl::focus() == this ) draw_focus(box(), xx, yy, ww, hh);
     }
-    else
-    {
-	fl_clip(xx, yy, ww, hh);
-	fl_draw_shortcut = 2; // hack value to make '&' disappear
-	m.draw(xx, yy, ww, hh, this, Fl::focus() == this);
-	fl_draw_shortcut = 0;
-	fl_pop_clip();
+    else {
+      fl_draw_shortcut = 2; // hack value to make '&' disappear
+      m.draw(xx, yy, ww, hh, this, Fl::focus() == this);
+      fl_draw_shortcut = 0;
     }
+
+    fl_pop_clip();
   }
 
   draw_label();
@@ -103,6 +104,13 @@ Fl_Choice::Fl_Choice(int X, int Y, int W, int H, const char *l)
   box(FL_FLAT_BOX);
   down_box(FL_BORDER_BOX);
   color(FL_BACKGROUND2_COLOR);
+}
+
+int Fl_Choice::value(const Fl_Menu_Item *v) {
+  if (!v) return 0;
+  if (!Fl_Menu_::value(v)) return 0;
+  redraw();
+  return 1;
 }
 
 int Fl_Choice::value(int v) {
@@ -151,5 +159,5 @@ int Fl_Choice::handle(int e) {
 }
 
 //
-// End of "$Id: Fl_Choice.cxx,v 1.10.2.5.2.14 2003/08/24 13:09:06 easysw Exp $".
+// End of "$Id: Fl_Choice.cxx,v 1.10.2.5.2.17 2004/04/29 02:47:09 easysw Exp $".
 //

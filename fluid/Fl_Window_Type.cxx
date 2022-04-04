@@ -1,5 +1,5 @@
 //
-// "$Id: Fl_Window_Type.cxx,v 1.13.2.10.2.7 2003/08/02 21:17:30 easysw Exp $"
+// "$Id: Fl_Window_Type.cxx,v 1.13.2.10.2.10 2004/11/20 15:42:24 easysw Exp $"
 //
 // Window type code for the Fast Light Tool Kit (FLTK).
 //
@@ -7,7 +7,7 @@
 // for interacting with the overlay, which allows the user to
 // select, move, and resize the children widgets.
 //
-// Copyright 1998-2003 by Bill Spitzak and others.
+// Copyright 1998-2004 by Bill Spitzak and others.
 //
 // This library is free software; you can redistribute it and/or
 // modify it under the terms of the GNU Library General Public
@@ -304,6 +304,9 @@ void Fl_Window_Type::open() {
     w->show();
     w->resizable(p);
   }
+
+  w->size_range(gridx * snap, gridy * snap, Fl::w(), Fl::h(),
+                gridx * snap, gridy * snap, 0);
 }
 
 // control panel items:
@@ -524,6 +527,16 @@ extern void fix_group_size(Fl_Type *t);
 extern Fl_Menu_Item Main_Menu[];
 extern Fl_Menu_Item New_Menu[];
 
+// Update the XYWH values in the widget panel...
+static void update_xywh() {
+  if (current_widget && current_widget->is_widget()) {
+    widget_x_input->value(((Fl_Widget_Type *)current_widget)->o->x());
+    widget_y_input->value(((Fl_Widget_Type *)current_widget)->o->y());
+    widget_w_input->value(((Fl_Widget_Type *)current_widget)->o->w());
+    widget_h_input->value(((Fl_Widget_Type *)current_widget)->o->h());
+  }
+}
+
 // move the selected children according to current dx,dy,drag state:
 void Fl_Window_Type::moveallchildren()
 {
@@ -555,6 +568,8 @@ void Fl_Window_Type::moveallchildren()
   ((Overlay_Window *)(this->o))->redraw_overlay();
   modflag = 1;
   dx = dy = 0;
+
+  update_xywh();
 }
 
 int Fl_Window_Type::handle(int event) {
@@ -792,5 +807,5 @@ int Fl_Window_Type::read_fdesign(const char* propname, const char* value) {
 }
 
 //
-// End of "$Id: Fl_Window_Type.cxx,v 1.13.2.10.2.7 2003/08/02 21:17:30 easysw Exp $".
+// End of "$Id: Fl_Window_Type.cxx,v 1.13.2.10.2.10 2004/11/20 15:42:24 easysw Exp $".
 //

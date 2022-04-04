@@ -1,9 +1,9 @@
 //
-// "$Id: fl_scroll_area.cxx,v 1.4.2.3.2.4 2003/01/30 21:44:12 easysw Exp $"
+// "$Id: fl_scroll_area.cxx,v 1.4.2.3.2.8 2004/09/09 21:34:48 matthiaswm Exp $"
 //
 // Scrolling routines for the Fast Light Tool Kit (FLTK).
 //
-// Copyright 1998-2003 by Bill Spitzak and others.
+// Copyright 1998-2004 by Bill Spitzak and others.
 //
 // This library is free software; you can redistribute it and/or
 // modify it under the terms of the GNU Library General Public
@@ -27,6 +27,8 @@
 // a "callback" which is called to draw rectangular areas that are moved
 // into the drawing area.
 
+#include <config.h>
+#include <FL/Fl.H>
 #include <FL/x.H>
 
 // scroll a rectangle and redraw the newly exposed portions:
@@ -71,23 +73,51 @@ void fl_scroll(int X, int Y, int W, int H, int dx, int dy,
   BitBlt(fl_gc, dest_x, dest_y, src_w, src_h, fl_gc, src_x, src_y,SRCCOPY);
   // NYI: need to redraw areas that the source of BitBlt was bad due to
   // overlapped windows, probably similar to X version:
-#elif defined(__MACOS__)
+  // MRS: basic code needs to redraw parts that scrolled from off-screen...
+  int temp, limit;
+  int wx, wy;
+
+  // Compute the X position of the current window;
+  // this only works when scrolling in response to
+  // a user event; Fl_Window::x/y_root() do not work
+  // on WIN32...
+  wx = Fl::event_x_root() - Fl::event_x();
+  wy = Fl::event_y_root() - Fl::event_y();
+
+  temp = wx + src_x;
+  if (temp < Fl::x()) {
+    draw_area(data, dest_x, dest_y, Fl::x() - temp, src_h);
+  }
+  temp  = wx + src_x + src_w;
+  limit = Fl::x() + Fl::w();
+  if (temp > limit) {
+    draw_area(data, dest_x + src_w - temp + limit, dest_y, temp - limit, src_h);
+  }
+
+  temp = wy + src_y;
+  if (temp < Fl::y()) {
+    draw_area(data, dest_x, dest_y, src_w, Fl::y() - temp);
+  }
+  temp  = wy + src_y + src_h;
+  limit = Fl::y() + Fl::h();
+  if (temp > limit) {
+    draw_area(data, dest_x, dest_y + src_h - temp + limit, src_w, temp - limit);
+  }
+#elif defined(__APPLE_QD__)
   Rect src = { src_y, src_x, src_y+src_h, src_x+src_w };
   Rect dst = { dest_y, dest_x, dest_y+src_h, dest_x+src_w };
   static RGBColor bg = { 0xffff, 0xffff, 0xffff }; RGBBackColor( &bg );
   static RGBColor fg = { 0x0000, 0x0000, 0x0000 }; RGBForeColor( &fg );
   CopyBits( GetPortBitMapForCopyBits( GetWindowPort(fl_window) ),
             GetPortBitMapForCopyBits( GetWindowPort(fl_window) ), &src, &dst, srcCopy, 0L);
-#elif NANO_X
-  GrCopyArea(fl_window,fl_gc,dest_x,dest_y,src_w,src_h,fl_window,src_x,src_y,MWROP_SRCCOPY);
-  for (;;) {
-    draw_area(data, dest_x, dest_y, src_w, src_h);
-    break;
-  }
-
-#elif DJGPP
-// FIXME_DJGPP
-    draw_area(data, dest_x, dest_y, src_w, src_h);
+#elif defined(__APPLE_QUARTZ__)
+  // warning: there does not seem to be an equivalent to this function in Quartz
+  Rect src = { src_y, src_x, src_y+src_h, src_x+src_w };
+  Rect dst = { dest_y, dest_x, dest_y+src_h, dest_x+src_w };
+  static RGBColor bg = { 0xffff, 0xffff, 0xffff }; RGBBackColor( &bg );
+  static RGBColor fg = { 0x0000, 0x0000, 0x0000 }; RGBForeColor( &fg );
+  CopyBits( GetPortBitMapForCopyBits( GetWindowPort(fl_window) ),
+            GetPortBitMapForCopyBits( GetWindowPort(fl_window) ), &src, &dst, srcCopy, 0L);
 #else
   XCopyArea(fl_display, fl_window, fl_window, fl_gc,
 	    src_x, src_y, src_w, src_h, dest_x, dest_y);
@@ -106,5 +136,5 @@ void fl_scroll(int X, int Y, int W, int H, int dx, int dy,
 }
 
 //
-// End of "$Id: fl_scroll_area.cxx,v 1.4.2.3.2.4 2003/01/30 21:44:12 easysw Exp $".
+// End of "$Id: fl_scroll_area.cxx,v 1.4.2.3.2.8 2004/09/09 21:34:48 matthiaswm Exp $".
 //

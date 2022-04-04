@@ -1,9 +1,9 @@
 //
-// "$Id: Fl_Tabs.cxx,v 1.6.2.10.2.13 2002/09/09 02:04:46 spitzak Exp $"
+// "$Id: Fl_Tabs.cxx,v 1.6.2.10.2.20 2004/07/27 16:02:21 easysw Exp $"
 //
 // Tab widget for the Fast Light Tool Kit (FLTK).
 //
-// Copyright 1998-2002 by Bill Spitzak and others.
+// Copyright 1998-2004 by Bill Spitzak and others.
 //
 // This library is free software; you can redistribute it and/or
 // modify it under the terms of the GNU Library General Public
@@ -89,6 +89,7 @@ int Fl_Tabs::tab_height() {
   int H = h();
   int H2 = y();
   Fl_Widget*const* a = array();
+  if (tab_height_ > -1) return tab_height_;
   for (int i=children(); i--;) {
     Fl_Widget* o = *a++;
     if (o->y() < y()+H) H = o->y()-y();
@@ -97,6 +98,10 @@ int Fl_Tabs::tab_height() {
   H2 = y()+h()-H2;
   if (H2 > H) return (H2 <= 0) ? 0 : -H2;
   else return (H <= 0) ? 0 : H;
+}
+
+void Fl_Tabs::tab_height(int h) {
+  tab_height_ = h;
 }
 
 // this is used by fluid to pick tabs:
@@ -133,8 +138,13 @@ int Fl_Tabs::handle(int event) {
   case FL_DRAG:
   case FL_RELEASE:
     o = which(Fl::event_x(), Fl::event_y());
-    if (event == FL_RELEASE) {push(0); if (o && value(o)) do_callback();}
-    else push(o);
+    if (event == FL_RELEASE) {
+      push(0);
+      if (o && value(o)) {
+        set_changed();
+	do_callback();
+      }
+    } else push(o);
     if (Fl::visible_focus() && event == FL_RELEASE) Fl::focus(this);
     return 1;
   case FL_FOCUS:
@@ -146,7 +156,7 @@ int Fl_Tabs::handle(int event) {
       int H = tab_height();
       if (H >= 0) {
         H += Fl::box_dy(box());
-        damage(FL_DAMAGE_SCROLL, x(), y(), w(), H);
+	damage(FL_DAMAGE_SCROLL, x(), y(), w(), H);
       } else {
         H = Fl::box_dy(box()) - H;
         damage(FL_DAMAGE_SCROLL, x(), y() + h() - H, w(), H);
@@ -160,6 +170,7 @@ int Fl_Tabs::handle(int event) {
 	for (i = 1; i < children(); i ++)
 	  if (child(i)->visible()) break;
 	value(child(i - 1));
+	set_changed();
 	do_callback();
         return 1;
       case FL_Right:
@@ -167,6 +178,7 @@ int Fl_Tabs::handle(int event) {
 	for (i = 0; i < children(); i ++)
 	  if (child(i)->visible()) break;
 	value(child(i + 1));
+	set_changed();
 	do_callback();
         return 1;
       case FL_Down:
@@ -299,8 +311,9 @@ Fl_Tabs::Fl_Tabs(int X,int Y,int W, int H, const char *l) :
 {
   box(FL_THIN_UP_BOX);
   push_ = 0;
+  tab_height_ = -1;
 }
 
 //
-// End of "$Id: Fl_Tabs.cxx,v 1.6.2.10.2.13 2002/09/09 02:04:46 spitzak Exp $".
+// End of "$Id: Fl_Tabs.cxx,v 1.6.2.10.2.20 2004/07/27 16:02:21 easysw Exp $".
 //

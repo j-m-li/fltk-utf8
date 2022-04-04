@@ -28,8 +28,6 @@
 // and to sort them so the first 4 in a family are normal, bold, italic,
 // and bold italic.
 #include <Fl/fl_utf8.H>
-extern char *fl_utf82locale(const char *s, UINT codepage = 0);
-extern char *fl_locale2utf8(const char *s, UINT codepage = 0);
 
 // Bug: older versions calculated the value for *ap as a side effect of
 // making the name, and then forgot about it. To avoid having to change
@@ -96,7 +94,7 @@ static int CALLBACK
   for (int i=0; i<FL_FREE_FONT; i++) // skip if one of our built-in fonts
     if (!strcmp(Fl::get_font_name((Fl_Font)i),n)) return 1;
   char buffer[LF_FACESIZE + 1];
-  strcpy(buffer+1, fl_locale2utf8(n));
+  strcpy(buffer+1, fl_locale2utf8(n, strlen(n), 0));
   buffer[0] = ' '; Fl::set_font((Fl_Font)(fl_free_font++), strdup(buffer));
   if (lpelf->lfWeight <= 400)
     buffer[0] = 'B', Fl::set_font((Fl_Font)(fl_free_font++), strdup(buffer));
@@ -210,7 +208,7 @@ Fl::get_font_sizes(Fl_Font fnum, int*& sizep) {
     EnumFontFamiliesW(fl_gc, (WCHAR*)b, (FONTENUMPROCW)EnumSizeCbW, 0);
 	free(b);  
   } else {
-    EnumFontFamiliesA(fl_gc, fl_utf82locale(s->name+1), (FONTENUMPROCA)EnumSizeCb, 0);
+    EnumFontFamiliesA(fl_gc, fl_utf82locale(s->name+1, strlen(s->name+1), 0), (FONTENUMPROCA)EnumSizeCb, 0);
   }
   sizep = sizes;
   return nbSize;

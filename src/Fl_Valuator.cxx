@@ -1,9 +1,9 @@
 //
-// "$Id: Fl_Valuator.cxx,v 1.5.2.4.2.6 2003/01/30 21:42:53 easysw Exp $"
+// "$Id: Fl_Valuator.cxx,v 1.5.2.4.2.9 2004/07/27 16:02:21 easysw Exp $"
 //
 // Valuator widget for the Fast Light Tool Kit (FLTK).
 //
-// Copyright 1998-2003 by Bill Spitzak and others.
+// Copyright 1998-2004 by Bill Spitzak and others.
 //
 // This library is free software; you can redistribute it and/or
 // modify it under the terms of the GNU Library General Public
@@ -27,8 +27,9 @@
 
 #include <FL/Fl.H>
 #include <FL/Fl_Valuator.H>
-#include <FL/fl_math.h>
+#include <FL/math.h>
 #include <stdio.h>
+#include "flstring.h"
 
 Fl_Valuator::Fl_Valuator(int X, int Y, int W, int H, const char* L)
   : Fl_Widget(X,Y,W,H,L) {
@@ -79,8 +80,8 @@ void Fl_Valuator::handle_drag(double v) {
   if (v != value_) {
     value_ = v;
     value_damage();
+    set_changed();
     if (when() & FL_WHEN_CHANGED) do_callback();
-    else set_changed();
   }
 }
 
@@ -91,8 +92,9 @@ void Fl_Valuator::handle_release() {
     // initial position:
     clear_changed();
     // now do the callback only if slider in new position or always is on:
-    if (value_ != previous_value_ || when() & FL_WHEN_NOT_CHANGED)
+    if (value_ != previous_value_ || when() & FL_WHEN_NOT_CHANGED) {
       do_callback();
+    }
   }
 }
 
@@ -115,7 +117,8 @@ double Fl_Valuator::increment(double v, int n) {
 
 int Fl_Valuator::format(char* buffer) {
   double v = value();
-  if (!A) return sprintf(buffer, "%g", v);
+  // MRS: THIS IS A HACK - RECOMMEND ADDING BUFFER SIZE ARGUMENT
+  if (!A) return snprintf(buffer, 128, "%g", v);
   int i, X;
   double ba = B / A;
   for (X = 1, i = 0; X < ba; X *= 10) i++;
@@ -123,5 +126,5 @@ int Fl_Valuator::format(char* buffer) {
 }
 
 //
-// End of "$Id: Fl_Valuator.cxx,v 1.5.2.4.2.6 2003/01/30 21:42:53 easysw Exp $".
+// End of "$Id: Fl_Valuator.cxx,v 1.5.2.4.2.9 2004/07/27 16:02:21 easysw Exp $".
 //

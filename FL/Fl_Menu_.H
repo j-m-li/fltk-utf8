@@ -1,9 +1,9 @@
 //
-// "$Id: Fl_Menu_.H,v 1.7.2.4.2.7 2003/06/15 04:47:28 easysw Exp $"
+// "$Id: Fl_Menu_.H,v 1.7.2.4.2.10 2004/04/11 04:38:54 easysw Exp $"
 //
 // Menu base class header file for the Fast Light Tool Kit (FLTK).
 //
-// Copyright 1998-2003 by Bill Spitzak and others.
+// Copyright 1998-2004 by Bill Spitzak and others.
 //
 // This library is free software; you can redistribute it and/or
 // modify it under the terms of the GNU Library General Public
@@ -45,10 +45,12 @@ protected:
   unsigned textcolor_;
 
 public:
-  const Fl_Menu_Item* picked(const Fl_Menu_Item*);
-
   Fl_Menu_(int,int,int,int,const char * =0);
   ~Fl_Menu_();
+
+  int item_pathname(char *name, int namelen, const Fl_Menu_Item *finditem=0) const;
+  const Fl_Menu_Item* picked(const Fl_Menu_Item*);
+  const Fl_Menu_Item* find_item(const char *name);
 
   const Fl_Menu_Item* test_shortcut() {return picked(menu()->test_shortcut());}
   void global();
@@ -94,5 +96,5 @@ public:
 #endif
 
 //
-// End of "$Id: Fl_Menu_.H,v 1.7.2.4.2.7 2003/06/15 04:47:28 easysw Exp $".
+// End of "$Id: Fl_Menu_.H,v 1.7.2.4.2.10 2004/04/11 04:38:54 easysw Exp $".
 //

@@ -1,9 +1,9 @@
 //
-// "$Id: Fl_Browser.cxx,v 1.9.2.12.2.8 2003/01/30 21:41:24 easysw Exp $"
+// "$Id: Fl_Browser.cxx,v 1.9.2.12.2.13 2004/11/20 03:19:58 easysw Exp $"
 //
 // Browser widget for the Fast Light Tool Kit (FLTK).
 //
-// Copyright 1998-2003 by Bill Spitzak and others.
+// Copyright 1998-2004 by Bill Spitzak and others.
 //
 // This library is free software; you can redistribute it and/or
 // modify it under the terms of the GNU Library General Public
@@ -116,13 +116,13 @@ FL_BLINE* Fl_Browser::_remove(int line) {
 
   cacheline = line-1;
   cache = ttt->prev;
+  lines--;
+  full_height_ -= item_height(ttt);
   if (ttt->prev) ttt->prev->next = ttt->next;
   else first = ttt->next;
   if (ttt->next) ttt->next->prev = ttt->prev;
   else last = ttt->prev;
 
-  lines--;
-  full_height_ -= item_height(ttt);
   return(ttt);
 }
 
@@ -216,8 +216,9 @@ int Fl_Browser::item_height(void* lv) const {
     if (hh > hmax) hmax = hh;
   }
   else {
+    const int* i = column_widths();
     // do each column separately as they may all set different fonts:
-    for (char* str = l->txt; *str; str++) {
+    for (char* str = l->txt; str && *str; str++) {
       Fl_Font font = textfont(); // default font
       int tsize = textsize(); // default size
       while (*str==format_char()) {
@@ -239,12 +240,13 @@ int Fl_Browser::item_height(void* lv) const {
       }
       END_FORMAT:
       char* ptr = str;
-      for(;*str && (*str!=column_char()); str++) ;
-      if (ptr < str) {
+      if (ptr && *i++) str = strchr(str, column_char());
+      else str = NULL;
+      if((!str && *ptr) || (str && ptr < str)) {
 	fl_font(font, tsize); int hh = fl_height();
 	if (hh > hmax) hmax = hh;
       }
-      if (!*str) str --;
+      if (!str || !*str) break;
     }
   }
 
@@ -258,8 +260,8 @@ int Fl_Browser::item_width(void* v) const {
 
   while (*i) { // add up all tab-seperated fields
     char* e;
-    for (e = str; *e && *e != column_char(); e++);
-    if (!*e) break; // last one occupied by text
+    e = strchr(str, column_char());
+    if (!e) break; // last one occupied by text
     str = e+1;
     ww += *i++;
   }
@@ -284,6 +286,7 @@ int Fl_Browser::item_width(void* v) const {
     case 'S': tsize = strtol(str, &str, 10); break;
     case '.':
       done = 1;
+      break;
     case '@':
       str--;
       done = 1;
@@ -316,8 +319,8 @@ void Fl_Browser::item_draw(void* v, int X, int Y, int W, int H) const {
     int w1 = W;	// width for this field
     char* e = 0; // pointer to end of field or null if none
     if (*i) { // find end of field and temporarily replace with 0
-      for (e = str; *e && *e != column_char(); e++);
-      if (*e) {*e = 0; w1 = *i++;} else e = 0;
+      e = strchr(str, column_char());
+      if (e) {*e = 0; w1 = *i++;}
     }
     int tsize = textsize();
     Fl_Font font = textfont();
@@ -494,6 +497,54 @@ int Fl_Browser::value() const {
   return lineno(selection());
 }
 
+// SWAP TWO LINES
+void Fl_Browser::swap(FL_BLINE *a, FL_BLINE *b) {
+
+  if ( a == b || !a || !b) return;          // nothing to do
+  FL_BLINE *aprev  = a->prev;
+  FL_BLINE *anext  = a->next;
+  FL_BLINE *bprev  = b->prev;
+  FL_BLINE *bnext  = b->next;
+  if ( b->prev == a ) { 		// A ADJACENT TO B
+     if ( aprev ) aprev->next = b; else first = b;
+     b->next = a;
+     a->next = bnext;
+     b->prev = aprev;
+     a->prev = b;
+     if ( bnext ) bnext->prev = a; else last = a;
+  } else if ( a->prev == b ) {		// B ADJACENT TO A
+     if ( bprev ) bprev->next = a; else first = a;
+     a->next = b;
+     b->next = anext;
+     a->prev = bprev;
+     b->prev = a;
+     if ( anext ) anext->prev = b; else last = b;
+  } else {				// A AND B NOT ADJACENT
+     // handle prev's
+     b->prev = aprev;
+     if ( anext ) anext->prev = b; else last = b;
+     a->prev = bprev;
+     if ( bnext ) bnext->prev = a; else last = a;
+     // handle next's
+     if ( aprev ) aprev->next = b; else first = b;
+     b->next = anext;
+     if ( bprev ) bprev->next = a; else first = a;
+     a->next = bnext;
+  }
+  // Disable cache -- we played around with positions
+  cacheline = 0;
+  // Redraw modified lines
+  redraw_line(a);
+  redraw_line(b);
+}
+
+void Fl_Browser::swap(int ai, int bi) {
+  if (ai < 1 || ai > lines || bi < 1 || bi > lines) return;
+  FL_BLINE* a = find_line(ai);
+  FL_BLINE* b = find_line(bi);
+  swap(a,b);
+}
+
 //
-// End of "$Id: Fl_Browser.cxx,v 1.9.2.12.2.8 2003/01/30 21:41:24 easysw Exp $".
+// End of "$Id: Fl_Browser.cxx,v 1.9.2.12.2.13 2004/11/20 03:19:58 easysw Exp $".
 //

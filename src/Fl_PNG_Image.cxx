@@ -1,9 +1,9 @@
 //
-// "$Id: Fl_PNG_Image.cxx,v 1.1.2.9 2003/01/30 21:42:23 easysw Exp $"
+// "$Id: Fl_PNG_Image.cxx,v 1.1.2.12 2004/10/18 20:22:24 easysw Exp $"
 //
 // Fl_PNG_Image routines.
 //
-// Copyright 1997-2003 by Easy Software Products.
+// Copyright 1997-2004 by Easy Software Products.
 // Image support donated by Matthias Melcher, Copyright 2000.
 //
 // This library is free software; you can redistribute it and/or
@@ -32,11 +32,12 @@
 // Include necessary header files...
 //
 
+#include <FL/Fl.H>
 #include <FL/Fl_PNG_Image.H>
-#include <FL/fl_utf8.H>
 #include <config.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <FL/fl_utf8.H>
 
 extern "C"
 {
@@ -73,6 +74,12 @@ Fl_PNG_Image::Fl_PNG_Image(const char *png) // I - File to read
   pp   = png_create_read_struct(PNG_LIBPNG_VER_STRING, NULL, NULL, NULL);
   info = png_create_info_struct(pp);
 
+  if (setjmp(pp->jmpbuf))
+  {
+    Fl::warning("PNG file \"%s\" contains errors!\n", png);
+    return;
+  }
+
   // Initialize the PNG read "engine"...
   png_init_io(pp, fp);
 
@@ -102,11 +109,11 @@ Fl_PNG_Image::Fl_PNG_Image(const char *png) // I - File to read
   else if (info->bit_depth == 16)
     png_set_strip_16(pp);
 
-#  if defined(HAVE_PNG_GET_VALID) && defined(HAVE_SET_TRNS_TO_ALPHA)
+#  if defined(HAVE_PNG_GET_VALID) && defined(HAVE_PNG_SET_TRNS_TO_ALPHA)
   // Handle transparency...
   if (png_get_valid(pp, info, PNG_INFO_tRNS))
     png_set_tRNS_to_alpha(pp);
-#  endif // HAVE_PNG_GET_VALID && HAVE_SET_TRNS_TO_ALPHA
+#  endif // HAVE_PNG_GET_VALID && HAVE_PNG_SET_TRNS_TO_ALPHA
 
   array = new uchar[w() * h() * d()];
   alloc_array = 1;
@@ -121,6 +128,16 @@ Fl_PNG_Image::Fl_PNG_Image(const char *png) // I - File to read
   for (i = png_set_interlace_handling(pp); i > 0; i --)
     png_read_rows(pp, rows, NULL, h());
 
+#ifdef WIN32
+  // Some Windows graphics drivers don't honor transparency when RGB == white
+  if (channels == 4) {
+    // Convert RGB to 0 when alpha == 0...
+    uchar *ptr = (uchar *)array;
+    for (i = w() * h(); i > 0; i --, ptr += 4)
+      if (!ptr[3]) ptr[0] = ptr[1] = ptr[2] = 0;
+  }
+#endif // WIN32
+
   // Free memory and return...
   delete[] rows;
 
@@ -133,5 +150,5 @@ Fl_PNG_Image::Fl_PNG_Image(const char *png) // I - File to read
 
 
 //
-// End of "$Id: Fl_PNG_Image.cxx,v 1.1.2.9 2003/01/30 21:42:23 easysw Exp $".
+// End of "$Id: Fl_PNG_Image.cxx,v 1.1.2.12 2004/10/18 20:22:24 easysw Exp $".
 //

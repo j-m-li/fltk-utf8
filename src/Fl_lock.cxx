@@ -1,9 +1,9 @@
 //
-// "$Id: Fl_lock.cxx,v 1.13.2.4 2003/01/30 21:43:07 easysw Exp $"
+// "$Id: Fl_lock.cxx,v 1.13.2.6 2004/09/12 03:46:21 easysw Exp $"
 //
 // Multi-threading support code for the Fast Light Tool Kit (FLTK).
 //
-// Copyright 1998-2003 by Bill Spitzak and others.
+// Copyright 1998-2004 by Bill Spitzak and others.
 //
 // This library is free software; you can redistribute it and/or
 // modify it under the terms of the GNU Library General Public
@@ -122,78 +122,30 @@ void Fl::awake(void* msg) {
 }
 
 ////////////////////////////////////////////////////////////////
-// CARBON threading...
-#elif __MACOS__
-
-#  include <FL/x.H>
-// These pointers are in Fl_mac.cxx:
-extern void (*fl_lock_function)();
-extern void (*fl_unlock_function)();
-
-static void lock_function() {
-  ThreadBeginCritical();
-}
-
-static void unlock_function() {
-  ThreadEndCritical();
-}
-
-static void* thread_message_;
-void* Fl::thread_message() {
-  void* r = thread_message_;
-  thread_message_ = 0;
-  return r;
-}
-
-void Fl::unlock() {
-  unlock_function();
-}
-
-void Fl::lock() {
-  lock_function();
-  static int done = 0;
-  if (!done) { // initialize the mt support
-    done = 1;
-    fl_lock_function   = lock_function;
-    fl_unlock_function = unlock_function;
-  }
-}
-
-void Fl::awake(void* msg) {
-  EventRef breakEvent;
-
-  fl_lock_function();
-
-  CreateEvent( 0, kEventClassFLTK, kEventFLTKBreakLoop, 0, 
-              kEventAttributeUserEvent, &breakEvent );
-  PostEventToQueue( GetCurrentEventQueue(), breakEvent, 
-                    kEventPriorityStandard );
-  ReleaseEvent( breakEvent );
-
-  fl_unlock_function();
-}
-
-////////////////////////////////////////////////////////////////
 // POSIX threading...
 #elif HAVE_PTHREAD
 #  include <unistd.h>
 #  include <pthread.h>
 
-#  ifdef PTHREAD_RECURSIVE_MUTEX_INITIALIZER_NP
+#  if defined (PTHREAD_MUTEX_RECURSIVE_NP)
 // Linux supports recursive locks, use them directly:
 
-static pthread_mutex_t fltk_mutex = PTHREAD_RECURSIVE_MUTEX_INITIALIZER_NP;
+static bool minit;
+static pthread_mutex_t fltk_mutex;
+// this is needed for the Fl_Mutex constructor:
+pthread_mutexattr_t Fl_Mutex_attrib = {PTHREAD_MUTEX_RECURSIVE_NP};
 
 static void lock_function() {
+  if (!minit) {
+    pthread_mutex_init(&fltk_mutex, &Fl_Mutex_attrib);
+    minit = true;
+  }
   pthread_mutex_lock(&fltk_mutex);
 }
 
 void Fl::unlock() {
   pthread_mutex_unlock(&fltk_mutex);
 }
-
-// this is needed for the Fl_Mutex constructor:
-pthread_mutexattr_t Fl_Mutex_attrib = {PTHREAD_MUTEX_RECURSIVE_NP};
 
 #  else
 // Make a recursive lock out of the pthread mutex:
@@ -252,5 +204,5 @@ void Fl::awake(void* msg) {
 #endif
 
 //
-// End of "$Id: Fl_lock.cxx,v 1.13.2.4 2003/01/30 21:43:07 easysw Exp $".
+// End of "$Id: Fl_lock.cxx,v 1.13.2.6 2004/09/12 03:46:21 easysw Exp $".
 //

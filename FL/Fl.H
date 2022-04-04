@@ -1,9 +1,9 @@
 //
-// "$Id: Fl.H,v 1.8.2.11.2.22 2003/01/30 21:38:33 easysw Exp $"
+// "$Id: Fl.H,v 1.8.2.11.2.24 2004/11/23 19:47:50 easysw Exp $"
 //
 // Main header file for the Fast Light Tool Kit (FLTK).
 //
-// Copyright 1998-2003 by Bill Spitzak and others.
+// Copyright 1998-2004 by Bill Spitzak and others.
 //
 // This library is free software; you can redistribute it and/or
 // modify it under the terms of the GNU Library General Public
@@ -26,7 +26,7 @@
 #ifndef Fl_H
 #  define Fl_H
 
-#  include "fl_utf8.H" 
+#  include "fl_utf8.H"
 #  include "Enumerations.H"
 #  ifndef Fl_Object
 #    define Fl_Object Fl_Widget
@@ -58,7 +58,7 @@ public: // should be private!
   static int e_y_root;
   static int e_dx;
   static int e_dy;
-  static long e_state;
+  static int e_state;
   static int e_clicks;
   static int e_is_click;
   static int e_keysym;
@@ -74,8 +74,7 @@ public: // should be private!
   static int compose_state;
   static int visible_focus_;
   static int dnd_text_ops_;
-  static int minimal_shortcuts_;
-   static int symbol_in_label_;
+  static int symbol_in_label_;
   static void damage(int d) {damage_ = d;}
 
   static void (*idle)();
@@ -157,8 +156,8 @@ public:
   static int event_is_click()	{return e_is_click;}
   static void event_is_click(int i) {e_is_click = i;} // only 0 works!
   static int event_button()	{return e_keysym-FL_Button;}
-  static long event_state()	{return e_state;}
-  static int event_state(long i) {return e_state&i;}
+  static int event_state()	{return e_state;}
+  static int event_state(int i) {return e_state&i;}
   static int event_key()	{return e_keysym;}
   static int event_key(int);
   static int get_key(int);
@@ -192,13 +191,13 @@ public:
   static void paste(Fl_Widget &receiver);
 
   // screen size:
-#if defined(WIN32) || defined(__MACOS__)
+#if defined(WIN32) || defined(__APPLE__)
   static int x();
   static int y();
 #else
   static int x() {return 0;}
   static int y() {return 0;}
-#endif /* WIN32 || __MACOS__ */
+#endif /* WIN32 || __APPLE__ */
   static int w();
   static int h();
 
@@ -259,19 +258,75 @@ public:
   static void symbol_in_label(int v) { symbol_in_label_ = v; }
   static int  symbol_in_label() { return symbol_in_label_; }
 
-  // Keyboard shortcuts operation methods...
-  static void minimal_shortcuts(int v) { minimal_shortcuts_ = v; }
-  static int  minimal_shortcuts() { return minimal_shortcuts_; }
-
   // Multithreading support:
   static void lock();
   static void unlock();
   static void awake(void* message = 0);
   static void* thread_message();
+
+  // Widget deletion:
+  static void delete_widget(Fl_Widget *w);
+  static void do_widget_deletion();
+
+  // pointers you can use to change FLTK to a foreign language:
+  static const char* txt_ok;
+  static const char* txt_yes;
+  static const char* txt_no;
+  static const char* txt_cancel;
+  static const char* txt_close;
+  static const char* txt_choose_file;
+  static const char* txt_show;
+  static const char* txt_favorites;
+  static const char* txt_preview;
+  static const char* txt_file_name;
+  static const char* txt_manage_favorites;
+  static const char* txt_unable_to_load_icon;
+  static const char* txt_unable_to_open_fti;
+  static const char* txt_expected_letter_fti;
+  static const char* txt_expected_a_fti;
+  static const char* txt_expected_b_fti;
+  static const char* txt_expected_c_fti;
+  static const char* txt_unknown_command_fti;
+  static const char* txt_gif_unable_to_open;
+  static const char* txt_gif_is_not_gif;
+  static const char* txt_gif_is_version;
+  static const char* txt_gif_no_colormap;
+  static const char* txt_gif_unexpected_eof;
+  static const char* txt_gif_unknown_extension;
+  static const char* txt_gif_unknown_code;
+  static const char* txt_gif_lzw_barF;
+  static const char* txt_show_previous_help_page;
+  static const char* txt_make_the_help_text_smaller;
+  static const char* txt_make_the_help_text_larger;
+  static const char* txt_show_next_help_page;
+  static const char* txt_help_dialog;
+  static const char* txt_pnm_early_eof;
+  static const char* txt_ins1_failed;
+  static const char* txt_repl1_failed;
+  static const char* txt_cannot_modify_cb;
+  static const char* txt_cannot_find_pre;
+  static const char* txt_ptvl_failed;
+  static const char* txt_ovly1_failed;
+  static const char* txt_bad_measuremenT;
+  static const char* txt_error;
+  static const char* txt_unknown_color;
+  static const char* txt_xio_error;
+  static const char* txt_cannot_open_display;
+  static const char* txt_requires_true_color;
+  static const char* txt_cannot_do_scanline;
+  static const char* txt_cannot_bits_per_pixel;
+  static const char* txt_cannot_24bit;
+  static const char* txt_cannot_do_bits_per_pixel;
+  static const char* txt_cannot_create_pen;
+  static const char* txt_gif_lzw_barf;
+  static const char* txt_bad_measurement;
+  static const char* txt_at_search;
+  static const char* txt_find_text;
+
 };
 
 #endif // !Fl_H
 
 //
-// End of "$Id: Fl.H,v 1.8.2.11.2.22 2003/01/30 21:38:33 easysw Exp $".
+// End of "$Id: Fl.H,v 1.8.2.11.2.24 2004/11/23 19:47:50 easysw Exp $".
 //

@@ -333,7 +333,7 @@ show_callback(void)
   }
 }
 
-#if defined(WIN32) && defined(FL_DLL) && !defined (__GNUC__)
+#if defined(WIN32) && defined(FL_DLL0) && !defined (__GNUC__)
 
 #include <FL/fl_utf8.H>
 #include <windows.h>

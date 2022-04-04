@@ -1,9 +1,9 @@
 //
-// "$Id: fl_dnd_win32.cxx,v 1.5.2.15 2003/05/04 21:45:46 easysw Exp $"
+// "$Id: fl_dnd_win32.cxx,v 1.5.2.16 2004/04/11 04:38:59 easysw Exp $"
 //
 // Drag & Drop code for the Fast Light Tool Kit (FLTK).
 //
-// Copyright 1998-2003 by Bill Spitzak and others.
+// Copyright 1998-2004 by Bill Spitzak and others.
 //
 // This library is free software; you can redistribute it and/or
 // modify it under the terms of the GNU Library General Public
@@ -26,6 +26,7 @@
 // in.  Search other files for "WIN32" or filenames ending in _win32.cxx
 // for other system-specific code.
 
+
 #include <FL/Fl.H>
 #include <FL/x.H>
 #include <FL/Fl_Window.H>
@@ -34,9 +35,8 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <sys/types.h>
+#include <objidl.h>
 #include <time.h>
-
-
 #if defined(__CYGWIN__)
 #include <sys/time.h>
 #include <unistd.h>
@@ -49,6 +49,7 @@ extern int fl_selection_length[2];
 extern int fl_selection_buffer_length[2];
 extern char fl_i_own_selection[2];
 extern char *fl_locale2utf8(const char *s, UINT codepage = 0);
+extern unsigned int fl_codepage;
 
 Fl_Window *fl_dnd_target_window = 0;
 
@@ -58,6 +59,8 @@ Fl_Window *fl_dnd_target_window = 0;
 #include <ole2.h>
 #include <shellapi.h>
 #include <shlobj.h>
+
+
 /**
  * subclass the IDropTarget to receive data from DnD operations
  */
@@ -165,25 +168,6 @@ public:
 
     FORMATETC fmt = { 0 };
     STGMEDIUM medium = { 0 };
-/*
-    fmt.tymed = TYMED_HGLOBAL;
-    fmt.dwAspect = DVASPECT_CONTENT;
-    fmt.lindex = -1;
-    fmt.cfFormat = CF_TEXT;
-    // if it is ASCII text, send an FL_PASTE with that text
-    if ( data->GetData( &fmt, &medium )==S_OK )
-    {
-      void *stuff = GlobalLock( medium.hGlobal );
-      //long len = GlobalSize( medium.hGlobal );
-      Fl::e_length = strlen( (char*)stuff ); // min(strlen, len)
-      Fl::e_text = (char*)stuff;
-      Fl::belowmouse()->handle(FL_PASTE); // e_text will be invalid after this call
-      GlobalUnlock( medium.hGlobal );
-      ReleaseStgMedium( &medium );
-      SetForegroundWindow( hwnd );
-      return S_OK;
-    }
-	*/
     fmt.tymed = TYMED_HGLOBAL;
     fmt.dwAspect = DVASPECT_CONTENT;
     fmt.lindex = -1;
@@ -198,37 +182,36 @@ public:
         for ( i=0; i<nf; i++ ) nn += DragQueryFileW( hdrop, i, 0, 0 );
         nn += nf;
         xchar *dst = (xchar *)malloc(nn * sizeof(xchar));
-	xchar *bu = dst;
+        xchar *bu = dst;
         for ( i=0; i<nf; i++ ) {
-	  n = DragQueryFileW( hdrop, i, (WCHAR*)dst, nn );
-	  dst += n;
-	  if ( i<nf-1 ) {
-	    *dst++ = L'\n';
-	  }
-	}
+          n = DragQueryFileW( hdrop, i, (WCHAR*)dst, nn );
+          dst += n;
+          if ( i<nf-1 ) {
+            *dst++ = L'\n';
+          }
+        }
         Fl::e_text = (char*) malloc(nn * 5 + 1);
-	Fl::e_length = fl_unicode2utf(bu, nn, Fl::e_text);
+        Fl::e_length = fl_unicode2utf(bu, nn, Fl::e_text);
         Fl::e_text[Fl::e_length] = 0;
-	free(bu);
+        free(bu);
       } else {
-	nf = DragQueryFile( hdrop, (UINT)-1, 0, 0 );
+        nf = DragQueryFile( hdrop, (UINT)-1, 0, 0 );
         for ( i=0; i<nf; i++ ) nn += DragQueryFile( hdrop, i, 0, 0 );
         nn += nf;
         Fl::e_length = nn - 1;
         char *dst = Fl::e_text = (char*)malloc(nn+1);
         for ( i=0; i<nf; i++ ) {
-	  n = DragQueryFile( hdrop, i, dst, nn );
-	  dst += n;
-	  if ( i<nf-1 ) {
-	    *dst++ = '\n';
-	  }
-	}
+          n = DragQueryFile( hdrop, i, dst, nn );
+          dst += n;
+          if ( i<nf-1 ) {
+            *dst++ = '\n';
+          }
+        } 
         *dst = 0;
-        char *b = fl_locale2utf8((char*)Fl::e_text, GetACP());      
+        char *b = fl_locale2utf8((char*)Fl::e_text, strlen(Fl::e_text), GetACP());
         free( Fl::e_text );
         Fl::e_text = strdup(b);
       }
-      
       Fl::belowmouse()->handle(FL_DROP);
       free( Fl::e_text );
       ReleaseStgMedium( &medium );
@@ -277,16 +260,89 @@ public:
   }
 };
 
+
+class FLEnum : public IEnumFORMATETC
+{
+public:
+  int n;
+  LONG m_lRefCount;		
+
+  ULONG __stdcall AddRef(void) {  
+    return InterlockedIncrement(&m_lRefCount);
+  }
+
+  ULONG __stdcall Release(void) {
+    LONG count = InterlockedDecrement(&m_lRefCount);
+    if(count == 0) {
+      delete this;
+      return 0;
+    } else {
+      return count;
+    }
+  }
+
+
+  HRESULT __stdcall QueryInterface(REFIID iid, void **ppvObject) {
+    if(iid == IID_IEnumFORMATETC || iid == IID_IUnknown) {
+       AddRef();
+       *ppvObject = this;
+       return S_OK;
+    } else {
+        *ppvObject = 0;
+        return E_NOINTERFACE;
+    }
+  }
+
+  HRESULT __stdcall Next(ULONG celt, FORMATETC * rgelt, ULONG *pceltFetched) {
+    if (n > 0) return S_FALSE;
+    for (ULONG i = 0; i < celt; i++) {
+      n++;
+      rgelt->cfFormat = CF_HDROP;
+      rgelt->dwAspect = DVASPECT_CONTENT;
+      rgelt->lindex = -1;
+      rgelt->ptd = NULL;
+      rgelt->tymed = TYMED_HGLOBAL;	
+    }
+    if (pceltFetched) *pceltFetched = celt;
+    return S_OK;
+  }
+ 
+  HRESULT __stdcall Skip(ULONG celt) {
+    n += celt;
+    return  (n == 0) ? S_OK : S_FALSE;
+  }
+ 
+  HRESULT __stdcall Reset(void) {
+	n = 0; 
+	return S_OK;
+  }
+
+  HRESULT __stdcall Clone(IEnumFORMATETC  **ppenum){
+    *ppenum = new FLEnum();
+    return S_OK;
+  }
+
+  FLEnum(void) {
+    m_lRefCount   = 1;
+    n = 0;
+  }
+
+  ~FLEnum(void) {
+    n = 0;
+  }
+};
+
+
 /**
  * this is the actual object that FLTK can drop somewhere
  * - the implementation is minimal, but it should work with all decent Win32 drop targets
  */
-
 class FLDataObject : public IDataObject
 {
   DWORD m_cRefCount;
+  FLEnum *m_EnumF;
 public:
-  FLDataObject() { m_cRefCount = 1; }
+  FLDataObject() { m_cRefCount = 1; m_EnumF = new FLEnum();}
   HRESULT STDMETHODCALLTYPE QueryInterface( REFIID riid, LPVOID *ppvObject ) {
     if (IID_IUnknown==riid || IID_IDataObject==riid)
     {
@@ -307,28 +363,48 @@ public:
   }
   // GetData currently allows ASCII text through Global Memory only
   HRESULT STDMETHODCALLTYPE GetData( FORMATETC *pformatetcIn, STGMEDIUM *pmedium ) {
-    if ((pformatetcIn->dwAspect & DVASPECT_CONTENT) &&
+    if (/*(pformatetcIn->dwAspect & DVASPECT_CONTENT) &&*/
         (pformatetcIn->tymed & TYMED_HGLOBAL) &&
         (pformatetcIn->cfFormat == CF_HDROP))
     {
-      HGLOBAL gh = GlobalAlloc( GHND| GMEM_SHARE, (fl_selection_length[0]+4) * sizeof(short) 
-		  + sizeof(DROPFILES));
-      unsigned short *pMem = (unsigned short*)GlobalLock( gh );
-	  if (!pMem) {
-		  GlobalFree(gh);
-		  return DV_E_FORMATETC;
-	  }
-	  DROPFILES *df =(DROPFILES*) pMem;
-	  df->pFiles = sizeof(DROPFILES);
-	  df->pt.x = 0;
-	  df->pt.y = 0;
-	  df->fNC = FALSE;
-	  df->fWide = TRUE;
-	  int l = fl_utf2unicode((unsigned char*)fl_selection_buffer[0], 
-		  fl_selection_length[0], (xchar*)(((char*)pMem) + sizeof(DROPFILES)));
-	  pMem[l] = 0;
-	  pMem[l + 1] = 0;
-	  pMem[l + 2] = 0;
+      HGLOBAL gh = GlobalAlloc( GHND| GMEM_SHARE, 
+                            (fl_selection_length[0]+4) * sizeof(short)
+                            + sizeof(DROPFILES));
+      unsigned char *pMem = (unsigned char*)GlobalLock( gh );
+      if (!pMem) {
+        GlobalFree(gh);
+        return DV_E_FORMATETC;
+      }
+      DROPFILES *df =(DROPFILES*) pMem;
+      int l;
+      df->pFiles = sizeof(DROPFILES);
+      df->pt.x = 0;
+      df->pt.y = 0;
+      df->fNC = FALSE;
+      for (int i = 0; i < fl_selection_length[0]; i++) {
+        if (fl_selection_buffer[0][i] == '\n') {
+          fl_selection_buffer[0][i] = '\0';
+        }
+      } 
+      if (fl_is_nt4()) {	
+        df->fWide = TRUE;
+        l = fl_utf2unicode((unsigned char*)fl_selection_buffer[0],
+                             fl_selection_length[0], (xchar*)(((char*)pMem) 
+                              + sizeof(DROPFILES)));
+      } else {
+        df->fWide = FALSE;
+        WCHAR *wbuf = (WCHAR*)malloc(sizeof(WCHAR) * fl_selection_length[0] + 2);
+        l = fl_utf2unicode((unsigned char*)fl_selection_buffer[0],
+                             fl_selection_length[0], wbuf);
+	l = WideCharToMultiByte(fl_codepage, 0, 
+		wbuf, l, ((char*)pMem)+ sizeof(DROPFILES), 
+		fl_selection_length[0], NULL, NULL);
+	free(wbuf);
+      }
+      pMem[l * sizeof(WCHAR) + sizeof(DROPFILES)] = 0;
+      pMem[l * sizeof(WCHAR) + 1 + sizeof(DROPFILES)] = 0;
+      pMem[l * sizeof(WCHAR) + 2 + sizeof(DROPFILES)] = 0;
+      pMem[l * sizeof(WCHAR) + 3 + sizeof(DROPFILES)] = 0;
       pmedium->tymed	      = TYMED_HGLOBAL;
       pmedium->hGlobal	      = gh;
       pmedium->pUnkForRelease = NULL;
@@ -340,16 +416,21 @@ public:
   HRESULT STDMETHODCALLTYPE QueryGetData( FORMATETC *pformatetc )
   {
     if ((pformatetc->dwAspect & DVASPECT_CONTENT) &&
-        (pformatetc->tymed & TYMED_HGLOBAL) &&
+        (pformatetc->tymed & TYMED_ISTREAM  ) &&
         (pformatetc->cfFormat == CF_HDROP))
       return S_OK;
     return DV_E_FORMATETC;	
   }  
+
+  HRESULT STDMETHODCALLTYPE EnumFormatEtc( DWORD dir, IEnumFORMATETC** ppenumFormatEtc) {
+	*ppenumFormatEtc = m_EnumF; 
+	return S_OK; 
+  }
+
   // all the following methods are not really needed for a DnD object
   HRESULT STDMETHODCALLTYPE GetDataHere( FORMATETC* /*pformatetcIn*/, STGMEDIUM* /*pmedium*/) { return E_NOTIMPL; }
   HRESULT STDMETHODCALLTYPE GetCanonicalFormatEtc( FORMATETC* /*in*/, FORMATETC* /*out*/) { return E_NOTIMPL; }
   HRESULT STDMETHODCALLTYPE SetData( FORMATETC* /*pformatetc*/, STGMEDIUM* /*pmedium*/, BOOL /*fRelease*/) { return E_NOTIMPL; }
-  HRESULT STDMETHODCALLTYPE EnumFormatEtc( DWORD /*dir*/, IEnumFORMATETC** /*ppenumFormatEtc*/) { return E_NOTIMPL; }
   HRESULT STDMETHODCALLTYPE DAdvise( FORMATETC* /*pformatetc*/, DWORD /*advf*/,
       IAdviseSink* /*pAdvSink*/, DWORD* /*pdwConnection*/) { return E_NOTIMPL; }
   HRESULT STDMETHODCALLTYPE DUnadvise( DWORD /*dwConnection*/) { return E_NOTIMPL; }
@@ -396,5 +477,5 @@ int Fl::dnd()
 
 
 //
-// End of "$Id: fl_dnd_win32.cxx,v 1.5.2.15 2003/05/04 21:45:46 easysw Exp $".
+// End of "$Id: fl_dnd_win32.cxx,v 1.5.2.16 2004/04/11 04:38:59 easysw Exp $".
 //

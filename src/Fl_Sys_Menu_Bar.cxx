@@ -1,9 +1,9 @@
 //
-// "$Id: Fl_Sys_Menu_Bar.cxx,v 1.1.2.7 2003/06/12 01:36:18 easysw Exp $"
+// "$Id: Fl_Sys_Menu_Bar.cxx,v 1.1.2.10 2004/11/21 14:32:22 easysw Exp $"
 //
 // MacOS system menu bar widget for the Fast Light Tool Kit (FLTK).
 //
-// Copyright 1998-2003 by Bill Spitzak and others.
+// Copyright 1998-2004 by Bill Spitzak and others.
 //
 // This library is free software; you can redistribute it and/or
 // modify it under the terms of the GNU Library General Public
@@ -48,7 +48,9 @@
  * Changing the menu items has no effect on the menu bar.
  */
 
-#include <FL/X.H>
+#if defined(__APPLE__)
+
+#include <FL/x.H>
 #include <FL/Fl.H>
 #include <FL/Fl_Sys_Menu_Bar.H>
 
@@ -315,6 +317,8 @@ int Fl_Menu_Bar::handle(int event) {
 }
 */
 
+#endif /* __APPLE__ */
+
 //
-// End of "$Id: Fl_Sys_Menu_Bar.cxx,v 1.1.2.7 2003/06/12 01:36:18 easysw Exp $".
+// End of "$Id: Fl_Sys_Menu_Bar.cxx,v 1.1.2.10 2004/11/21 14:32:22 easysw Exp $".
 //

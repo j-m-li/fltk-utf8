@@ -54,21 +54,8 @@
  * You can use a signed char by having GETJSAMPLE mask it with 0xFF.
  */
 
-#ifdef HAVE_UNSIGNED_CHAR
-
 typedef unsigned char JSAMPLE;
 #define GETJSAMPLE(value)  ((int) (value))
-
-#else /* not HAVE_UNSIGNED_CHAR */
-
-typedef char JSAMPLE;
-#ifdef CHAR_IS_UNSIGNED
-#define GETJSAMPLE(value)  ((int) (value))
-#else
-#define GETJSAMPLE(value)  ((int) (value) & 0xFF)
-#endif /* CHAR_IS_UNSIGNED */
-
-#endif /* HAVE_UNSIGNED_CHAR */
 
 #define MAXJSAMPLE	255
 #define CENTERJSAMPLE	128
@@ -105,22 +92,8 @@ typedef short JCOEF;
  * managers, this is also the data type passed to fread/fwrite.
  */
 
-#ifdef HAVE_UNSIGNED_CHAR
-
 typedef unsigned char JOCTET;
 #define GETJOCTET(value)  (value)
-
-#else /* not HAVE_UNSIGNED_CHAR */
-
-typedef char JOCTET;
-#ifdef CHAR_IS_UNSIGNED
-#define GETJOCTET(value)  (value)
-#else
-#define GETJOCTET(value)  ((value) & 0xFF)
-#endif /* CHAR_IS_UNSIGNED */
-
-#endif /* HAVE_UNSIGNED_CHAR */
-
 
 /* These typedefs are used for various table entries and so forth.
  * They must be at least as wide as specified; but making them too big
@@ -131,23 +104,11 @@ typedef char JOCTET;
 
 /* UINT8 must hold at least the values 0..255. */
 
-#ifdef HAVE_UNSIGNED_CHAR
 typedef unsigned char UINT8;
-#else /* not HAVE_UNSIGNED_CHAR */
-#ifdef CHAR_IS_UNSIGNED
-typedef char UINT8;
-#else /* not CHAR_IS_UNSIGNED */
-typedef short UINT8;
-#endif /* CHAR_IS_UNSIGNED */
-#endif /* HAVE_UNSIGNED_CHAR */
 
 /* UINT16 must hold at least the values 0..65535. */
 
-#ifdef HAVE_UNSIGNED_SHORT
 typedef unsigned short UINT16;
-#else /* not HAVE_UNSIGNED_SHORT */
-typedef unsigned int UINT16;
-#endif /* HAVE_UNSIGNED_SHORT */
 
 /* INT16 must hold at least the values -32768..32767. */
 
@@ -157,17 +118,9 @@ typedef short INT16;
 
 /* INT32 must hold at least signed 32-bit values. */
 
-/*
-    VZ: due to the horrible mess resulting in INT32 being defined in windows.h
-        for some compilers but not for the other ones, I have globally replace
-        INT32 with JPEG_INT32 in libjpeg code to avoid the eight level ifdef
-        which used to be here. The problem is that, of course, now we'll have
-        conflicts when upgrading to the next libjpeg release -- however
-        considering their frequency (1 in the last 5 years) it seems that
-        it is not too high a price to pay for the clean compilation with all
-        versions of mingw32 and cygwin
- */
-typedef long JPEG_INT32;
+#ifndef XMD_H
+typedef int INT32;
+#endif
 
 /* Datatype used for image dimensions.  The JPEG standard only supports
  * images up to 64K*64K due to 16-bit fields in SOF markers.  Therefore
@@ -188,38 +141,15 @@ typedef unsigned int JDIMENSION;
  * or code profilers that require it.
  */
 
-#if defined(__VISAGECPP__)
-#define JPEG_CALLING_CONV _Optlink
-#else /* !Visual Age C++ */
-#define JPEG_CALLING_CONV
-#endif
-
-#if defined(FL_DLL)
-#  undef JPEG_CALLING_CONV
-#  if defined(JPEG_DLL)
-#    define JPEG_CALLING_CONV __declspec(dllexport)
-#  else
-#    define JPEG_CALLING_CONV __declspec(dllimport)
-#  endif
-#endif
-
-/* We can't declare a static function as extern "C" as we need to do in C++
- * programs, so suppress static in METHODDEF when using C++.
- */
-#if defined(__cplusplus)
-#define JPEG_METHOD_LINKAGE
-#else /* !__cplusplus */
-#define JPEG_METHOD_LINKAGE static
-#endif
-
 /* a function called through method pointers: */
-#define METHODDEF(type)		JPEG_METHOD_LINKAGE  type 
+#define METHODDEF(type)		static type
 /* a function used only in its module: */
-#define LOCAL(type)		static type 
+#define LOCAL(type)		static type
 /* a function referenced thru EXTERNs: */
 #define GLOBAL(type)		type
 /* a reference to a GLOBAL function: */
-#define EXTERN(type)		extern JPEG_CALLING_CONV type 
+#define EXTERN(type)		extern type
+
 
 /* This macro is used to declare a "method", that is, a function pointer.
  * We want to supply prototype parameters if the compiler can cope.
@@ -227,22 +157,7 @@ typedef unsigned int JDIMENSION;
  * Again, you can customize this if you need special linkage keywords.
  */
 
-#if defined(__VISAGECPP__) /* need this for /common/imagjpeg.obj but not loclly */
-#ifdef HAVE_PROTOTYPES
-#define JMETHOD(type,methodname,arglist)  type (_Optlink *methodname) arglist
-#else
-#define JMETHOD(type,methodname,arglist)  type (_Optlink *methodname) ()
-#endif
-
-#else
-
-#ifdef HAVE_PROTOTYPES
 #define JMETHOD(type,methodname,arglist)  type (*methodname) arglist
-#else
-#define JMETHOD(type,methodname,arglist)  type (*methodname) ()
-#endif
-
-#endif
 
 /* Here is the pseudo-keyword for declaring pointers that must be "far"
  * on 80x86 machines.  Most of the specialized coding for 80x86 is handled
@@ -250,13 +165,8 @@ typedef unsigned int JDIMENSION;
  * explicit coding is needed; see uses of the NEED_FAR_POINTERS symbol.
  */
 
-#ifdef NEED_FAR_POINTERS
-#define FAR  far
-#else
-#ifndef FAR
+#undef FAR
 #define FAR
-#endif
-#endif
 
 
 /*
@@ -267,7 +177,7 @@ typedef unsigned int JDIMENSION;
  */
 
 #ifndef HAVE_BOOLEAN
-typedef int boolean;
+typedef char boolean;
 #endif
 #ifndef FALSE			/* in case these macros already exist */
 #define FALSE	0		/* values of boolean */
@@ -404,4 +314,3 @@ typedef int boolean;
 #endif
 
 #endif /* JPEG_INTERNAL_OPTIONS */
-

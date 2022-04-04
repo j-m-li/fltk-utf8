@@ -1,9 +1,9 @@
 //
-// "$Id: Fl_Widget.cxx,v 1.5.2.4.2.22 2003/01/30 21:42:58 easysw Exp $"
+// "$Id: Fl_Widget.cxx,v 1.5.2.4.2.26 2004/11/23 19:51:03 easysw Exp $"
 //
 // Base widget class for the Fast Light Tool Kit (FLTK).
 //
-// Copyright 1998-2003 by Bill Spitzak and others.
+// Copyright 1998-2004 by Bill Spitzak and others.
 //
 // This library is free software; you can redistribute it and/or
 // modify it under the terms of the GNU Library General Public
@@ -28,6 +28,8 @@
 #include <FL/Fl_Group.H>
 #include <FL/Fl_Tooltip.H>
 #include <FL/fl_draw.H>
+#include <stdlib.h>
+#include "flstring.h"
 
 
 ////////////////////////////////////////////////////////////////
@@ -129,6 +131,7 @@ extern void fl_throw_focus(Fl_Widget*); // in Fl_x.cxx
 // However, it is only legal to destroy a "root" such as an Fl_Window,
 // and automatic destructors may be called.
 Fl_Widget::~Fl_Widget() {
+  if (flags() & COPIED_LABEL) free((void *)(label_.value));
   parent_ = 0; // Don't throw focus to a parent widget.
   fl_throw_focus(this);
 }
@@ -150,7 +153,7 @@ Fl_Widget::draw_focus(Fl_Boxtype B, int X, int Y, int W, int H) const {
 
   fl_color(fl_contrast(FL_BLACK, color()));
 
-#if defined(WIN32) || defined(__MACOS__)
+#if defined(WIN32) || defined(__APPLE_QD__)
   // Windows 95/98/ME do not implement the dotted line style, so draw
   // every other pixel around the focus area...
   //
@@ -244,6 +247,27 @@ int Fl_Widget::contains(const Fl_Widget *o) const {
   return 0;
 }
 
+
+void
+Fl_Widget::label(const char *a) {
+  if (flags() & COPIED_LABEL) {
+    free((void *)(label_.value));
+    clear_flag(COPIED_LABEL);
+  }
+  label_.value=a;
+  redraw_label();
+}
+
+
+void
+Fl_Widget::copy_label(const char *a) {
+  if (flags() & COPIED_LABEL) free((void *)(label_.value));
+  set_flag(COPIED_LABEL);
+  label_.value=strdup(a);
+  redraw_label();
+}
+
+
 //
-// End of "$Id: Fl_Widget.cxx,v 1.5.2.4.2.22 2003/01/30 21:42:58 easysw Exp $".
+// End of "$Id: Fl_Widget.cxx,v 1.5.2.4.2.26 2004/11/23 19:51:03 easysw Exp $".
 //

@@ -1,9 +1,9 @@
 //
-// "$Id: Fl_Shared_Image.cxx,v 1.23.2.16 2002/08/09 01:09:49 easysw Exp $"
+// "$Id: Fl_Shared_Image.cxx,v 1.23.2.21 2004/09/24 16:00:11 easysw Exp $"
 //
 // Shared image code for the Fast Light Tool Kit (FLTK).
 //
-// Copyright 1998-2002 by Bill Spitzak and others.
+// Copyright 1998-2004 by Bill Spitzak and others.
 //
 // This library is free software; you can redistribute it and/or
 // modify it under the terms of the GNU Library General Public
@@ -25,8 +25,9 @@
 
 #include <stdio.h>
 #include <stdlib.h>
-#include "flstring.h"
 #include <FL/fl_utf8.H>
+#include "flstring.h"
+
 #include <FL/Fl.H>
 #include <FL/Fl_Shared_Image.H>
 #include <FL/Fl_XBM_Image.H>
@@ -269,12 +270,6 @@ Fl_Shared_Image::copy(int W, int H) {
   Fl_Image		*temp_image;	// New image file
   Fl_Shared_Image	*temp_shared;	// New shared image
 
-  // See if the new and old sizes are the same...
-  if (image_ && image_->w() == W && image_->h() == H) {
-    refcount_ ++;
-    return (this);
-  }
-
   // Make a copy of the image we're sharing...
   if (!image_) temp_image = 0;
   else temp_image = image_->copy(W, H);
@@ -332,6 +327,7 @@ Fl_Shared_Image::draw(int X, int Y, int W, int H, int cx, int cy) {
   else Fl_Image::draw(X, Y, W, H, cx, cy);
 }
 
+
 //
 // 'Fl_Shared_Image::uncache()' - Uncache the shared image...
 //
@@ -341,6 +337,7 @@ Fl_Shared_Image::uncache()
 {
   if (image_) image_->uncache();
 }
+
 
 //
 // 'Fl_Shared_Image::find()' - Find a shared image...
@@ -464,5 +461,5 @@ Fl_Shared_Image::remove_handler(Fl_Shared_Handler f) {
 
 
 //
-// End of "$Id: Fl_Shared_Image.cxx,v 1.23.2.16 2002/08/09 01:09:49 easysw Exp $".
+// End of "$Id: Fl_Shared_Image.cxx,v 1.23.2.21 2004/09/24 16:00:11 easysw Exp $".
 //

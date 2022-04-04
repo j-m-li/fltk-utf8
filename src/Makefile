@@ -1,9 +1,9 @@
 #
-# "$Id: Makefile,v 1.18.2.14.2.54 2003/08/24 13:09:06 easysw Exp $"
+# "$Id: Makefile,v 1.18.2.14.2.59 2004/11/20 03:19:58 easysw Exp $"
 #
 # Library makefile for the Fast Light Tool Kit (FLTK).
 #
-# Copyright 1998-2003 by Bill Spitzak and others.
+# Copyright 1998-2004 by Bill Spitzak and others.
 #
 # This library is free software; you can redistribute it and/or
 # modify it under the terms of the GNU Library General Public
@@ -20,7 +20,7 @@
 # Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307
 # USA.
 #
-# Please report all bugs and problems to "fltk-utf8-bugs@fltk-utf8.org".
+# Please report all bugs and problems to "fltk-bugs@fltk.org".
 #
 
 CPPFILES = \
@@ -55,6 +55,7 @@ CPPFILES = \
 	Fl_Menu.cxx \
 	Fl_Menu_.cxx \
 	Fl_Menu_Bar.cxx \
+	Fl_Sys_Menu_Bar.cxx \
 	Fl_Menu_Button.cxx \
 	Fl_Menu_Window.cxx \
 	Fl_Menu_add.cxx \
@@ -66,14 +67,12 @@ CPPFILES = \
 	Fl_Positioner.cxx \
 	Fl_Preferences.cxx \
 	Fl_Progress.cxx \
-	Fl_Ps.cxx \
 	Fl_Repeat_Button.cxx \
 	Fl_Return_Button.cxx \
 	Fl_Roller.cxx \
 	Fl_Round_Button.cxx \
 	Fl_Scroll.cxx \
 	Fl_Scrollbar.cxx \
-	Fl_Shaped_Window.cxx \
 	Fl_Shared_Image.cxx \
 	Fl_Single_Window.cxx \
 	Fl_Slider.cxx \
@@ -84,7 +83,6 @@ CPPFILES = \
 	Fl_Tile.cxx \
 	Fl_Tiled_Image.cxx \
 	Fl_Tooltip.cxx \
-	Fl_Tree.cxx \
 	Fl_Valuator.cxx \
 	Fl_Value_Input.cxx \
 	Fl_Value_Output.cxx \
@@ -149,7 +147,10 @@ CPPFILES = \
 	fl_show_colormap.cxx \
 	fl_symbols.cxx \
 	fl_vertex.cxx \
-	fl_utf8.cxx 
+	Fl_Shaped_Window.cxx \
+	Fl_Table.cxx \
+	Fl_Tree.cxx \
+	fl_utf8.cxx
 
 FLCPPFILES = \
 	forms_compatability.cxx \
@@ -180,7 +181,7 @@ IMGCPPFILES = \
 
 CFILES = fl_call_main.c flstring.c scandir.c numericsort.c vsnprintf.c
 
-CLEAN =	core* cmap *.obj *.lib
+CLEAN =	core* cmap
 
 ################################################################
 
@@ -198,20 +199,20 @@ all:	$(LIBNAME) $(DSONAME) \
 
 $(LIBNAME): $(OBJECTS)
 	echo $(LIBCOMMAND) $@ ...
-	-$(RM) $@
+	$(RM) $@
 	$(LIBCOMMAND) $@ $(OBJECTS)
 	$(RANLIB) $@
 
 libfltk-utf8.so.1.1: $(OBJECTS)
 	echo $(DSOCOMMAND) $@ ...
-	$(DSOCOMMAND) $@ $(OBJECTS) 
-	-$(RM) libfltk-utf8.so
+	$(DSOCOMMAND) $@ $(OBJECTS)
+	$(RM) libfltk-utf8.so
 	$(LN) libfltk-utf8.so.1.1 libfltk-utf8.so
 
 libfltk-utf8.sl.1.1: $(OBJECTS)
 	echo $(DSOCOMMAND) $@ ...
-	$(DSOCOMMAND) $@ $(OBJECTS) 
-	-$(RM) libfltk-utf8.sl
+	$(DSOCOMMAND) $@ $(OBJECTS)
+	$(RM) libfltk-utf8.sl
 	$(LN) libfltk-utf8.sl.1.1 libfltk-utf8.sl
 
 libfltk-utf8.1.1.dylib: $(OBJECTS)
@@ -221,33 +222,33 @@ libfltk-utf8.1.1.dylib: $(OBJECTS)
 		-current_version 1.1.4 \
 		-compatibility_version 1.1.0 \
 		$(OBJECTS) $(LDLIBS)
-	-$(RM) libfltk-utf8.dylib
+	$(RM) libfltk-utf8.dylib
 	$(LN) libfltk-utf8.1.1.dylib libfltk-utf8.dylib
 
 libfltk-utf8_s.a: $(OBJECTS)
 	echo $(DSOCOMMAND) libfltk-utf8_s.o ...
 	$(DSOCOMMAND) libfltk-utf8_s.o $(OBJECTS) $(IMAGELIBS)
 	echo $(LIBCOMMAND) libfltk-utf8_s.a libfltk-utf8_s.o
-	-$(RM) $@
+	$(RM) $@
 	$(LIBCOMMAND) libfltk-utf8_s.a libfltk-utf8_s.o
 	$(CHMOD) +x libfltk-utf8_s.a
 
 $(FLLIBNAME): $(FLOBJECTS)
 	echo $(LIBCOMMAND) $@ ...
-	-$(RM) $@
+	$(RM) $@
 	$(LIBCOMMAND) $@ $(FLOBJECTS)
 	$(RANLIB) $@
 
 libfltk-utf8_forms.so.1.1: $(FLOBJECTS) libfltk-utf8.so.1.1
 	echo $(DSOCOMMAND) $@ ...
 	$(DSOCOMMAND) $@ $(FLOBJECTS) -L. -lfltk-utf8
-	-$(RM) libfltk-utf8_forms.so
+	$(RM) libfltk-utf8_forms.so
 	$(LN) libfltk-utf8_forms.so.1.1 libfltk-utf8_forms.so
 
 libfltk-utf8_forms.sl.1.1: $(FLOBJECTS) libfltk-utf8.sl.1.1
 	echo $(DSOCOMMAND) $@ ...
 	$(DSOCOMMAND) $@ $(FLOBJECTS) -L. -lfltk-utf8
-	-$(RM) libfltk-utf8_forms.sl
+	$(RM) libfltk-utf8_forms.sl
 	$(LN) libfltk-utf8_forms.sl.1.1 libfltk-utf8_forms.sl
 
 libfltk-utf8_forms.1.1.dylib: $(FLOBJECTS) libfltk-utf8.1.1.dylib
@@ -256,34 +257,34 @@ libfltk-utf8_forms.1.1.dylib: $(FLOBJECTS) libfltk-utf8.1.1.dylib
 		-install_name $(libdir)/$@ \
 		-current_version 1.1.4 \
 		-compatibility_version 1.1.0 \
-		$(FLOBJECTS) $(LDLIBS) -L. -lfltk-utf8
-	-$(RM) libfltk-utf8_forms.dylib
+		$(FLOBJECTS) -L. $(LDLIBS) -lfltk-utf8
+	$(RM) libfltk-utf8_forms.dylib
 	$(LN) libfltk-utf8_forms.1.1.dylib libfltk-utf8_forms.dylib
 
 libfltk-utf8_forms_s.a: $(FLOBJECTS)
 	echo $(DSOCOMMAND) libfltk-utf8_forms_s.o ...
 	$(DSOCOMMAND) libfltk-utf8_forms_s.o $(FLOBJECTS)
 	echo $(LIBCOMMAND) libfltk-utf8_forms_s.a libfltk-utf8_forms_s.o
-	-$(RM) $@
+	$(RM) $@
 	$(LIBCOMMAND) libfltk-utf8_forms_s.a libfltk-utf8_forms_s.o
 	$(CHMOD) +x libfltk-utf8_forms_s.a
 
 $(GLLIBNAME): $(GLOBJECTS)
 	echo $(LIBCOMMAND) $@ ...
-	-$(RM) $@
+	$(RM) $@
 	$(LIBCOMMAND) $@ $(GLOBJECTS)
 	$(RANLIB) $@
 
 libfltk-utf8_gl.so.1.1: $(GLOBJECTS) libfltk-utf8.so.1.1
 	echo $(DSOCOMMAND) $@ ...
 	$(DSOCOMMAND) $@ $(GLOBJECTS) -L. -lfltk-utf8
-	-$(RM) libfltk-utf8_gl.so
+	$(RM) libfltk-utf8_gl.so
 	$(LN) libfltk-utf8_gl.so.1.1 libfltk-utf8_gl.so
 
 libfltk-utf8_gl.sl.1.1: $(GLOBJECTS) libfltk-utf8.sl.1.1
 	echo $(DSOCOMMAND) $@ ...
 	$(DSOCOMMAND) $@ $(GLOBJECTS) -L. -lfltk-utf8
-	-$(RM) libfltk-utf8_gl.sl
+	$(RM) libfltk-utf8_gl.sl
 	$(LN) libfltk-utf8_gl.sl.1.1 libfltk-utf8_gl.sl
 
 libfltk-utf8_gl.1.1.dylib: $(GLOBJECTS) libfltk-utf8.1.1.dylib
@@ -292,34 +293,34 @@ libfltk-utf8_gl.1.1.dylib: $(GLOBJECTS) libfltk-utf8.1.1.dylib
 		-install_name $(libdir)/$@ \
 		-current_version 1.1.4 \
 		-compatibility_version 1.1.0 \
-		$(GLOBJECTS) $(GLDLIBS) -L. -lfltk-utf8
-	-$(RM) libfltk-utf8_gl.dylib
+		$(GLOBJECTS) -L. $(GLDLIBS) -lfltk-utf8
+	$(RM) libfltk-utf8_gl.dylib
 	$(LN) libfltk-utf8_gl.1.1.dylib libfltk-utf8_gl.dylib
 
 libfltk-utf8_gl_s.a: $(GLOBJECTS)
 	echo $(DSOCOMMAND) libfltk-utf8_gl_s.o ...
 	$(DSOCOMMAND) libfltk-utf8_gl_s.o $(GLOBJECTS)
 	echo $(LIBCOMMAND) libfltk-utf8_gl_s.a libfltk-utf8_gl_s.o
-	-$(RM) $@
+	$(RM) $@
 	$(LIBCOMMAND) libfltk-utf8_gl_s.a libfltk-utf8_gl_s.o
 	$(CHMOD) +x libfltk-utf8_gl_s.a
 
 $(IMGLIBNAME): $(IMGOBJECTS)
 	echo $(LIBCOMMAND) $@ ...
-	-$(RM) $@
+	$(RM) $@
 	$(LIBCOMMAND) $@ $(IMGOBJECTS)
 	$(RANLIB) $@
 
 libfltk-utf8_images.so.1.1: $(IMGOBJECTS) libfltk-utf8.so.1.1
 	echo $(DSOCOMMAND) $@ ...
-	$(DSOCOMMAND) $@ $(IMGOBJECTS) -L. -lfltk-utf8
-	-$(RM) libfltk-utf8_images.so
+	$(DSOCOMMAND) $@ $(IMGOBJECTS) $(IMAGELIBS) -L. -lfltk-utf8
+	$(RM) libfltk-utf8_images.so
 	$(LN) libfltk-utf8_images.so.1.1 libfltk-utf8_images.so
 
 libfltk-utf8_images.sl.1.1: $(IMGOBJECTS) libfltk-utf8.sl.1.1
 	echo $(DSOCOMMAND) $@ ...
-	$(DSOCOMMAND) $@ $(IMGOBJECTS) -L. -lfltk-utf8
-	-$(RM) libfltk-utf8_images.sl
+	$(DSOCOMMAND) $@ $(IMGOBJECTS) $(IMAGELIBS) -L. -lfltk-utf8
+	$(RM) libfltk-utf8_images.sl
 	$(LN) libfltk-utf8_images.sl.1.1 libfltk-utf8_images.sl
 
 libfltk-utf8_images.1.1.dylib: $(IMGOBJECTS) libfltk-utf8.1.1.dylib
@@ -328,15 +329,15 @@ libfltk-utf8_images.1.1.dylib: $(IMGOBJECTS) libfltk-utf8.1.1.dylib
 		-install_name $(libdir)/$@ \
 		-current_version 1.1.4 \
 		-compatibility_version 1.1.0 \
-		$(GLOBJECTS) $(GLDLIBS) -L. -lfltk-utf8
-	-$(RM) libfltk-utf8_images.dylib
+		$(IMGOBJECTS) $(LDLIBS) -L. $(IMAGELIBS) -lfltk-utf8
+	$(RM) libfltk-utf8_images.dylib
 	$(LN) libfltk-utf8_images.1.1.dylib libfltk-utf8_images.dylib
 
 libfltk-utf8_images_s.a: $(IMGOBJECTS)
 	echo $(DSOCOMMAND) libfltk-utf8_images_s.o ...
 	$(DSOCOMMAND) libfltk-utf8_images_s.o $(IMGOBJECTS)
 	echo $(LIBCOMMAND) libfltk-utf8_images_s.a libfltk-utf8_images_s.o
-	-$(RM) $@
+	$(RM) $@
 	$(LIBCOMMAND) libfltk-utf8_images_s.a libfltk-utf8_images_s.o
 	$(CHMOD) +x libfltk-utf8_images_s.a
 
@@ -422,169 +423,169 @@ install: $(LIBNAME) $(DSONAME) \
 	$(FLLIBNAME) $(FLDSONAME) \
 	$(GLLIBNAME) $(GLDSONAME) \
 	$(IMGLIBNAME) $(IMGDSONAME)
-	echo "Installing libraries in $(libdir)..."
-	-$(MKDIR) $(libdir)
-	$(RM) $(libdir)/$(LIBNAME)
-	-$(CP) $(LIBNAME) $(FLLIBNAME) $(GLLIBNAME) $(IMGLIBNAME) $(libdir)
-	$(RANLIB) $(libdir)/$(LIBNAME)
-	$(RANLIB) $(libdir)/$(FLLIBNAME)
+	echo "Installing libraries in $(DESTDIR)$(libdir)..."
+	-$(MKDIR) $(DESTDIR)$(libdir)
+	$(RM) $(DESTDIR)$(libdir)/$(LIBNAME)
+	-$(CP) $(LIBNAME) $(FLLIBNAME) $(GLLIBNAME) $(IMGLIBNAME) $(DESTDIR)$(libdir)
+	$(RANLIB) $(DESTDIR)$(libdir)/$(LIBNAME)
+	$(RANLIB) $(DESTDIR)$(libdir)/$(FLLIBNAME)
 	if test x$(GLLIBNAME) != x; then \
-		$(RANLIB) $(libdir)/$(GLLIBNAME); \
+		$(RANLIB) $(DESTDIR)$(libdir)/$(GLLIBNAME); \
 	fi
-	$(RANLIB) $(libdir)/$(IMGLIBNAME)
+	$(RANLIB) $(DESTDIR)$(libdir)/$(IMGLIBNAME)
 	if test x$(DSONAME) = xlibfltk-utf8.so.1.1; then\
-		$(RM) $(libdir)/libfltk-utf8.so*;\
-		$(CP) libfltk-utf8.so.1.1 $(libdir); \
-		$(CHMOD) 755 $(libdir)/libfltk-utf8.so.1.1; \
-		$(LN) libfltk-utf8.so.1.1 $(libdir)/libfltk-utf8.so;\
+		$(RM) $(DESTDIR)$(libdir)/libfltk-utf8.so*;\
+		$(CP) libfltk-utf8.so.1.1 $(DESTDIR)$(libdir); \
+		$(CHMOD) 755 $(DESTDIR)$(libdir)/libfltk-utf8.so.1.1; \
+		$(LN) libfltk-utf8.so.1.1 $(DESTDIR)$(libdir)/libfltk-utf8.so;\
 	fi
 	if test x$(DSONAME) = xlibfltk-utf8.sl.1.1; then\
-		$(RM) $(libdir)/libfltk-utf8.sl*;\
-		$(CP) libfltk-utf8.sl.1.1 $(libdir); \
-		$(CHMOD) 755 $(libdir)/libfltk-utf8.sl.1.1; \
-		$(LN) libfltk-utf8.sl.1.1 $(libdir)/libfltk-utf8.sl;\
+		$(RM) $(DESTDIR)$(libdir)/libfltk-utf8.sl*;\
+		$(CP) libfltk-utf8.sl.1.1 $(DESTDIR)$(libdir); \
+		$(CHMOD) 755 $(DESTDIR)$(libdir)/libfltk-utf8.sl.1.1; \
+		$(LN) libfltk-utf8.sl.1.1 $(DESTDIR)$(libdir)/libfltk-utf8.sl;\
 	fi
 	if test x$(DSONAME) = xlibfltk-utf8.1.1.dylib; then\
-		$(RM) $(libdir)/libfltk-utf8.*dylib;\
-		$(CP) libfltk-utf8.1.1.dylib $(libdir); \
-		$(CHMOD) 755 $(libdir)/libfltk-utf8.1.1.dylib; \
-		$(LN) libfltk-utf8.1.1.dylib $(libdir)/libfltk-utf8.dylib;\
+		$(RM) $(DESTDIR)$(libdir)/libfltk-utf8.*dylib;\
+		$(CP) libfltk-utf8.1.1.dylib $(DESTDIR)$(libdir); \
+		$(CHMOD) 755 $(DESTDIR)$(libdir)/libfltk-utf8.1.1.dylib; \
+		$(LN) libfltk-utf8.1.1.dylib $(DESTDIR)$(libdir)/libfltk-utf8.dylib;\
 	fi
 	if test x$(DSONAME) = xlibfltk-utf8_s.a; then\
-		$(RM) $(libdir)/libfltk-utf8_s.a;\
-		$(CP) libfltk-utf8_s.a $(libdir); \
-		$(CHMOD) 755 $(libdir)/libfltk-utf8_s.a; \
+		$(RM) $(DESTDIR)$(libdir)/libfltk-utf8_s.a;\
+		$(CP) libfltk-utf8_s.a $(DESTDIR)$(libdir); \
+		$(CHMOD) 755 $(DESTDIR)$(libdir)/libfltk-utf8_s.a; \
 	fi
 	if test x$(FLDSONAME) = xlibfltk-utf8_forms.so.1.1; then\
-		$(RM) $(libdir)/libfltk-utf8_forms.so*;\
-		$(CP) libfltk-utf8_forms.so.1.1 $(libdir); \
-		$(CHMOD) 755 $(libdir)/libfltk-utf8_forms.so.1.1; \
-		$(LN) libfltk-utf8_forms.so.1.1 $(libdir)/libfltk-utf8_forms.so;\
+		$(RM) $(DESTDIR)$(libdir)/libfltk-utf8_forms.so*;\
+		$(CP) libfltk-utf8_forms.so.1.1 $(DESTDIR)$(libdir); \
+		$(CHMOD) 755 $(DESTDIR)$(libdir)/libfltk-utf8_forms.so.1.1; \
+		$(LN) libfltk-utf8_forms.so.1.1 $(DESTDIR)$(libdir)/libfltk-utf8_forms.so;\
 	fi
 	if test x$(FLDSONAME) = xlibfltk-utf8_forms.sl.1.1; then\
-		$(RM) $(libdir)/libfltk-utf8_forms.sl*;\
-		$(CP) libfltk-utf8_forms.sl.1.1 $(libdir); \
-		$(CHMOD) 755 $(libdir)/libfltk-utf8_forms.sl.1.1; \
-		$(LN) libfltk-utf8_forms.sl.1.1 $(libdir)/libfltk-utf8_forms.sl;\
+		$(RM) $(DESTDIR)$(libdir)/libfltk-utf8_forms.sl*;\
+		$(CP) libfltk-utf8_forms.sl.1.1 $(DESTDIR)$(libdir); \
+		$(CHMOD) 755 $(DESTDIR)$(libdir)/libfltk-utf8_forms.sl.1.1; \
+		$(LN) libfltk-utf8_forms.sl.1.1 $(DESTDIR)$(libdir)/libfltk-utf8_forms.sl;\
 	fi
 	if test x$(FLDSONAME) = xlibfltk-utf8_forms.1.1.dylib; then\
-		$(RM) $(libdir)/libfltk-utf8_forms.*dylib;\
-		$(CP) libfltk-utf8_forms.1.1.dylib $(libdir); \
-		$(CHMOD) 755 $(libdir)/libfltk-utf8_forms.1.1.dylib; \
-		$(LN) libfltk-utf8_forms.1.1.dylib $(libdir)/libfltk-utf8_forms.dylib;\
+		$(RM) $(DESTDIR)$(libdir)/libfltk-utf8_forms.*dylib;\
+		$(CP) libfltk-utf8_forms.1.1.dylib $(DESTDIR)$(libdir); \
+		$(CHMOD) 755 $(DESTDIR)$(libdir)/libfltk-utf8_forms.1.1.dylib; \
+		$(LN) libfltk-utf8_forms.1.1.dylib $(DESTDIR)$(libdir)/libfltk-utf8_forms.dylib;\
 	fi
 	if test x$(FLDSONAME) = xlibfltk-utf8_forms_s.a; then\
-		$(RM) $(libdir)/libfltk-utf8_forms_s.a;\
-		$(CP) libfltk-utf8_forms_s.a $(libdir); \
-		$(CHMOD) 755 $(libdir)/libfltk-utf8_forms.a; \
+		$(RM) $(DESTDIR)$(libdir)/libfltk-utf8_forms_s.a;\
+		$(CP) libfltk-utf8_forms_s.a $(DESTDIR)$(libdir); \
+		$(CHMOD) 755 $(DESTDIR)$(libdir)/libfltk-utf8_forms.a; \
 	fi
 	if test x$(GLDSONAME) = xlibfltk-utf8_gl.so.1.1; then\
-		$(RM) $(libdir)/libfltk-utf8_gl.so*;\
-		$(CP) libfltk-utf8_gl.so.1.1 $(libdir); \
-		$(CHMOD) 755 $(libdir)/libfltk-utf8_gl.so.1.1; \
-		$(LN) libfltk-utf8_gl.so.1.1 $(libdir)/libfltk-utf8_gl.so;\
+		$(RM) $(DESTDIR)$(libdir)/libfltk-utf8_gl.so*;\
+		$(CP) libfltk-utf8_gl.so.1.1 $(DESTDIR)$(libdir); \
+		$(CHMOD) 755 $(DESTDIR)$(libdir)/libfltk-utf8_gl.so.1.1; \
+		$(LN) libfltk-utf8_gl.so.1.1 $(DESTDIR)$(libdir)/libfltk-utf8_gl.so;\
 	fi
 	if test x$(GLDSONAME) = xlibfltk-utf8_gl.sl.1.1; then\
-		$(RM) $(libdir)/libfltk-utf8_gl.sl*;\
-		$(CP) libfltk-utf8_gl.sl.1.1 $(libdir); \
-		$(CHMOD) 755 $(libdir)/libfltk-utf8_gl.sl.1.1; \
-		$(LN) libfltk-utf8_gl.sl.1.1 $(libdir)/libfltk-utf8_gl.sl;\
+		$(RM) $(DESTDIR)$(libdir)/libfltk-utf8_gl.sl*;\
+		$(CP) libfltk-utf8_gl.sl.1.1 $(DESTDIR)$(libdir); \
+		$(CHMOD) 755 $(DESTDIR)$(libdir)/libfltk-utf8_gl.sl.1.1; \
+		$(LN) libfltk-utf8_gl.sl.1.1 $(DESTDIR)$(libdir)/libfltk-utf8_gl.sl;\
 	fi
 	if test x$(GLDSONAME) = xlibfltk-utf8_gl.1.1.dylib; then\
-		$(RM) $(libdir)/libfltk-utf8_gl.*dylib;\
-		$(CP) libfltk-utf8_gl.1.1.dylib $(libdir); \
-		$(CHMOD) 755 $(libdir)/libfltk-utf8_gl.1.1.dylib; \
-		$(LN) libfltk-utf8_gl.1.1.dylib $(libdir)/libfltk-utf8_gl.dylib;\
+		$(RM) $(DESTDIR)$(libdir)/libfltk-utf8_gl.*dylib;\
+		$(CP) libfltk-utf8_gl.1.1.dylib $(DESTDIR)$(libdir); \
+		$(CHMOD) 755 $(DESTDIR)$(libdir)/libfltk-utf8_gl.1.1.dylib; \
+		$(LN) libfltk-utf8_gl.1.1.dylib $(DESTDIR)$(libdir)/libfltk-utf8_gl.dylib;\
 	fi
 	if test x$(GLDSONAME) = xlibfltk-utf8_gl_s.a; then\
-		$(RM) $(libdir)/libfltk-utf8_gl_s.a;\
-		$(CP) libfltk-utf8_gl_s.a $(libdir); \
-		$(CHMOD) 755 $(libdir)/libfltk-utf8_gl.a; \
+		$(RM) $(DESTDIR)$(libdir)/libfltk-utf8_gl_s.a;\
+		$(CP) libfltk-utf8_gl_s.a $(DESTDIR)$(libdir); \
+		$(CHMOD) 755 $(DESTDIR)$(libdir)/libfltk-utf8_gl.a; \
 	fi
 	if test x$(IMGDSONAME) = xlibfltk-utf8_images.so.1.1; then\
-		$(RM) $(libdir)/libfltk-utf8_images.so*;\
-		$(CP) libfltk-utf8_images.so.1.1 $(libdir); \
-		$(CHMOD) 755 $(libdir)/libfltk-utf8_images.so.1.1; \
-		$(LN) libfltk-utf8_images.so.1.1 $(libdir)/libfltk-utf8_images.so;\
+		$(RM) $(DESTDIR)$(libdir)/libfltk-utf8_images.so*;\
+		$(CP) libfltk-utf8_images.so.1.1 $(DESTDIR)$(libdir); \
+		$(CHMOD) 755 $(DESTDIR)$(libdir)/libfltk-utf8_images.so.1.1; \
+		$(LN) libfltk-utf8_images.so.1.1 $(DESTDIR)$(libdir)/libfltk-utf8_images.so;\
 	fi
 	if test x$(IMGDSONAME) = xlibfltk-utf8_images.sl.1.1; then\
-		$(RM) $(libdir)/libfltk-utf8_images.sl*;\
-		$(CP) libfltk-utf8_images.sl.1.1 $(libdir); \
-		$(CHMOD) 755 $(libdir)/libfltk-utf8_images.sl.1.1; \
-		$(LN) libfltk-utf8_images.sl.1.1 $(libdir)/libfltk-utf8_images.sl;\
+		$(RM) $(DESTDIR)$(libdir)/libfltk-utf8_images.sl*;\
+		$(CP) libfltk-utf8_images.sl.1.1 $(DESTDIR)$(libdir); \
+		$(CHMOD) 755 $(DESTDIR)$(libdir)/libfltk-utf8_images.sl.1.1; \
+		$(LN) libfltk-utf8_images.sl.1.1 $(DESTDIR)$(libdir)/libfltk-utf8_images.sl;\
 	fi
 	if test x$(IMGDSONAME) = xlibfltk-utf8_images.1.1.dylib; then\
-		$(RM) $(libdir)/libfltk-utf8_images.*dylib;\
-		$(CP) libfltk-utf8_images.1.1.dylib $(libdir); \
-		$(CHMOD) 755 $(libdir)/libfltk-utf8_images.1.1.dylib; \
-		$(LN) libfltk-utf8_images.1.1.dylib $(libdir)/libfltk-utf8_images.dylib;\
+		$(RM) $(DESTDIR)$(libdir)/libfltk-utf8_images.*dylib;\
+		$(CP) libfltk-utf8_images.1.1.dylib $(DESTDIR)$(libdir); \
+		$(CHMOD) 755 $(DESTDIR)$(libdir)/libfltk-utf8_images.1.1.dylib; \
+		$(LN) libfltk-utf8_images.1.1.dylib $(DESTDIR)$(libdir)/libfltk-utf8_images.dylib;\
 	fi
 	if test x$(IMGDSONAME) = xlibfltk-utf8_images_s.a; then\
-		$(RM) $(libdir)/libfltk-utf8_images_s.a;\
-		$(CP) libfltk-utf8_images_s.a $(libdir); \
-		$(CHMOD) 755 $(libdir)/libfltk-utf8_images.a; \
+		$(RM) $(DESTDIR)$(libdir)/libfltk-utf8_images_s.a;\
+		$(CP) libfltk-utf8_images_s.a $(DESTDIR)$(libdir); \
+		$(CHMOD) 755 $(DESTDIR)$(libdir)/libfltk-utf8_images.a; \
 	fi
 
 uninstall:
 	echo "Uninstalling libraries..."
-	$(RM) $(libdir)/$(LIBNAME)
+	$(RM) $(DESTDIR)$(libdir)/$(LIBNAME)
 	if test x$(DSONAME) = xlibfltk-utf8.so.1.1; then\
-		$(RM) $(libdir)/libfltk-utf8.so*;\
+		$(RM) $(DESTDIR)$(libdir)/libfltk-utf8.so*;\
 	fi
 	if test x$(DSONAME) = xlibfltk-utf8.sl.1.1; then\
-		$(RM) $(libdir)/libfltk-utf8.sl*;\
+		$(RM) $(DESTDIR)$(libdir)/libfltk-utf8.sl*;\
 	fi
 	if test x$(DSONAME) = xlibfltk-utf8.1.1.dylib; then\
-		$(RM) $(libdir)/libfltk-utf8.*dylib;\
+		$(RM) $(DESTDIR)$(libdir)/libfltk-utf8.*dylib;\
 	fi
 	if test x$(DSONAME) = xlibfltk-utf8_s.a; then\
-		$(RM) $(libdir)/libfltk-utf8_s.a;\
+		$(RM) $(DESTDIR)$(libdir)/libfltk-utf8_s.a;\
 	fi
-	$(RM) $(libdir)/$(FLLIBNAME);
+	$(RM) $(DESTDIR)$(libdir)/$(FLLIBNAME);
 	if test x$(FLDSONAME) = xlibfltk-utf8_forms.so.1.1; then\
-		$(RM) $(libdir)/libfltk-utf8_forms.so*;\
+		$(RM) $(DESTDIR)$(libdir)/libfltk-utf8_forms.so*;\
 	fi
 	if test x$(FLDSONAME) = xlibfltk-utf8_forms.sl.1.1; then\
-		$(RM) $(libdir)/libfltk-utf8_forms.sl*;\
+		$(RM) $(DESTDIR)$(libdir)/libfltk-utf8_forms.sl*;\
 	fi
 	if test x$(FLDSONAME) = xlibfltk-utf8_forms.1.1.dylib; then\
-		$(RM) $(libdir)/libfltk-utf8_forms.*dylib;\
+		$(RM) $(DESTDIR)$(libdir)/libfltk-utf8_forms.*dylib;\
 	fi
 	if test x$(FLDSONAME) = xlibfltk-utf8_forms_s.a; then\
-		$(RM) $(libdir)/libfltk-utf8_forms_s.a;\
+		$(RM) $(DESTDIR)$(libdir)/libfltk-utf8_forms_s.a;\
 	fi
 	if test x$(GLLIBNAME) != x; then\
-		$(RM) $(libdir)/$(GLLIBNAME);\
+		$(RM) $(DESTDIR)$(libdir)/$(GLLIBNAME);\
 	fi
 	if test x$(GLDSONAME) = xlibfltk-utf8_gl.so.1.1; then\
-		$(RM) $(libdir)/libfltk-utf8_gl.so*;\
+		$(RM) $(DESTDIR)$(libdir)/libfltk-utf8_gl.so*;\
 	fi
 	if test x$(GLDSONAME) = xlibfltk-utf8_gl.sl.1.1; then\
-		$(RM) $(libdir)/libfltk-utf8_gl.sl*;\
+		$(RM) $(DESTDIR)$(libdir)/libfltk-utf8_gl.sl*;\
 	fi
 	if test x$(GLDSONAME) = xlibfltk-utf8_gl.1.1.dylib; then\
-		$(RM) $(libdir)/libfltk-utf8_gl.*dylib;\
+		$(RM) $(DESTDIR)$(libdir)/libfltk-utf8_gl.*dylib;\
 	fi
 	if test x$(GLDSONAME) = xlibfltk-utf8_gl_s.a; then\
-		$(RM) $(libdir)/libfltk-utf8_gl_s.a;\
+		$(RM) $(DESTDIR)$(libdir)/libfltk-utf8_gl_s.a;\
 	fi
 	if test x$(IMGLIBNAME) != x; then\
-		$(RM) $(libdir)/$(IMGLIBNAME);\
+		$(RM) $(DESTDIR)$(libdir)/$(IMGLIBNAME);\
 	fi
 	if test x$(IMGDSONAME) = xlibfltk-utf8_images.so.1.1; then\
-		$(RM) $(libdir)/libfltk-utf8_images.so*;\
+		$(RM) $(DESTDIR)$(libdir)/libfltk-utf8_images.so*;\
 	fi
 	if test x$(IMGDSONAME) = xlibfltk-utf8_images.sl.1.1; then\
-		$(RM) $(libdir)/libfltk-utf8_images.sl*;\
+		$(RM) $(DESTDIR)$(libdir)/libfltk-utf8_images.sl*;\
 	fi
 	if test x$(IMGDSONAME) = xlibfltk-utf8_images.1.1.dylib; then\
-		$(RM) $(libdir)/libfltk-utf8_images.*dylib;\
+		$(RM) $(DESTDIR)$(libdir)/libfltk-utf8_images.*dylib;\
 	fi
 	if test x$(IMGDSONAME) = xlibfltk-utf8_images_s.a; then\
-		$(RM) $(libdir)/libfltk-utf8_images_s.a;\
+		$(RM) $(DESTDIR)$(libdir)/libfltk-utf8_images_s.a;\
 	fi
 
 
 #
-# End of "$Id: Makefile,v 1.18.2.14.2.54 2003/08/24 13:09:06 easysw Exp $".
+# End of "$Id: Makefile,v 1.18.2.14.2.59 2004/11/20 03:19:58 easysw Exp $".
 #

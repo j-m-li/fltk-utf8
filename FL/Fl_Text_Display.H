@@ -1,9 +1,9 @@
 //
-// "$Id: Fl_Text_Display.H,v 1.4.2.13 2003/01/30 21:40:18 easysw Exp $"
+// "$Id: Fl_Text_Display.H,v 1.4.2.15 2004/04/11 04:38:54 easysw Exp $"
 //
 // Header file for Fl_Text_Display class.
 //
-// Copyright 2001-2003 by Bill Spitzak and others.
+// Copyright 2001-2004 by Bill Spitzak and others.
 // Original code Copyright Mark Edel.  Permission to distribute under
 // the LGPL for the FLTK library granted by Mark Edel.
 //
@@ -98,6 +98,8 @@ class FL_EXPORT Fl_Text_Display: public Fl_Group {
     void show_cursor(int b = 1);
     void hide_cursor() { show_cursor(0); }
     void cursor_style(int style);
+    Fl_Color cursor_color() const {return mCursor_color;}
+    void cursor_color(Fl_Color n) {mCursor_color = n;}
     int scrollbar_width() { return scrollbar_width_; }
     Fl_Align scrollbar_align() { return scrollbar_align_; }
     void scrollbar_width(int W) { scrollbar_width_ = W; }
@@ -288,5 +290,5 @@ class FL_EXPORT Fl_Text_Display: public Fl_Group {
 #endif
 
 //
-// End of "$Id: Fl_Text_Display.H,v 1.4.2.13 2003/01/30 21:40:18 easysw Exp $".
+// End of "$Id: Fl_Text_Display.H,v 1.4.2.15 2004/04/11 04:38:54 easysw Exp $".
 //

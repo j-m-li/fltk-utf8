@@ -1,60 +1,29 @@
-/* This test added by JACS as a quick fix. What should we do
- * to make it work with configure?
- */
-
-#if defined(_MSC_VER) || defined(__BORLANDC__)
-#include "jconfig.vc"
-#else
-
-/* jconfig.h.  Generated automatically by configure.  */
 /* jconfig.cfg --- source file edited by configure script */
 /* see jconfig.doc for explanations */
 
-#ifdef __MWERKS__
-#if (__MWERKS__ < 0x0900) || macintosh
-    #define __WXMAC__
-		#define USE_MAC_MEMMGR
-// automatically includes MacHeaders
-#elif (__MWERKS__ >= 0x0900) && __INTEL__
-    #define __WXMSW__
-#endif
-#endif
+#include <config.h>
 
 #define HAVE_PROTOTYPES
 #define HAVE_UNSIGNED_CHAR
 #define HAVE_UNSIGNED_SHORT
-#undef void
-#undef const
-
 #ifdef __CHAR_UNSIGNED__
-  #ifndef CHAR_IS_UNSIGNED
-    #define CHAR_IS_UNSIGNED
-  #endif
-#else
-  #undef CHAR_IS_UNSIGNED
-#endif
-
-#define HAVE_STDDEF_H
-#define HAVE_STDLIB_H
-#undef NEED_BSD_STRINGS
-#undef NEED_SYS_TYPES_H
-#undef NEED_FAR_POINTERS
-#undef NEED_SHORT_EXTERNAL_NAMES
+#  define CHAR_IS_UNSIGNED
+#endif /* __CHAR_UNSIGNED__ */
 /* Define this if you get warnings about undefined structures. */
 #undef INCOMPLETE_TYPES_BROKEN
+
+#if defined(WIN32) || defined(__EMX__)
+/* Define "boolean" as unsigned char, not int, per Windows custom */
+#  ifndef __RPCNDR_H__		/* don't conflict if rpcndr.h already read */
+typedef unsigned char boolean;
+#  endif
+#  define HAVE_BOOLEAN		/* prevent jmorecfg.h from redefining it */
+#endif /* WIN32 || __EMX__ */
 
 #ifdef JPEG_INTERNALS
 
 #undef RIGHT_SHIFT_IS_UNSIGNED
-
-#if defined(__VISAGECPP__) && (__IBMCPP__ >= 400 || __IBMC__ >= 400)
-#define INLINE
-#elif defined(__WATCOMC__)
-#define INLINE
-#else
-#define INLINE inline
-#endif
-
+#undef INLINE
 /* These are for configuring the JPEG memory manager. */
 #undef DEFAULT_MAX_MEM
 #undef NO_MKTEMP
@@ -73,10 +42,11 @@
 #undef NEED_SIGNAL_CATCHER
 #undef DONT_USE_B_MODE
 
+#if defined(WIN32) || defined(__EMX__)
+#  define USE_SETMODE
+#endif /* WIN32 || __EMX__ */
+
 /* Define this if you want percent-done progress reports from cjpeg/djpeg. */
 #undef PROGRESS_REPORT
 
 #endif /* JPEG_CJPEG_DJPEG */
-#endif
-    /* _MSC_VER */
-

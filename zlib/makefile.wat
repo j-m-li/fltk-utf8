@@ -1,103 +1,60 @@
-# Makefile for zlib
-# Watcom 10a
+#
+# "$Id: makefile.wat,v 1.1.2.1 2004/11/20 03:19:59 easysw Exp $"
+#
+# GNU ZIP library makefile for the Fast Light Toolkit (FLTK).
+#
+# Copyright 1997-2004 by Easy Software Products.
+#
+# This library is free software; you can redistribute it and/or
+# modify it under the terms of the GNU Library General Public
+# License as published by the Free Software Foundation; either
+# version 2 of the License, or (at your option) any later version.
+#
+# This library is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+# Library General Public License for more details.
+#
+# You should have received a copy of the GNU Library General Public
+# License along with this library; if not, write to the Free Software
+# Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307
+# USA.
+#
+# Please report all bugs and problems to "fltk-bugs@fltk.org".
+#
 
-# This version of the zlib makefile was adapted by Chris Young for use
-# with Watcom 10a 32-bit protected mode flat memory model.  It was created 
-# for use with POV-Ray ray tracer and you may choose to edit the CFLAGS to 
-# suit your needs but the -DMSDOS is required.
-# -- Chris Young 76702.1655@compuserve.com
+LIBNAMEROOT=ftlk_z
 
-# To use, do "wmake -f makefile.wat"
-
-# See zconf.h for details about the memory requirements.
-
-# ------------- Watcom 10a -------------
-MODEL=-mf 
-CFLAGS= $(MODEL) -fpi87 -fp5 -zp4 -5r -w5 -oneatx -DWIN32
-CC=wcc386
-LD=wcl386
-LIB=wlib -b -c 
-LDFLAGS= 
-O=.obj
-LIBTARGET=..\..\lib\zlib.lib
-
-# variables
-OBJECTS=adler32$(O) compress$(O) crc32$(O) gzio$(O) uncompr$(O) deflate$(O) &
-        trees$(O) zutil$(O) inflate$(O) infblock$(O) inftrees$(O) infcodes$(O) &
-        infutil$(O) inffast$(O)
-
-# all: test
-
-all: $(LIBTARGET)
-
-adler32.obj: adler32.c zutil.h zlib.h zconf.h
-	$(CC) $(CFLAGS) $*.c
-
-compress.obj: compress.c zlib.h zconf.h
-	$(CC) $(CFLAGS) $*.c
-
-crc32.obj: crc32.c zutil.h zlib.h zconf.h
-	$(CC) $(CFLAGS) $*.c
-
-deflate.obj: deflate.c deflate.h zutil.h zlib.h zconf.h
-	$(CC) $(CFLAGS) $*.c
-
-gzio.obj: gzio.c zutil.h zlib.h zconf.h
-	$(CC) $(CFLAGS) $*.c
-
-infblock.obj: infblock.c zutil.h zlib.h zconf.h infblock.h inftrees.h &
-  infcodes.h infutil.h
-	$(CC) $(CFLAGS) $*.c
-
-infcodes.obj: infcodes.c zutil.h zlib.h zconf.h inftrees.h infutil.h &
-  infcodes.h inffast.h
-	$(CC) $(CFLAGS) $*.c
-
-inflate.obj: inflate.c zutil.h zlib.h zconf.h infblock.h
-	$(CC) $(CFLAGS) $*.c
-
-inftrees.obj: inftrees.c zutil.h zlib.h zconf.h inftrees.h
-	$(CC) $(CFLAGS) $*.c
-
-infutil.obj: infutil.c zutil.h zlib.h zconf.h inftrees.h infutil.h
-	$(CC) $(CFLAGS) $*.c
-
-inffast.obj: inffast.c zutil.h zlib.h zconf.h inftrees.h infutil.h inffast.h
-	$(CC) $(CFLAGS) $*.c
-
-trees.obj: trees.c deflate.h zutil.h zlib.h zconf.h
-	$(CC) $(CFLAGS) $*.c
-
-uncompr.obj: uncompr.c zlib.h zconf.h
-	$(CC) $(CFLAGS) $*.c
-
-zutil.obj: zutil.c zutil.h zlib.h zconf.h
-	$(CC) $(CFLAGS) $*.c
-
-example.obj: example.c zlib.h zconf.h
-	$(CC) $(CFLAGS) $*.c
-
-minigzip.obj: minigzip.c zlib.h zconf.h
-	$(CC) $(CFLAGS) $*.c
-
-$(LIBTARGET) : $(OBJECTS)
-	%create tmp.lbc
-	@for %i in ( $(OBJECTS) ) do @%append tmp.lbc +%i
-	wlib /b /c /n /p=512 $^@ @tmp.lbc
+!include ../watcom.mif
 
 
-example.exe: example.obj $(LIBTARGET)
-	$(LD) $(LDFLAGS) example.obj $(LIBTARGET)
+#
+# Object files...
+#
 
-minigzip.exe: minigzip.obj $(LIBTARGET)
-	$(LD) $(LDFLAGS) minigzip.obj $(LIBTARGET)
+LIBOBJS = adler32.obj compress.obj crc32.obj gzio.obj uncompr.obj deflate.obj &
+          trees.obj zutil.obj inflate.obj inftrees.obj inffast.obj
 
-test: minigzip.exe example.exe
-	example
-	echo hello world | minigzip | minigzip -d >test
-	type test
 
-clean: .SYMBOLIC
-	-erase *.obj
-	-erase *.exe
-        -erase $(LIBTARGET)
+#
+# Make all targets...
+#
+
+all: $(LIBNAME)
+
+$(LIBNAME): $(LIBOBJS)
+    $(LIB) $(LIBOPTS) $@ $<
+
+#
+# Clean all directories
+#
+clean : .SYMBOLIC
+    @echo Cleaning up.
+CLEANEXTS = obj
+    @for %a in ($(CLEANEXTS)) do -rm -f $(ODIR)\*.%a
+    -rm -f *.err
+    -rm -f $(LIBNAME)
+
+#
+# End of "$Id: makefile.wat,v 1.1.2.1 2004/11/20 03:19:59 easysw Exp $".
+#

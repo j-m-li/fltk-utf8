@@ -24,12 +24,21 @@
 
 #include <FL/Fl.H>
 #include <FL/Fl_Window.H>
+#include <FL/Fl_PNG_Image.H>
+#include <FL/Fl_GIF_Image.H>
 #include <FL/Fl_Tree.H>
 #include <FL/fl_draw.H>
 #include <string.h>
 #include <stdlib.h>
 #include <stdio.h>
 
+unsigned char *png_data;
+int png_w;
+int png_h;
+unsigned char *gif_data;
+int gif_w;
+int gif_h;
+Fl_PNG_Image *pi;
 
 class Scribble : public Fl_Window
 {
@@ -113,8 +122,9 @@ public:
 
   void draw() {
     Fl_Window::draw();
+
     if (nb_objs < 1) return;
-   
+
     if (damage() == FL_DAMAGE_CHILD) {
       Obj *o = objs[nb_objs-1];
       Dot *d;
@@ -129,8 +139,9 @@ public:
         fl_line(d1->x, d1->y, d->x, d->y);
       }
     } else {
-      int i = nb_objs - 1;
-      for (;i >= 0; i--) {
+      int i;
+      
+      for (i = 0;i < nb_objs; i++) {
         Obj *o = objs[i];
         int ii = o->nb_dots - 1;
         fl_color(o->color);
@@ -147,6 +158,9 @@ public:
         } 
       }
     }
+    fl_draw_image(png_data, 0, 0, png_w, png_h, 4,0);
+    fl_draw_image(gif_data, w() - gif_w, 0, gif_w, gif_h, 4,0);
+    pi->draw(0, h() - pi->h(), pi->w(), pi->h());
   }
 
   int handle(int e) {
@@ -169,7 +183,23 @@ public:
 };
 
 int main(int argc, char** argv) {
+  Fl_GIF_Image gi("giftest.gif");
+  printf("%d %d\n", gi.w(), gi.h());
+  gif_w = gi.w();
+  gif_h = gi.h();
+  gif_data = (unsigned char *) malloc(gif_w * gif_h * 4);
+  gi.to_rgba(gif_data);
+
+  pi = new Fl_PNG_Image("pngtest.png");
+
+  Fl_PNG_Image pn("pngtest.png");
+  png_w = pn.w();
+  png_h = pn.h();
+  png_data = (unsigned char *) malloc(png_w * png_h * 4);
+  pn.to_rgba(png_data);
+
   Scribble window(300,400);
+  window.resizable(window);
   window.show(argc,argv);
   return Fl::run();
 }

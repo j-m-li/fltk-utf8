@@ -1,7 +1,7 @@
 /*
- * "$Id: fl_call_main.c,v 1.1.2.11.2.4 2003/01/30 21:43:28 easysw Exp $"
+ * "$Id: fl_call_main.c,v 1.1.2.11.2.5 2004/04/11 04:38:59 easysw Exp $"
  *
- * Copyright 1998-2003 by Bill Spitzak and others.
+ * Copyright 1998-2004 by Bill Spitzak and others.
  *
  * fl_call_main() calls main() for you Windows people.  Needs to be done in C
  * because Borland C++ won't let you call main() from C++.
@@ -46,10 +46,10 @@
 
 #if defined(WIN32) && !defined(FL_DLL) && !defined (__GNUC__)
 
-#include <FL/fl_utf8.H>
 #include <windows.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <FL/fl_utf8.H>
 
 #ifdef __MWERKS__
 # include <crtl.h>
@@ -64,7 +64,7 @@ extern int main(int, char *[]);
 
 static int mbcs2utf(const char *s, int l, char *buf)
 {
-  xchar *mbwbuf;
+  static xchar *mbwbuf;
   if (!s) return 0;
   mbwbuf = (xchar*)malloc((l * 6 +6) * sizeof(xchar));
   l = mbstowcs(mbwbuf, s, l);
@@ -95,7 +95,6 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance,
   freopen("conout$", "w", stderr);
 #endif /* _DEBUG */
 
- 
   ar = (char**) malloc(sizeof(char*) * (__argc + 1));
   i = 0;
   while (i < __argc) {
@@ -109,7 +108,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance,
       ar[i] = (char*) malloc((l * 5) + 1);
       ar[i][mbcs2utf(__argv[i], l, ar[i])] = 0;
     }
-    i++;  
+    i++;
   }
   ar[__argc] = 0;
 
@@ -131,6 +130,6 @@ static void dummy(void) {dummy();}
 #endif
 
 /*
- * End of "$Id: fl_call_main.c,v 1.1.2.11.2.4 2003/01/30 21:43:28 easysw Exp $".
+ * End of "$Id: fl_call_main.c,v 1.1.2.11.2.5 2004/04/11 04:38:59 easysw Exp $".
  */
 

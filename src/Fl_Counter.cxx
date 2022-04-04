@@ -1,9 +1,9 @@
 //
-// "$Id: Fl_Counter.cxx,v 1.8.2.3.2.13 2003/01/30 21:41:38 easysw Exp $"
+// "$Id: Fl_Counter.cxx,v 1.8.2.3.2.15 2004/07/23 21:12:24 easysw Exp $"
 //
 // Counter widget for the Fast Light Tool Kit (FLTK).
 //
-// Copyright 1998-2003 by Bill Spitzak and others.
+// Copyright 1998-2004 by Bill Spitzak and others.
 //
 // This library is free software; you can redistribute it and/or
 // modify it under the terms of the GNU Library General Public
@@ -33,6 +33,7 @@ void Fl_Counter::draw() {
 
   boxtype[0] = box();
   if (boxtype[0] == FL_UP_BOX) boxtype[0] = FL_DOWN_BOX;
+  if (boxtype[0] == FL_THIN_UP_BOX) boxtype[0] = FL_THIN_DOWN_BOX;
   for (i=1; i<5; i++)
     if (mouseobj == i)
       boxtype[i] = fl_down(box());
@@ -188,5 +189,5 @@ Fl_Counter::Fl_Counter(int X, int Y, int W, int H, const char* l)
 }
 
 //
-// End of "$Id: Fl_Counter.cxx,v 1.8.2.3.2.13 2003/01/30 21:41:38 easysw Exp $".
+// End of "$Id: Fl_Counter.cxx,v 1.8.2.3.2.15 2004/07/23 21:12:24 easysw Exp $".
 //

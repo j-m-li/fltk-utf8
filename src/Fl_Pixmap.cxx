@@ -1,9 +1,9 @@
 //
-// "$Id: Fl_Pixmap.cxx,v 1.9.2.4.2.21 2002/08/09 01:09:49 easysw Exp $"
+// "$Id: Fl_Pixmap.cxx,v 1.9.2.4.2.33 2004/09/24 16:00:10 easysw Exp $"
 //
 // Pixmap drawing code for the Fast Light Tool Kit (FLTK).
 //
-// Copyright 1998-2002 by Bill Spitzak and others.
+// Copyright 1998-2004 by Bill Spitzak and others.
 //
 // This library is free software; you can redistribute it and/or
 // modify it under the terms of the GNU Library General Public
@@ -36,12 +36,14 @@
 #include <FL/Fl_Widget.H>
 #include <FL/Fl_Menu_Item.H>
 #include <FL/Fl_Pixmap.H>
-#include <FL/Fl_Fltk.H>
 
 #include <stdio.h>
-#include <stdlib.h>
 #include "flstring.h"
 #include <ctype.h>
+
+#ifdef __APPLE_QUARTZ__
+extern Fl_Offscreen fl_create_offscreen_with_alpha(int w, int h);
+#endif
 
 extern uchar **fl_mask_bitmap; // used by fl_draw_pixmap.cxx to store mask
 void fl_restore_clip(); // in fl_rect.cxx
@@ -54,6 +56,13 @@ void Fl_Pixmap::measure() {
     fl_measure_pixmap(data(), W, H);
     w(W); h(H);
   }
+}
+
+void Fl_Pixmap::to_rgba(uchar *buf) {
+  if (!data()) return;
+  if (w()<0) measure();
+  if (!w()) return;
+  fl_rgba_pixmap(data(), FL_WHITE, buf);
 }
 
 void Fl_Pixmap::draw(int XP, int YP, int WP, int HP, int cx, int cy) {
@@ -71,12 +80,6 @@ void Fl_Pixmap::draw(int XP, int YP, int WP, int HP, int cx, int cy) {
     draw_empty(XP, YP);
     return;
   }
-  if (fl->type == FL_PS_DEVICE) {
-	fl_draw_pixmap(data(), XP, YP, FL_WHITE);
-	return;
-  }
-
-
   // account for current clip region (faster on Irix):
   int X,Y,W,H; fl_clip_box(XP,YP,WP,HP,X,Y,W,H);
   cx += X-XP; cy += Y-YP;
@@ -87,40 +90,28 @@ void Fl_Pixmap::draw(int XP, int YP, int WP, int HP, int cx, int cy) {
   if (cy < 0) {H += cy; Y -= cy; cy = 0;}
   if (cy+H > h()) H = h()-cy;
   if (H <= 0) return;
-
   if (!id) {
+#ifdef __APPLE_QUARTZ__
+    id = fl_create_offscreen_with_alpha(w(), h());
+    fl_begin_offscreen((Fl_Offscreen)id);
+    fl_draw_pixmap(data(), 0, 0, FL_GREEN);
+    fl_end_offscreen();
+#else
     id = fl_create_offscreen(w(), h());
     fl_begin_offscreen((Fl_Offscreen)id);
     uchar *bitmap = 0;
     fl_mask_bitmap = &bitmap;
-    fl_draw_pixmap(data(), 0, 0, fl_color());
+    fl_draw_pixmap(data(), 0, 0, FL_BLACK);
     fl_mask_bitmap = 0;
     if (bitmap) {
       mask = fl_create_bitmask(w(), h(), bitmap);
-      array = bitmap;
+      delete[] bitmap;
     }
-
     fl_end_offscreen();
+#endif
   }
-
 #ifdef WIN32
-  if (fl->type == FL_GDI_DEVICE) {
-		if (mask) {
-		    HDC new_gc = CreateCompatibleDC(fl_gc);
-			SelectObject(new_gc, (void*)mask);
-			StretchBlt(fl->gc, (int)(XP*fl->s+fl->L), (int)(YP*fl->s+fl->T), (int)(w()*fl->s), (int)(h()*fl->s), new_gc, 0, 0, WP, HP, SRCAND);
-			SelectObject(new_gc, (void*)id);
-			StretchBlt(fl->gc, (int)(XP*fl->s+fl->L), (int)(YP*fl->s+fl->T), (int)(w()*fl->s), (int)(h()*fl->s), new_gc, 0, 0, WP, HP, SRCPAINT);
-			DeleteDC(new_gc);
-		} else {
-			HDC new_gc = CreateCompatibleDC(fl_gc);
-			SelectObject(new_gc, id);	
-			StretchBlt(fl->gc, (int)(XP*fl->s+fl->L), (int)(YP*fl->s+fl->T), (int)(WP*fl->s), (int)(HP*fl->s), new_gc, 0, 0, WP, HP, SRCCOPY);
-			DeleteDC(new_gc);
-		}
-		return;
-  } 
-  if (mask) {   
+  if (mask) {
     HDC new_gc = CreateCompatibleDC(fl_gc);
     SelectObject(new_gc, (void*)mask);
     BitBlt(fl_gc, X, Y, W, H, new_gc, cx, cy, SRCAND);
@@ -130,7 +121,7 @@ void Fl_Pixmap::draw(int XP, int YP, int WP, int HP, int cx, int cy) {
   } else {
     fl_copy_offscreen(X, Y, W, H, (Fl_Offscreen)id, cx, cy);
   }
-#elif defined(__MACOS__)
+#elif defined(__APPLE_QD__)
   if (mask) {
     Rect src, dst;
     src.left = cx; src.right = cx+W;
@@ -149,10 +140,8 @@ void Fl_Pixmap::draw(int XP, int YP, int WP, int HP, int cx, int cy) {
   } else {
     fl_copy_offscreen(X, Y, W, H, (Fl_Offscreen)id, cx, cy);
   }
-#else
-#ifndef NANO_X 
-#if DJGPP
-
+#elif defined(__APPLE_QUARTZ__)
+  fl_copy_offscreen(X, Y, W, H, (Fl_Offscreen)id, cx, cy);
 #else
   if (mask) {
     // I can't figure out how to combine a mask with existing region,
@@ -166,37 +155,12 @@ void Fl_Pixmap::draw(int XP, int YP, int WP, int HP, int cx, int cy) {
     int oy = Y-cy; if (oy < 0) oy += h();
     XSetClipOrigin(fl_display, fl_gc, X-cx, Y-cy);
   }
-#endif
-#else
-  GR_GC_ID oldgc;
-#define DOIT 1
-  if (mask && DOIT) 
-  {
-    oldgc = fl_gc;
-    fl_gc = GrNewGC();
-    GrSetGCRegion(fl_gc,(unsigned long)mask);
-    GrOffsetRegion((unsigned long)mask,X,Y);
-  }
-#endif //tanghao
   fl_copy_offscreen(X, Y, W, H, id, cx, cy);
-#ifndef NANO_X //tanghao
-#if DJGPP
-
-#else
   if (mask) {
     // put the old clip region back
     XSetClipOrigin(fl_display, fl_gc, 0, 0);
     fl_restore_clip();
   }
-#endif
-#else
-  if (mask && DOIT)
-  {
-    GrOffsetRegion((unsigned long)mask,-X,-Y);
-    GrDestroyGC(fl_gc);
-    fl_gc = oldgc;
-  }
-#endif //tanghao
 #endif
 }
 
@@ -276,12 +240,18 @@ void Fl_Pixmap::copy_data() {
 }
 
 Fl_Image *Fl_Pixmap::copy(int W, int H) {
-  // Don't Optimize the simple copy where the width and height are the same...
-  //if (W == w() && H == h()) return new Fl_Pixmap(data());
+  Fl_Pixmap	*new_image;	// New pixmap
+
+  // Optimize the simple copy where the width and height are the same...
+  if (W == w() && H == h()) {
+    // Make an exact copy of the image and return it...
+    new_image = new Fl_Pixmap(data());
+    new_image->copy_data();
+    return new_image;
+  }
   if (W <= 0 || H <= 0) return 0;
 
   // OK, need to resize the image data; allocate memory and 
-  Fl_Pixmap	*new_image;	// New pixmap
   char		**new_data,	// New array for image data
 		**new_row,	// Pointer to row in image data
 		*new_ptr,	// Pointer into new array
@@ -445,7 +415,6 @@ void Fl_Pixmap::delete_data() {
     for (int i = 0; i < count(); i ++) delete[] (char *)data()[i];
     delete[] (char **)data();
   }
-  if (array) delete[] (unsigned char *)array;
 }
 
 void Fl_Pixmap::set_data(const char * const * p) {
@@ -517,5 +486,5 @@ void Fl_Pixmap::desaturate() {
 }
 
 //
-// End of "$Id: Fl_Pixmap.cxx,v 1.9.2.4.2.21 2002/08/09 01:09:49 easysw Exp $".
+// End of "$Id: Fl_Pixmap.cxx,v 1.9.2.4.2.33 2004/09/24 16:00:10 easysw Exp $".
 //

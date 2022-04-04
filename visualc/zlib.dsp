@@ -41,7 +41,8 @@ RSC=rc.exe
 # PROP Intermediate_Dir "Release"
 # PROP Target_Dir ""
 # ADD BASE CPP /nologo /W3 /GX /O2 /D "WIN32" /D "NDEBUG" /D "_WINDOWS" /YX /FD /c
-# ADD CPP /nologo /MT /GX /Ot /Op /Ob2 /I "." /I ".." /D "FL_STATIC" /D "WIN32" /D "NDEBUG" /D "_WINDOWS" /D "WIN32_LEAN_AND_MEAN" /D "VC_EXTRA_LEAN" /D "WIN32_EXTRA_LEAN" /YX /FD /c
+# ADD CPP /nologo /MD /GX /Ot /Op /Ob2 /I "../visualc" /I "../zlib" /D "WIN32" /D "NDEBUG" /D "_WINDOWS" /D "WIN32_LEAN_AND_MEAN" /D "VC_EXTRA_LEAN" /D "WIN32_EXTRA_LEAN" /YX /FD /c
+# SUBTRACT CPP /Os
 # ADD BASE RSC /l 0x409
 # ADD RSC /l 0x409
 BSC32=bscmake.exe
@@ -49,7 +50,7 @@ BSC32=bscmake.exe
 # ADD BSC32 /nologo
 LIB32=link.exe -lib
 # ADD BASE LIB32 /nologo
-# ADD LIB32 /nologo /out:"..\lib\zlib.lib"
+# ADD LIB32 /nologo /out:"..\lib\fltkutf8z.lib"
 
 !ELSEIF  "$(CFG)" == "zlib - Win32 Debug"
 
@@ -64,7 +65,7 @@ LIB32=link.exe -lib
 # PROP Intermediate_Dir "Debug"
 # PROP Target_Dir ""
 # ADD BASE CPP /nologo /W3 /GX /Z7 /Od /D "WIN32" /D "_DEBUG" /D "_WINDOWS" /YX /FD /c
-# ADD CPP /nologo /MTd /GX /Z7 /Od /I "." /I ".." /D "FL_STATIC" /D "WIN32" /D "_DEBUG" /D "_WINDOWS" /D "WIN32_LEAN_AND_MEAN" /D "VC_EXTRA_LEAN" /D "WIN32_EXTRA_LEAN" /FR /YX /FD /c
+# ADD CPP /nologo /MDd /GX /Zi /Od /I "../visualc" /I "../zlib" /D "WIN32" /D "_DEBUG" /D "_WINDOWS" /D "WIN32_LEAN_AND_MEAN" /D "VC_EXTRA_LEAN" /D "WIN32_EXTRA_LEAN" /YX /FD /c
 # ADD BASE RSC /l 0x409
 # ADD RSC /l 0x409
 BSC32=bscmake.exe
@@ -72,7 +73,7 @@ BSC32=bscmake.exe
 # ADD BSC32 /nologo
 LIB32=link.exe -lib
 # ADD BASE LIB32 /nologo
-# ADD LIB32 /nologo /out:"..\lib\zlibd.lib"
+# ADD LIB32 /nologo /out:"..\lib\fltkutf8zd.lib"
 
 !ENDIF 
 
@@ -102,14 +103,6 @@ SOURCE=..\zlib\gzio.c
 # End Source File
 # Begin Source File
 
-SOURCE=..\zlib\infblock.c
-# End Source File
-# Begin Source File
-
-SOURCE=..\zlib\infcodes.c
-# End Source File
-# Begin Source File
-
 SOURCE=..\zlib\inffast.c
 # End Source File
 # Begin Source File
@@ -122,23 +115,11 @@ SOURCE=..\zlib\inftrees.c
 # End Source File
 # Begin Source File
 
-SOURCE=..\zlib\infutil.c
-# End Source File
-# Begin Source File
-
-SOURCE=..\zlib\maketree.c
-# End Source File
-# Begin Source File
-
 SOURCE=..\zlib\trees.c
 # End Source File
 # Begin Source File
 
 SOURCE=..\zlib\uncompr.c
-# End Source File
-# Begin Source File
-
-SOURCE=..\zlib\zconf.h
 # End Source File
 # Begin Source File
 

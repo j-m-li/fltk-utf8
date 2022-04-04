@@ -1,9 +1,9 @@
 //
-// "$Id: fl_vertex.cxx,v 1.5.2.3.2.7 2003/01/30 21:44:26 easysw Exp $"
+// "$Id: fl_vertex.cxx,v 1.5.2.3.2.12 2004/08/31 22:00:49 matthiaswm Exp $"
 //
 // Portable drawing routines for the Fast Light Tool Kit (FLTK).
 //
-// Copyright 1998-2003 by Bill Spitzak and others.
+// Copyright 1998-2004 by Bill Spitzak and others.
 //
 // This library is free software; you can redistribute it and/or
 // modify it under the terms of the GNU Library General Public
@@ -26,11 +26,14 @@
 // Portable drawing code for drawing arbitrary shapes with
 // simple 2D transformations.  See also fl_arc.cxx
 
+// matt: the Quartz implementation purposly doesn't use the Quartz matrix
+//       operations for reasons of compatibility and maintainability
+
+#include <config.h>
 #include <FL/fl_draw.H>
 #include <FL/x.H>
-#include <FL/fl_math.h>
+#include <FL/math.h>
 #include <stdlib.h>
-#include <stdio.h>
 
 struct matrix {double a, b, c, d, x, y;};
 
@@ -48,7 +51,7 @@ void fl_push_matrix() {
   stack[sptr++] = m;
 }
 
-void fl_pop_matrix() {m = stack[--sptr];}
+void fl_pop_matrix() {if (sptr > 0) m = stack[--sptr];}
 
 void fl_mult_matrix(double a, double b, double c, double d, double x, double y) {
   matrix o;
@@ -65,7 +68,7 @@ void fl_scale(double x,double y) {fl_mult_matrix(x,0,0,y,0,0);}
 
 void fl_scale(double x) {fl_mult_matrix(x,0,0,x,0,0);}
 
-void Fl_Fltk::translate(double x,double y) {fl_mult_matrix(1,0,0,1,x,y);}
+void fl_translate(double x,double y) {fl_mult_matrix(1,0,0,1,x,y);}
 
 void fl_rotate(double d) {
   if (d) {
@@ -79,52 +82,48 @@ void fl_rotate(double d) {
   }
 }
 
-static XPoint *p = (XPoint *)0;
 // typedef what the x,y fields in a point are:
-#if defined(WIN32) || DJGPP
+#ifdef WIN32
 typedef int COORD_T;
+#  define XPOINT XPoint
+#elif defined(__APPLE_QUARTZ__)
+typedef float COORD_T;
+typedef struct { float x; float y; } QPoint;
+#  define XPOINT QPoint
+extern float fl_quartz_line_width_;
 #else
 typedef short COORD_T;
+#  define XPOINT XPoint
 #endif
+
+static XPOINT *p = (XPOINT *)0;
 
 static int p_size;
 static int n;
 static int what;
 enum {LINE, LOOP, POLYGON, POINT_};
 
-void Fl_Fltk::begin_points() {n = 0; what = POINT_;}
+void fl_begin_points() {n = 0; what = POINT_;}
 
-void Fl_Fltk::begin_line() {n = 0; what = LINE;}
+void fl_begin_line() {n = 0; what = LINE;}
 
-void Fl_Fltk::begin_loop() {n = 0; what = LOOP;}
+void fl_begin_loop() {n = 0; what = LOOP;}
 
-void Fl_Fltk::begin_polygon() {n = 0; what = POLYGON;}
+void fl_begin_polygon() {n = 0; what = POLYGON;}
 
-double fl_transform_x(double x, double y) {
-  return x*m.a + y*m.c + m.x;
-}
+double fl_transform_x(double x, double y) {return x*m.a + y*m.c + m.x;}
 
-double fl_transform_y(double x, double y) {
-  return x*m.b + y*m.d + m.y;
-}
+double fl_transform_y(double x, double y) {return x*m.b + y*m.d + m.y;}
 
-double fl_transform_dx(double x, double y) {
-  return x*m.a + y*m.c;
-}
+double fl_transform_dx(double x, double y) {return x*m.a + y*m.c;}
 
-double fl_transform_dy(double x, double y) {
-  return x*m.b + y*m.d;
-}
+double fl_transform_dy(double x, double y) {return x*m.b + y*m.d;}
 
-static void fl_trans_vertex(COORD_T x, COORD_T y) {
-  if (fl->type == FL_GDI_DEVICE) {
-    x = (COORD_T)(x * fl->s + fl->L);
-	y = (COORD_T)(y * fl->s + fl->T);
-  }
+static void fl_transformed_vertex(COORD_T x, COORD_T y) {
   if (!n || x != p[n-1].x || y != p[n-1].y) {
     if (n >= p_size) {
       p_size = p ? 2*p_size : 16;
-      p = (XPoint *)realloc((void*)p, p_size*sizeof(*p));
+      p = (XPOINT*)realloc((void*)p, p_size*sizeof(*p));
     }
     p[n].x = x;
     p[n].y = y;
@@ -132,49 +131,53 @@ static void fl_trans_vertex(COORD_T x, COORD_T y) {
   }
 }
 
-void Fl_Fltk::transformed_vertex(double xf, double yf) {
-	fl_trans_vertex(COORD_T(rint(xf)), COORD_T(rint(yf)));
+void fl_transformed_vertex(double xf, double yf) {
+#ifdef __APPLE_QUARTZ__
+  fl_transformed_vertex(COORD_T(xf), COORD_T(yf));
+#else
+  fl_transformed_vertex(COORD_T(rint(xf)), COORD_T(rint(yf)));
+#endif
 }
 
-void Fl_Fltk::vertex(double x,double y) {
-  Fl_Fltk::transformed_vertex(x*m.a + y*m.c + m.x, x*m.b + y*m.d + m.y);
+void fl_vertex(double x,double y) {
+  fl_transformed_vertex(x*m.a + y*m.c + m.x, x*m.b + y*m.d + m.y);
 }
 
-void Fl_Fltk::end_points() {
+void fl_end_points() {
 #ifdef WIN32
   for (int i=0; i<n; i++) SetPixel(fl_gc, p[i].x, p[i].y, fl_RGB());
-#elif defined(__MACOS__)
+#elif defined(__APPLE_QD__)
   for (int i=0; i<n; i++) { MoveTo(p[i].x, p[i].y); Line(0, 0); } 
-#elif NANO_X
-  if (n>1) GrPoly(fl_window,fl_gc, n, p);
-			//(GR_DRAW_ID id, GR_GC_ID gc, GR_COUNT count,
-			//GR_POINT *pointtable);
-#elif DJGPP
-  for (int i=0; i<n; i++) GrPlot(p[i].x, p[i].y, fl_gc->lno_color);
+#elif defined(__APPLE_QUARTZ__)
+  if (fl_quartz_line_width_==1.0f) CGContextSetShouldAntialias(fl_gc, false);
+  for (int i=0; i<n; i++) { 
+    CGContextMoveToPoint(fl_gc, p[i].x, p[i].y);
+    CGContextAddLineToPoint(fl_gc, p[i].x, p[i].y);
+    CGContextStrokePath(fl_gc);
+  }
+  if (fl_quartz_line_width_==1.0f) CGContextSetShouldAntialias(fl_gc, false);
 #else
   if (n>1) XDrawPoints(fl_display, fl_window, fl_gc, p, n, 0);
 #endif
 }
 
-void Fl_Fltk::end_line() {
+void fl_end_line() {
   if (n < 2) {
     fl_end_points();
     return;
   }
-
 #ifdef WIN32
-  if (n>1) {
-    Polyline(fl_gc, p, n);
-  }
-#elif defined(__MACOS__)
+  if (n>1) Polyline(fl_gc, p, n);
+#elif defined(__APPLE_QD__)
   if (n<=1) return;
   MoveTo(p[0].x, p[0].y);
   for (int i=1; i<n; i++) LineTo(p[i].x, p[i].y);
-#elif NANO_X
-  if (n>1) GrPoly(fl_window,fl_gc,n,p);
-#elif DJGPP
-  for (int i=1; i<n; i++) GrLine(p[i-1].x, p[i-1].y,p[i].x, p[i].y,
-	fl_gc->lno_color);
+#elif defined(__APPLE_QUARTZ__)
+  if (n<=1) return;
+  CGContextMoveToPoint(fl_gc, p[0].x, p[0].y);
+  for (int i=1; i<n; i++)
+    CGContextAddLineToPoint(fl_gc, p[i].x, p[i].y);
+  CGContextStrokePath(fl_gc);
 #else
   if (n>1) XDrawLines(fl_display, fl_window, fl_gc, p, n, 0);
 #endif
@@ -184,21 +187,13 @@ static void fixloop() {  // remove equal points from closed path
   while (n>2 && p[n-1].x == p[0].x && p[n-1].y == p[0].y) n--;
 }
 
-void Fl_Fltk::end_loop() {
+void fl_end_loop() {
   fixloop();
-  if (n>2) {
-	  int g = 0;
-	  if (fl->type == FL_GDI_DEVICE) {
-	    g = 1;
-		fl->type = FL_FLTK_DEVICE;
-	  }
-	  fl_trans_vertex((COORD_T)p[0].x, (COORD_T)p[0].y);
-	  if (g) fl->type = FL_GDI_DEVICE;
-  }
-  Fl_Fltk::end_line();
+  if (n>2) fl_transformed_vertex((COORD_T)p[0].x, (COORD_T)p[0].y);
+  fl_end_line();
 }
 
-void Fl_Fltk::end_polygon() {
+void fl_end_polygon() {
   fixloop();
   if (n < 3) {
     fl_end_line();
@@ -209,7 +204,7 @@ void Fl_Fltk::end_polygon() {
     SelectObject(fl_gc, fl_brush());
     Polygon(fl_gc, p, n);
   }
-#elif defined(__MACOS__)
+#elif defined(__APPLE_QD__)
   if (n<=1) return;
   PolyHandle ph = OpenPoly();
   MoveTo(p[0].x, p[0].y);
@@ -217,73 +212,57 @@ void Fl_Fltk::end_polygon() {
   ClosePoly();
   PaintPoly(ph);
   KillPoly(ph);
-#elif NANO_X
-  if (n>2) GrFillPoly(fl_window,fl_gc,n,p);
-#elif DJGPP
-  if (n < 3) return;
-  int **pt = (int**) malloc(sizeof(int*) *n);
-  int *pot = (int*) malloc(sizeof(int) *n * 2);
-  int i = n;
-  while (i > 0) {
-    i--;
-    pt[i] = pot + i;
-    pt[i][0] = p[i].x;
-    pt[i][1] = p[i].y;
-  }
-  GrFilledPolygon(n, (int(*)[2])pt, fl_gc->lno_color);
-  free(pt);
-  free(pot);
+#elif defined(__APPLE_QUARTZ__)
+  if (n<=1) return;
+  CGContextMoveToPoint(fl_gc, p[0].x, p[0].y);
+  for (int i=1; i<n; i++) 
+    CGContextAddLineToPoint(fl_gc, p[i].x, p[i].y);
+  CGContextClosePath(fl_gc);
+  CGContextFillPath(fl_gc);
 #else
   if (n>2) XFillPolygon(fl_display, fl_window, fl_gc, p, n, Convex, 0);
 #endif
 }
 
-static int garp;
+static int gap;
 #ifdef WIN32
 static int counts[20];
 static int numcount;
 #endif
 
-void Fl_Fltk::begin_complex_polygon() {
-  Fl_Fltk::begin_polygon();
-  garp = 0;
+void fl_begin_complex_polygon() {
+  fl_begin_polygon();
+  gap = 0;
 #ifdef WIN32
   numcount = 0;
 #endif
 }
 
-void Fl_Fltk::gap() {
-  while (n>garp+2 && p[n-1].x == p[garp].x && p[n-1].y == p[garp].y) n--;
-  if (n > garp+2) {
-	int g = 0;
-	if (fl->type == FL_GDI_DEVICE) {
-	  g = 1;
-      fl->type = FL_FLTK_DEVICE;
-	}
-    fl_trans_vertex((COORD_T)p[garp].x, (COORD_T)p[garp].y);
-    if (g) fl->type = FL_GDI_DEVICE; 
+void fl_gap() {
+  while (n>gap+2 && p[n-1].x == p[gap].x && p[n-1].y == p[gap].y) n--;
+  if (n > gap+2) {
+    fl_transformed_vertex((COORD_T)p[gap].x, (COORD_T)p[gap].y);
 #ifdef WIN32
-    counts[numcount++] = n-garp;
+    counts[numcount++] = n-gap;
 #endif
-    garp = n;
+    gap = n;
   } else {
-    n = garp;
+    n = gap;
   }
 }
 
-void Fl_Fltk::end_complex_polygon() {
-  Fl_Fltk::gap();
+void fl_end_complex_polygon() {
+  fl_gap();
   if (n < 3) {
     fl_end_line();
     return;
   }
-
 #ifdef WIN32
   if (n>2) {
     SelectObject(fl_gc, fl_brush());
     PolyPolygon(fl_gc, p, counts, numcount);
   }
-#elif defined(__MACOS__)
+#elif defined(__APPLE_QD__)
   if (n<=1) return;
   PolyHandle ph = OpenPoly();
   MoveTo(p[0].x, p[0].y);
@@ -291,22 +270,13 @@ void Fl_Fltk::end_complex_polygon() {
   ClosePoly();
   PaintPoly(ph);
   KillPoly(ph);
-#elif NANO_X
-  if (n>2) GrFillPoly(fl_window,fl_gc,n,p);
-#elif DJGPP
-  if (n < 3) return;
-  int **pt = (int**) malloc(sizeof(int*) *n);
-  int *pot = (int*) malloc(sizeof(int) *n * 2);
-  int i = n;
-  while (i > 0) {
-    i--;
-    pt[i] = pot + i;
-    pt[i][0] = p[i].x;
-    pt[i][1] = p[i].y;
-  }
-  GrFilledPolygon(n, (int(*)[2])pt, fl_gc->lno_color);
-  free(pt);
-  free(pot);
+#elif defined(__APPLE_QUARTZ__)
+  if (n<=1) return;
+  CGContextMoveToPoint(fl_gc, p[0].x, p[0].y);
+  for (int i=1; i<n; i++)
+    CGContextAddLineToPoint(fl_gc, p[i].x, p[i].y);
+  CGContextClosePath(fl_gc);
+  CGContextFillPath(fl_gc);
 #else
   if (n>2) XFillPolygon(fl_display, fl_window, fl_gc, p, n, 0, 0);
 #endif
@@ -316,17 +286,11 @@ void Fl_Fltk::end_complex_polygon() {
 // warning: these do not draw rotated ellipses correctly!
 // See fl_arc.c for portable version.
 
-void Fl_Fltk::circle(double x, double y,double r) {
+void fl_circle(double x, double y,double r) {
   double xt = fl_transform_x(x,y);
   double yt = fl_transform_y(x,y);
   double rx = r * (m.c ? sqrt(m.a*m.a+m.c*m.c) : fabs(m.a));
   double ry = r * (m.b ? sqrt(m.b*m.b+m.d*m.d) : fabs(m.d));
-  if (fl->type == FL_GDI_DEVICE) {
-    xt = xt*fl->s+fl->L;
-	yt = yt*fl->s+fl->T;
-	rx = rx*fl->s;
-	ry = ry*fl->s;
-  }
   int llx = (int)rint(xt-rx);
   int w = (int)rint(xt+rx)-llx;
   int lly = (int)rint(yt-ry);
@@ -337,19 +301,13 @@ void Fl_Fltk::circle(double x, double y,double r) {
     Pie(fl_gc, llx, lly, llx+w, lly+h, 0,0, 0,0); 
   } else
     Arc(fl_gc, llx, lly, llx+w, lly+h, 0,0, 0,0); 
-#elif defined(__MACOS__)
+#elif defined(__APPLE_QD__)
   Rect rt; rt.left=llx; rt.right=llx+w; rt.top=lly; rt.bottom=lly+h;
   (what == POLYGON ? PaintOval : FrameOval)(&rt);
-#elif NANO_X
-  if (what == POLYGON)
-    GrFillEllipse(fl_window,fl_gc,llx+w/2,lly+h/2,w/2,h/2);
-  else
-    GrEllipse(fl_window,fl_gc,llx+w/2,lly+h/2,w/2,h/2);
-#elif DJGPP
-  if (what == POLYGON)
-    GrFilledEllipse(llx+w/2,lly+h/2,llx+w/2,lly+h/2, fl_gc->lno_color);
-  else
-    GrEllipse(llx+w/2,lly+h/2,llx+w/2,lly+h/2, fl_gc->lno_color);
+#elif defined(__APPLE_QUARTZ__)
+  // Quartz warning : circle won't scale to current matrix!
+  CGContextAddArc(fl_gc, xt, yt, (w+h)*0.25f, 0, 2.0f*M_PI, 1);
+  (what == POLYGON ? CGContextFillPath : CGContextStrokePath)(fl_gc);
 #else
   (what == POLYGON ? XFillArc : XDrawArc)
     (fl_display, fl_window, fl_gc, llx, lly, w, h, 0, 360*64);
@@ -357,5 +315,5 @@ void Fl_Fltk::circle(double x, double y,double r) {
 }
 
 //
-// End of "$Id: fl_vertex.cxx,v 1.5.2.3.2.7 2003/01/30 21:44:26 easysw Exp $".
+// End of "$Id: fl_vertex.cxx,v 1.5.2.3.2.12 2004/08/31 22:00:49 matthiaswm Exp $".
 //

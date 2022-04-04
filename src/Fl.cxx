@@ -1,9 +1,9 @@
 //
-// "$Id: Fl.cxx,v 1.24.2.41.2.54 2002/10/04 15:59:28 easysw Exp $"
+// "$Id: Fl.cxx,v 1.24.2.41.2.71 2004/11/23 19:50:58 easysw Exp $"
 //
 // Main event handling code for the Fast Light Tool Kit (FLTK).
 //
-// Copyright 1998-2002 by Bill Spitzak and others.
+// Copyright 1998-2004 by Bill Spitzak and others.
 //
 // This library is free software; you can redistribute it and/or
 // modify it under the terms of the GNU Library General Public
@@ -23,6 +23,11 @@
 // Please report all bugs and problems to "fltk-bugs@fltk.org".
 //
 
+// warning: the Apple Quartz version still uses some Quickdraw calls,
+//          mostly to get around the single active context in QD and 
+//          to implement clipping. This should be changed into pure
+//          Quartz calls in the near future.
+
 #include <FL/Fl.H>
 #include <FL/Fl_Window.H>
 #include <FL/x.H>
@@ -30,11 +35,11 @@
 #include <ctype.h>
 #include <stdlib.h>
 #include "flstring.h"
-#include <FL/Fl_Fltk.H>
 
-#if __MACOS__
-#include <Time.h>
-#endif
+#ifdef DEBUG
+#  include <stdio.h>
+#endif // DEBUG
+
 
 //
 // Globals...
@@ -51,17 +56,19 @@ int		Fl::damage_,
 		Fl::e_x_root,
 		Fl::e_y_root,
 		Fl::e_dx,
-		Fl::e_dy;
-long		Fl::e_state;
-int		Fl::e_clicks,
+		Fl::e_dy,
+		Fl::e_state,
+		Fl::e_clicks,
 		Fl::e_is_click,
 		Fl::e_keysym;
 char		*Fl::e_text = (char *)"";
 int		Fl::e_length;
 int		Fl::visible_focus_ = 1,
 		Fl::dnd_text_ops_ = 0,
-                Fl::minimal_shortcuts_ = 1,
-                Fl::symbol_in_label_ = 0;
+		Fl::symbol_in_label_ = 0;
+
+
+
 //
 // 'Fl::version()' - Return the API version number...
 //
@@ -101,10 +108,8 @@ struct Timeout {
 };
 static Timeout* first_timeout, *free_timeout;
 
-#if !defined(WIN32) && !__MACOS__
-#if !MSDOS || DJGPP
+#ifndef WIN32
 #  include <sys/time.h>
-#endif
 #endif
 
 // I avoid the overhead of getting the current time when we have no
@@ -113,40 +118,12 @@ static Timeout* first_timeout, *free_timeout;
 // the current time, and the next call will actualy elapse time.
 static char reset_clock = 1;
 
-#if MSDOS && NANO_X
-#include <time.h>
-struct timeval {
-	unsigned long tv_sec, tv_usec;
-};
-static int gettimeofday(struct timeval *tp, void*tz)
-{
-	static unsigned long s, u;
-	tp->tv_sec = time(NULL);
-	if (tp->tv_sec == u) {
-		s += 20000;
-	} else {
-		s = 0;
-	}
-	tp->tv_usec = s;
-	u = tp->tv_sec;
-	return 0;
-}
-#endif
-
 static void elapse_timeouts() {
 #ifdef WIN32
   unsigned long newclock = GetTickCount();
   static unsigned long prevclock;
   double elapsed = (newclock-prevclock)/1000.0;
   prevclock = newclock;
-#elif __MACOS__
-  UnsignedWide newclock;
-  static UnsignedWide prevclock = {0.0};
-  Microseconds(&newclock);
-  double elapsed = (newclock.hi - prevclock.hi)/1000000.0 * 0x100000000 +
-    (newclock.lo - prevclock.lo) / 1000000.0;
-  prevclock.lo = newclock.lo;
-  prevclock.hi = newclock.hi;
 #else
   static struct timeval prevclock;
   struct timeval newclock;
@@ -261,6 +238,8 @@ extern int fl_wait(double time); // in Fl_<platform>.cxx
 static char in_idle;
 
 double Fl::wait(double time_to_wait) {
+  do_widget_deletion();
+
   if (first_timeout) {
     elapse_timeouts();
     Timeout *t;
@@ -317,13 +296,7 @@ double Fl::wait(double time_to_wait) {
 #define FOREVER 1e20
 
 int Fl::run() {
-#if NANO_X
-  while (1 || Fl_X::first) {
-#else
-  while (Fl_X::first) {
-#endif
-	wait(FOREVER);
-  }
+  while (Fl_X::first) wait(FOREVER);
   return 0;
 }
 
@@ -357,11 +330,13 @@ Fl_X* Fl_X::first;
 Fl_Window* fl_find(Window xid) {
   Fl_X *window;
   for (Fl_X **pp = &Fl_X::first; (window = *pp); pp = &window->next)
-#ifdef __MACOS__
+#ifdef __APPLE_QD__
+    if (window->xid == xid && !window->w->window()) {
+#elif defined(__APPLE_QUARTZ__)
     if (window->xid == xid && !window->w->window()) {
 #else
     if (window->xid == xid) {
-#endif // __MACOS__
+#endif // __APPLE__
       if (window != Fl_X::first && !Fl::modal()) {
 	// make this window be first to speed up searches
 	// this is not done if modal is true to avoid messing up modal stack
@@ -408,12 +383,14 @@ void Fl::flush() {
 
 #ifdef WIN32
   GdiFlush();
-#elif defined (__MACOS__)
-  GrafPtr port; GetPort( &port );
-  if ( port ) 
-  {
+#elif defined(__APPLE_QD__)
+  GrafPtr port;
+  GetPort( &port );
+  if ( port )
     QDFlushPortBuffer( port, 0 );
-  }
+#elif defined (__APPLE_QUARTZ__)
+  if (fl_gc)
+    CGContextFlush(fl_gc);
 #else
   if (fl_display) XFlush(fl_display);
 #endif
@@ -513,6 +490,9 @@ void (*Fl_Tooltip::exit)(Fl_Widget *) = nothing;
 // X says the focus or mouse window have changed.
 
 void fl_fix_focus() {
+#ifdef DEBUG
+  puts("fl_fix_focus();");
+#endif // DEBUG
 
   if (Fl::grab()) return; // don't do anything while grab is on.
 
@@ -566,6 +546,10 @@ extern Fl_Widget *fl_selection_requestor; // from Fl_x.cxx
 // desirable behavior and caused flwm to crash.
 
 void fl_throw_focus(Fl_Widget *o) {
+#ifdef DEBUG
+  printf("fl_throw_focus(o=%p)\n", o);
+#endif // DEBUG
+
   if (o->contains(Fl::pushed())) Fl::pushed_ = 0;
 #ifndef WIN32
   if (o->contains(fl_selection_requestor)) fl_selection_requestor = 0;
@@ -625,6 +609,10 @@ int Fl::handle(int e, Fl_Window* window)
     return 1;
 
   case FL_PUSH:
+#ifdef DEBUG
+    printf("Fl::handle(e=%d, window=%p);\n", e, window);
+#endif // DEBUG
+
     if (grab()) wi = grab();
     else if (modal() && wi != modal()) return 0;
     pushed_ = wi;
@@ -662,7 +650,12 @@ int Fl::handle(int e, Fl_Window* window)
     if (grab()) wi = grab();
     {Fl_Widget* pbm = belowmouse();
     int ret = (wi && send(e, wi, window));
-    if (pbm != belowmouse()) Fl_Tooltip::enter(belowmouse());
+    if (pbm != belowmouse()) {
+#ifdef DEBUG
+      printf("Fl::handle(e=%d, window=%p);\n", e, window);
+#endif // DEBUG
+      Fl_Tooltip::enter(belowmouse());
+    }
     return ret;}
 
   case FL_RELEASE: {
@@ -688,6 +681,10 @@ int Fl::handle(int e, Fl_Window* window)
     return 1;
 
   case FL_KEYBOARD:
+#ifdef DEBUG
+    printf("Fl::handle(e=%d, window=%p);\n", e, window);
+#endif // DEBUG
+
     Fl_Tooltip::enter((Fl_Widget*)0);
 
     fl_xfocus = window; // this should not happen!  But maybe it does:
@@ -710,9 +707,7 @@ int Fl::handle(int e, Fl_Window* window)
     if (grab()) {wi = grab(); break;} // send it to grab window
 
     // Try it as shortcut, sending to mouse widget and all parents:
-    wi = focus();
-    if (!wi) wi = belowmouse(); 
-    if (!wi) {wi = modal(); if (!wi) wi = window;}
+    wi = belowmouse(); if (!wi) {wi = modal(); if (!wi) wi = window;}
     for (; wi; wi = wi->parent()) if (send(FL_SHORTCUT, wi, window)) return 1;
 
     // try using add_handle() functions:
@@ -728,12 +723,20 @@ int Fl::handle(int e, Fl_Window* window)
     return 0;
 
   case FL_ENTER:
+#ifdef DEBUG
+    printf("Fl::handle(e=%d, window=%p);\n", e, window);
+#endif // DEBUG
+
     fl_xmousewin = window;
     fl_fix_focus();
     Fl_Tooltip::enter(belowmouse());
     return 1;
 
   case FL_LEAVE:
+#ifdef DEBUG
+    printf("Fl::handle(e=%d, window=%p);\n", e, window);
+#endif // DEBUG
+
     if (!pushed_) {
       belowmouse(0);
       Fl_Tooltip::enter(0);
@@ -776,14 +779,21 @@ void Fl_Window::hide() {
   for (; *pp != ip; pp = &(*pp)->next) if (!*pp) return;
   *pp = ip->next;
 
-#ifdef __MACOS__
+#ifdef __APPLE_QD__
   // remove all childwindow links
   for ( Fl_X *pc = Fl_X::first; pc; pc = pc->next )
   { 
     if ( pc->xidNext == ip ) pc->xidNext = ip->xidNext;
     if ( pc->xidChildren == ip ) pc->xidChildren = ip->xidNext;   
   }
-#endif // __MACOS__
+#elif defined(__APPLE_QUARTZ__)
+  // remove all childwindow links
+  for ( Fl_X *pc = Fl_X::first; pc; pc = pc->next )
+  {
+    if ( pc->xidNext == ip ) pc->xidNext = ip->xidNext;
+    if ( pc->xidChildren == ip ) pc->xidChildren = ip->xidNext;
+  }
+#endif // __APPLE__
 
   i = 0;
 
@@ -810,19 +820,30 @@ void Fl_Window::hide() {
 
 #ifdef WIN32
   if (ip->private_dc) ReleaseDC(ip->xid,ip->private_dc);
-  if (ip->xid == fl_window && fl_gc && fl->type != FL_GDI_DEVICE) {
+  if (ip->xid == fl_window && fl_gc) {
     ReleaseDC(fl_window, fl_gc);
     fl_window = (HWND)-1;
     fl_gc = 0;
   }
-#elif defined(__MACOS__)
+#elif defined(__APPLE_QD__)
+  if ( ip->xid == fl_window )
+    fl_window = 0;
+#elif defined(__APPLE_QUARTZ__)
+  Fl_X::q_release_context(ip);
   if ( ip->xid == fl_window )
     fl_window = 0;
 #else
   if (ip->region) XDestroyRegion(ip->region);
 #endif
 
-#ifdef __MACOS__
+#ifdef __APPLE_QD__
+  if ( !parent() ) // don't destroy shared windows!
+  {
+    //+ RemoveTrackingHandler( dndTrackingHandler, ip->xid );
+    //+ RemoveReceiveHandler( dndReceiveHandler, ip->xid );
+    XDestroyWindow(fl_display, ip->xid);
+  }
+#elif defined(__APPLE_QUARTZ__)
   if ( !parent() ) // don't destroy shared windows!
   {
     //+ RemoveTrackingHandler( dndTrackingHandler, ip->xid );
@@ -866,28 +887,33 @@ int Fl_Window::handle(int ev)
       break;
     case FL_HIDE:
       if (shown()) {
-      // Find what really turned invisible, if is was a parent window
-      // we do nothing.  We need to avoid unnecessary unmap calls
-      // because they cause the display to blink when the parent is
-      // remapped.  However if this or any intermediate non-window
-      // widget has really had hide() called directly on it, we must
-      // unmap because when the parent window is remapped we don't
-      // want to reappear.
-        if (visible()) {
-          Fl_Widget* p = parent(); 
-          for (;p->parent() && p->visible();p = p->parent()) {}
-          if (p->type() >= FL_WINDOW) break; // don't do the unmap
-        }
-#ifdef __MACOS__
+	// Find what really turned invisible, if is was a parent window
+	// we do nothing.  We need to avoid unnecessary unmap calls
+	// because they cause the display to blink when the parent is
+	// remapped.  However if this or any intermediate non-window
+	// widget has really had hide() called directly on it, we must
+	// unmap because when the parent window is remapped we don't
+	// want to reappear.
+	if (visible()) {
+	 Fl_Widget* p = parent(); for (;p->visible();p = p->parent()) {}
+	 if (p->type() >= FL_WINDOW) break; // don't do the unmap
+	}
+#ifdef __APPLE_QD__
+        hide();
+	set_visible();
+#elif defined(__APPLE_QUARTZ__)
         hide();
         set_visible();
 #else
-        XUnmapWindow(fl_display, fl_xid(this));
-#endif // __MACOS__
+	XUnmapWindow(fl_display, fl_xid(this));
+#endif // __APPLE__
       }
       break;
     }
+//  } else if (ev == FL_FOCUS || ev == FL_UNFOCUS) {
+//    Fl_Tooltip::exit(Fl_Tooltip::current());
   }
+
   return Fl_Group::handle(ev);
 }
 
@@ -976,18 +1002,18 @@ void Fl_Widget::damage(uchar fl, int X, int Y, int W, int H) {
   Fl_X* i = Fl_X::i((Fl_Window*)wi);
   if (!i) return; // window not mapped, so ignore it
 
-  if (X<=0 && Y<=0 && W>=wi->w() && H>=wi->h()) {
-    // if damage covers entire window delete region:
-    wi->damage(fl);
-    return;
-  }
-
   // clip the damage to the window and quit if none:
   if (X < 0) {W += X; X = 0;}
   if (Y < 0) {H += Y; Y = 0;}
   if (W > wi->w()-X) W = wi->w()-X;
   if (H > wi->h()-Y) H = wi->h()-Y;
   if (W <= 0 || H <= 0) return;
+
+  if (!X && !Y && W==wi->w() && H==wi->h()) {
+    // if damage covers entire window delete region:
+    wi->damage(fl);
+    return;
+  }
 
   if (wi->damage()) {
     // if we already have damage we must merge with existing region:
@@ -996,8 +1022,13 @@ void Fl_Widget::damage(uchar fl, int X, int Y, int W, int H) {
       Fl_Region R = XRectangleRegion(X, Y, W, H);
       CombineRgn(i->region, i->region, R, RGN_OR);
       XDestroyRegion(R);
-#elif defined(__MACOS__)
+#elif defined(__APPLE_QD__)
       Fl_Region R = NewRgn(); 
+      SetRectRgn(R, X, Y, X+W, Y+H);
+      UnionRgn(R, i->region, i->region);
+      DisposeRgn(R);
+#elif defined(__APPLE_QUARTZ__)
+      Fl_Region R = NewRgn();
       SetRectRgn(R, X, Y, X+W, Y+H);
       UnionRgn(R, i->region, i->region);
       DisposeRgn(R);
@@ -1018,26 +1049,54 @@ void Fl_Widget::damage(uchar fl, int X, int Y, int W, int H) {
 }
 
 void Fl_Window::flush() {
-
-  if (!wm_resize) {
-    make_current();
-    fl_clip_region(i->region); i->region = 0;
-    draw();
-  } else {
-    make_current();
-    //fl_clip_region(i->region); i->region = 0;
-    Fl_Offscreen o = fl_create_offscreen(w(), h());
-    fl_begin_offscreen(o);
-    wm_resize = 0;
-    draw();
-    fl_end_offscreen();
-    //make_current();
-    fl_clip_region(i->region); i->region = 0;
-    fl_copy_offscreen(0,0, w(), h(), o, 0, 0);
-    fl_delete_offscreen(o);
-  }
+  make_current();
+//if (damage() == FL_DAMAGE_EXPOSE && can_boxcheat(box())) fl_boxcheat = this;
+  fl_clip_region(i->region); i->region = 0;
+  draw();
 }
 
+
 //
-// End of "$Id: Fl.cxx,v 1.24.2.41.2.54 2002/10/04 15:59:28 easysw Exp $".
+// The following methods allow callbacks to schedule the deletion of
+// widgets at "safe" times.
+//
+
+static int		num_dwidgets = 0, alloc_dwidgets = 0;
+static Fl_Widget	**dwidgets = 0;
+
+void
+Fl::delete_widget(Fl_Widget *w) {
+  if (!w) return;
+
+  if (num_dwidgets >= alloc_dwidgets) {
+    Fl_Widget	**temp;
+
+    temp = new Fl_Widget *[alloc_dwidgets + 10];
+    if (alloc_dwidgets) {
+      memcpy(temp, dwidgets, alloc_dwidgets * sizeof(Fl_Widget *));
+      delete[] dwidgets;
+    }
+
+    dwidgets = temp;
+    alloc_dwidgets += 10;
+  }
+
+  dwidgets[num_dwidgets] = w;
+  num_dwidgets ++;
+}
+
+
+void
+Fl::do_widget_deletion() {
+  if (!num_dwidgets) return;
+
+  for (int i = 0; i < num_dwidgets; i ++)
+    delete dwidgets[i];
+
+  num_dwidgets = 0;
+}
+
+
+//
+// End of "$Id: Fl.cxx,v 1.24.2.41.2.71 2004/11/23 19:50:58 easysw Exp $".
 //

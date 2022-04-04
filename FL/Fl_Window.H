@@ -1,9 +1,9 @@
 //
-// "$Id: Fl_Window.H,v 1.12.2.6.2.7 2003/06/12 01:36:16 easysw Exp $"
+// "$Id: Fl_Window.H,v 1.12.2.6.2.9 2004/11/20 03:19:57 easysw Exp $"
 //
 // Window header file for the Fast Light Tool Kit (FLTK).
 //
-// Copyright 1998-2003 by Bill Spitzak and others.
+// Copyright 1998-2004 by Bill Spitzak and others.
 //
 // This library is free software; you can redistribute it and/or
 // modify it under the terms of the GNU Library General Public
@@ -38,13 +38,12 @@ class FL_EXPORT Fl_Window : public Fl_Group {
   friend class Fl_X;
   Fl_X *i; // points at the system-specific stuff
 
-  unsigned long wm_props;
   const char* iconlabel_;
   const char* xclass_;
   const void* icon_;
   // size_range stuff:
-  int minw, minh, maxw, maxh;
-  uchar dw, dh, aspect, size_range_set, wm_resize;
+  short minw, minh, maxw, maxh;
+  uchar dw, dh, aspect, size_range_set;
   // cursor stuff
   Fl_Cursor cursor_default;
   Fl_Color cursor_fg, cursor_bg;
@@ -89,7 +88,7 @@ public:
   void hotspot(const Fl_Widget& p, int offscreen = 0) {hotspot(&p,offscreen);}
   void free_position()	{clear_flag(FL_FORCE_POSITION);}
   void size_range(int a, int b, int c=0, int d=0, int e=0, int f=0, int g=0) {
-    minw=a; minh=b; maxw=c; maxh=d; dw=(uchar)e; dh=(uchar)f; aspect=(uchar)g; size_range_();}
+    minw=(short)a; minh=(short)b; maxw=(short)c; maxh=(short)d; dw=(short)e; dh=(short)f; aspect=(short)g; size_range_();}
 
   const char* label() const	{return Fl_Widget::label();}
   const char* iconlabel() const	{return iconlabel_;}
@@ -125,5 +124,5 @@ public:
 #endif
 
 //
-// End of "$Id: Fl_Window.H,v 1.12.2.6.2.7 2003/06/12 01:36:16 easysw Exp $".
+// End of "$Id: Fl_Window.H,v 1.12.2.6.2.9 2004/11/20 03:19:57 easysw Exp $".
 //

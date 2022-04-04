@@ -1,9 +1,9 @@
 //
-// "$Id: Fl_Bitmap.cxx,v 1.5.2.4.2.17 2002/08/09 01:09:48 easysw Exp $"
+// "$Id: Fl_Bitmap.cxx,v 1.5.2.4.2.27 2004/09/24 16:00:10 easysw Exp $"
 //
 // Bitmap drawing routines for the Fast Light Tool Kit (FLTK).
 //
-// Copyright 1998-2002 by Bill Spitzak and others.
+// Copyright 1998-2004 by Bill Spitzak and others.
 //
 // This library is free software; you can redistribute it and/or
 // modify it under the terms of the GNU Library General Public
@@ -29,10 +29,9 @@
 #include <FL/Fl_Widget.H>
 #include <FL/Fl_Menu_Item.H>
 #include <FL/Fl_Bitmap.H>
-#include <FL/Fl_Fltk.H>
 #include "flstring.h"
 
-#ifdef __MACOS__ // MacOS bitmask functions
+#ifdef __APPLE_QD__ // MacOS bitmask functions
 Fl_Bitmask fl_create_bitmask(int w, int h, const uchar *array) {
   Rect srcRect;
   srcRect.left = 0; srcRect.right = w;
@@ -77,6 +76,25 @@ Fl_Bitmask fl_create_bitmask(int w, int h, const uchar *array) {
 
 void fl_delete_bitmask(Fl_Bitmask id) {
   if (id) DisposeGWorld(id);
+}
+#elif defined(__APPLE_QUARTZ__)
+Fl_Bitmask fl_create_bitmask(int w, int h, const uchar *array) {
+  static uchar reverse[16] =    /* Bit reversal lookup table */
+    { 0x00, 0x88, 0x44, 0xcc, 0x22, 0xaa, 0x66, 0xee, 
+      0x11, 0x99, 0x55, 0xdd, 0x33, 0xbb, 0x77, 0xff };
+  int rowBytes = (w+7)>>3 ;
+  uchar *bmask = (uchar*)malloc(rowBytes*h), *dst = bmask;
+  const uchar *src = array;
+  for ( int i=rowBytes*h; i>0; i--,src++ ) {
+    *dst++ = ((reverse[*src & 0x0f] & 0xf0) | (reverse[(*src >> 4) & 0x0f] & 0x0f))^0xff;
+  }
+  CGDataProviderRef srcp = CGDataProviderCreateWithData( 0L, bmask, rowBytes*h, 0L);
+  CGImageRef id = CGImageMaskCreate( w, h, 1, 1, rowBytes, srcp, 0L, false);
+  CGDataProviderRelease(srcp);
+  return (Fl_Bitmask)id;
+}
+void fl_delete_bitmask(Fl_Bitmask id) {
+  if (id) CGImageRelease((CGImageRef)id);
 }
 #elif defined(WIN32) // Windows bitmask functions...
 // 'fl_create_bitmap()' - Create a 1-bit bitmap for drawing...
@@ -162,6 +180,7 @@ Fl_Bitmask fl_create_bitmask(int w, int h, const uchar *data) {
 
   id = CreateBitmap(w, h, np, bpp, newarray);
   delete[] newarray;
+
   return id;
 }
 
@@ -197,54 +216,6 @@ Fl_Bitmask fl_create_bitmask(int w, int h, const uchar *data, int for_mask) {
 void fl_delete_bitmask(Fl_Bitmask bm) {
   DeleteObject((HGDIOBJ)bm);
 }
-#elif NANO_X || DJGPP
-Fl_Bitmask fl_create_bitmask(int w, int h, const uchar *array) {
-    int k = 0;
-    int w1 = (w+7)/8;
-    int w2 = ((w+15)/16)*2;
-
-    uchar * new_array = new uchar [ w2 * h ];
-
-    static uchar reverse_table [ 16 ] = // bit reversal lookup table
-    {
-      0x00, 0x88, 0x44, 0xCC, 0x22, 0xAA, 0x66, 0xEE,
-      0x11, 0x99, 0x55, 0xDD, 0x33, 0xBB, 0x77, 0xFF
-    };
-
-    if (w < 8)
-    {
-      for ( int y = 0; y < h; ++y )
-      {
-        char p = array[y];
-        new_array[k] = 0;
-        new_array[k+1] =
-          (reverse_table[ p    &0x0F] & 0xF0) |
-          (reverse_table[(p>>4)&0x0F] & 0x0F);
-        k += 2;
-      }
-    }
-    else
-    {
-      uchar * dest = new_array;
-      for ( int y = 0; y < h; ++y )
-      {
-        for ( int n = 0; n < w1; ++n, ++k )
-	{
-          uchar p = array[k + ((n % 2) ? -1 : 1)];
-          *dest++ = 
-            (reverse_table[ p    &0x0F] & 0xF0) |
-	    (reverse_table[(p>>4)&0x0F] & 0x0F);
-	}
-        dest += w2-w1;
-      }
-    }
-    return new_array;
-}
-
-void fl_delete_bitmask(Fl_Bitmask bm) {
-  delete(bm);
-}
-
 #else // X11 bitmask functions
 Fl_Bitmask fl_create_bitmask(int w, int h, const uchar *data) {
   return XCreateBitmapFromData(fl_display, fl_window, (const char *)data,
@@ -254,14 +225,14 @@ Fl_Bitmask fl_create_bitmask(int w, int h, const uchar *data) {
 void fl_delete_bitmask(Fl_Bitmask bm) {
   fl_delete_offscreen((Fl_Offscreen)bm);
 }
-#endif // __MACOS__
+#endif // __APPLE__
 
 
 // MRS: Currently it appears that CopyDeepMask() does not work with an 8-bit alpha mask.
-//      If you want to test/fix this, uncomment the "#ifdef __MACOS__" and comment out
+//      If you want to test/fix this, uncomment the "#ifdef __APPLE__" and comment out
 //      the "#if 0" here.  Also see Fl_Image.cxx for a similar check...
 
-//#ifdef __MACOS__
+//#ifdef __APPLE_QD__
 #if 0
 // Create an 8-bit mask used for alpha blending
 Fl_Bitmask fl_create_alphamask(int w, int h, int d, int ld, const uchar *array) {
@@ -377,7 +348,7 @@ Fl_Bitmask fl_create_alphamask(int w, int h, int d, int ld, const uchar *array) 
 
   return (mask);
 }
-#endif // __MACOS__
+#endif // __APPLE__
 
 void Fl_Bitmap::draw(int XP, int YP, int WP, int HP, int cx, int cy) {
   if (!array) {
@@ -397,24 +368,14 @@ void Fl_Bitmap::draw(int XP, int YP, int WP, int HP, int cx, int cy) {
   if (H <= 0) return;
 #ifdef WIN32
   if (!id) id = fl_create_bitmap(w(), h(), array);
-   
-  if (fl->type == FL_GDI_DEVICE) {
-    HDC tempdc = CreateCompatibleDC(fl_gc);
-    SelectObject(tempdc, (HGDIOBJ)id);
-	SelectObject(tempdc, fl_brush());
-	StretchBlt(fl->gc, (int)(XP*fl->s + fl->L), (int)(YP*fl->s + fl->T), (int)(WP*fl->s), (int)(HP*fl->s), tempdc,0, 0, WP, HP, 0xE20746L);
-    DeleteDC(tempdc);
-	return;
-  } else {
-    HDC tempdc = CreateCompatibleDC(fl_gc);
-    SelectObject(tempdc, (HGDIOBJ)id);
-    SelectObject(fl_gc, fl_brush());
-    // secret bitblt code found in old MSWindows reference manual:
-	BitBlt(fl_gc, X, Y, W, H, tempdc, cx, cy, 0xE20746L);
-    DeleteDC(tempdc);
-  }
-  
-#elif defined(__MACOS__)
+
+  HDC tempdc = CreateCompatibleDC(fl_gc);
+  SelectObject(tempdc, (HGDIOBJ)id);
+  SelectObject(fl_gc, fl_brush());
+  // secret bitblt code found in old MSWindows reference manual:
+  BitBlt(fl_gc, X, Y, W, H, tempdc, cx, cy, 0xE20746L);
+  DeleteDC(tempdc);
+#elif defined(__APPLE_QD__)
   if (!id) id = fl_create_bitmask(w(), h(), array);
   GrafPtr dstPort;
   GetPort( &dstPort );
@@ -428,15 +389,14 @@ void Fl_Bitmap::draw(int XP, int YP, int WP, int HP, int cx, int cy) {
 	   &dst, 				// dst bounds
 	   srcOr, 				// mode
 	   0L);					// mask region
-#elif defined(NANO_X)
+#elif defined(__APPLE_QUARTZ__)
   if (!id) id = fl_create_bitmask(w(), h(), array);
-  {
-    // if you don't set this the first time the bitmap is drawn in test/bitmap.cxx the background color is wrong (WHITE): all subsequent draws are correct -- why?
-    GrSetGCUseBackground(fl_gc,false);
+  if (id && fl_gc) {
+    CGRect rect = { X, Y, W, H };
+    Fl_X::q_begin_image(rect, cx, cy, w(), h());
+    CGContextDrawImage(fl_gc, rect, (CGImageRef)id);
+    Fl_X::q_end_image();
   }
-  GrBitmap(fl_window,fl_gc,X,Y,W,H,(GR_BITMAP*)id);
-#elif defined(DJGPP)
-	//FIXME_DJGPP
 #else
   if (!id) id = fl_create_bitmask(w(), h(), array);
 
@@ -458,8 +418,8 @@ Fl_Bitmap::~Fl_Bitmap() {
 void Fl_Bitmap::uncache() {
   if (id) {
     fl_delete_bitmask((Fl_Offscreen)id);
+    id = 0;
   }
-  id = 0;
 }
 
 void Fl_Bitmap::label(Fl_Widget* widget) {
@@ -472,14 +432,23 @@ void Fl_Bitmap::label(Fl_Menu_Item* m) {
 }
 
 Fl_Image *Fl_Bitmap::copy(int W, int H) {
+  Fl_Bitmap	*new_image;	// New RGB image
+  uchar		*new_array;	// New array for image data
+
   // Optimize the simple copy where the width and height are the same...
-  if (W == w() && H == h()) return new Fl_Bitmap(array, w(), h());
+  if (W == w() && H == h()) {
+    new_array = new uchar [H * ((W + 7) / 8)];
+    memcpy(new_array, array, H * ((W + 7) / 8));
+
+    new_image = new Fl_Bitmap(new_array, W, H);
+    new_image->alloc_array = 1;
+
+    return new_image;
+  }
   if (W <= 0 || H <= 0) return 0;
 
   // OK, need to resize the image data; allocate memory and 
-  Fl_Bitmap	*new_image;	// New RGB image
-  uchar		*new_array,	// New array for image data
-		*new_ptr,	// Pointer into new array
+  uchar		*new_ptr,	// Pointer into new array
 		new_bit,	// Bit for new array
 		old_bit;	// Bit for old array
   const uchar	*old_ptr;	// Pointer into old array
@@ -497,11 +466,11 @@ Fl_Image *Fl_Bitmap::copy(int W, int H) {
   ystep  = h() / H;
 
   // Allocate memory for the new image...
-  new_array = new uchar [H * (W + 7) / 8];
+  new_array = new uchar [H * ((W + 7) / 8)];
   new_image = new Fl_Bitmap(new_array, W, H);
   new_image->alloc_array = 1;
 
-  memset(new_array, 0, H * (W + 7) / 8);
+  memset(new_array, 0, H * ((W + 7) / 8));
 
   // Scale the image using a nearest-neighbor algorithm...
   for (dy = H, sy = 0, yerr = H, new_ptr = new_array; dy > 0; dy --) {
@@ -541,5 +510,5 @@ Fl_Image *Fl_Bitmap::copy(int W, int H) {
 
 
 //
-// End of "$Id: Fl_Bitmap.cxx,v 1.5.2.4.2.17 2002/08/09 01:09:48 easysw Exp $".
+// End of "$Id: Fl_Bitmap.cxx,v 1.5.2.4.2.27 2004/09/24 16:00:10 easysw Exp $".
 //

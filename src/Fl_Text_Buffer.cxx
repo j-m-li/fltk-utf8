@@ -1,7 +1,7 @@
 //
-// "$Id: Fl_Text_Buffer.cxx,v 1.9.2.19 2003/05/28 16:09:12 matthiaswm Exp $"
+// "$Id: Fl_Text_Buffer.cxx,v 1.9.2.22 2004/09/08 15:42:47 easysw Exp $"
 //
-// Copyright 2001-2003 by Bill Spitzak and others.
+// Copyright 2001-2004 by Bill Spitzak and others.
 // Original code Copyright Mark Edel.  Permission to distribute under
 // the LGPL for the FLTK library granted by Mark Edel.
 //
@@ -25,18 +25,12 @@
 
 #include <stdio.h>
 #include <stdlib.h>
+#include <FL/fl_utf8.H>
 #include "flstring.h"
 #include <ctype.h>
 #include <FL/Fl.H>
 #include <FL/Fl_Text_Buffer.H>
-#include <FL/fl_utf8.H>
 
-#ifdef __MACOS__
-#define CW_BUG 37
-//#include <MemoryManager.h>
-#else
-#define CW_BUG 0
-#endif
 
 #define PREFERRED_GAP_SIZE 80
 /* Initial size for the buffer gap (empty space
@@ -77,12 +71,13 @@ static const char *ControlCodeTable[ 32 ] = {
   "dle", "dc1", "dc2", "dc3", "dc4", "nak", "syn", "etb",
   "can", "em", "sub", "esc", "fs", "gs", "rs", "us"};
 
-
-const char* fl_ins1_failed = "Fl_Text_Buffer::insert_column(): internal consistency check ins1 failed";
-const char* fl_ovly1_failed = "Fl_Text_Buffer::overlay_rectangle(): internal consistency check ovly1 failed";
-const char* fl_repl1_failed = "Fl_Text_Buffer::replace_rectangular(): internal consistency check repl1 failed";
-const char* fl_cannot_modify_cb = "Fl_Text_Buffer::remove_modify_callback(): Can't find modify CB to remove";
-const char* fl_cannot_find_pre = "Fl_Text_Buffer::remove_predelete_callback(): Can't find pre-delete CB to remove";
+static char* undobuffer;
+static int undobufferlength;
+static Fl_Text_Buffer* undowidget;
+static int undoat;	// points after insertion
+static int undocut;	// number of characters deleted there
+static int undoinsert;	// number of characters inserted
+static int undoyankcut;	// length of valid contents of buffer, even if undocut=0
 
 static int utf_len(char c)
 {
@@ -104,14 +99,6 @@ static int utf_len(char c)
   }
   return 0;
 }
-
-static char* undobuffer;
-static int undobufferlength;
-static Fl_Text_Buffer* undowidget;
-static int undoat;	// points after insertion
-static int undocut;	// number of characters deleted there
-static int undoinsert;	// number of characters inserted
-static int undoyankcut;	// length of valid contents of buffer, even if undocut=0
 
 static void undobuffersize(int n) {
   if (n > undobufferlength) {
@@ -236,7 +223,7 @@ char * Fl_Text_Buffer::text_range( int start, int end ) {
   /* Make sure start and end are ok, and allocate memory for returned string.
      If start is bad, return "", if end is bad, adjust it. */
   if ( start < 0 || start > mLength ) {
-    s = (char *)malloc(1);
+    s = (char *)malloc( 1 );
     s[ 0 ] = '\0';
     return s;
   }
@@ -248,18 +235,17 @@ char * Fl_Text_Buffer::text_range( int start, int end ) {
   if ( end > mLength )
     end = mLength;
   copiedLength = end - start;
-  
-  s = (char *)malloc( copiedLength + 1);
+  s = (char *)malloc( copiedLength + 1 );
 
   /* Copy the text from the buffer to the returned string */
   if ( end <= mGapStart ) {
-    memcpy( s, mBuf+start, copiedLength );
+    memcpy( s, &mBuf[ start ], copiedLength );
   } else if ( start >= mGapStart ) {
-    memcpy( s, mBuf + start + ( mGapEnd - mGapStart ), copiedLength );
+    memcpy( s, &mBuf[ start + ( mGapEnd - mGapStart ) ], copiedLength );
   } else {
     part1Length = mGapStart - start;
-    memcpy( s, mBuf + start, part1Length );
-    memcpy( s + part1Length, mBuf + mGapEnd, copiedLength - part1Length );
+    memcpy( s, &mBuf[ start ], part1Length );
+    memcpy( &s[ part1Length ], &mBuf[ mGapEnd ], copiedLength - part1Length );
   }
   s[ copiedLength ] = '\0';
   return s;
@@ -304,6 +290,11 @@ void Fl_Text_Buffer::replace( int start, int end, const char *s ) {
   const char * deletedText;
   int nInserted;
 
+  // Range check...
+  if (!s) return;
+  if (start < 0) start = 0;
+  if (end > mLength) end = mLength;
+
   call_predelete_callbacks( start, end-start );
   deletedText = text_range( start, end );
   remove_( start, end );
@@ -311,7 +302,7 @@ void Fl_Text_Buffer::replace( int start, int end, const char *s ) {
   nInserted = insert_( start, s );
   mCursorPosHint = start + nInserted;
   call_modify_callbacks( start, end - start, nInserted, 0, deletedText );
-  free( (char *)deletedText );
+  free( (void *)deletedText );
 }
 
 void Fl_Text_Buffer::remove( int start, int end ) {
@@ -327,6 +318,8 @@ void Fl_Text_Buffer::remove( int start, int end ) {
   if ( start < 0 ) start = 0;
   if ( end > mLength ) end = mLength;
   if ( end < 0 ) end = 0;
+
+  if (start == end) return;
 
   call_predelete_callbacks( start, end-start );
   /* Remove and redisplay */
@@ -415,6 +408,9 @@ void Fl_Text_Buffer::canUndo(char flag) {
   mCanUndo = flag;
 }
 
+const char *Fl::txt_ins1_failed = "Fl_Text_Buffer::insert_column(): internal consistency check ins1 failed";
+const char *Fl::txt_ovly1_failed = "Fl_Text_Buffer::overlay_rectangle(): internal consistency check ovly1 failed";
+
 /*
 ** Insert "text" columnwise into buffer starting at displayed character
 ** position "column" on the line beginning at "startPos".  Opens a rectangular
@@ -437,7 +433,7 @@ void Fl_Text_Buffer::insert_column( int column, int startPos, const char *s,
   insert_column_( column, lineStartPos, s, &insertDeleted, &nInserted,
                   &mCursorPosHint );
   if ( nDeleted != insertDeleted )
-    Fl::error(fl_ins1_failed);
+    Fl::error(Fl::txt_ins1_failed);
   call_modify_callbacks( lineStartPos, nDeleted, nInserted, 0, deletedText );
   free( (void *) deletedText );
   if ( charsInserted != NULL )
@@ -466,7 +462,7 @@ void Fl_Text_Buffer::overlay_rectangular( int startPos, int rectStart,
   overlay_rectangular_( lineStartPos, rectStart, rectEnd, s, &insertDeleted,
                         &nInserted, &mCursorPosHint );
   if ( nDeleted != insertDeleted )
-    Fl::error(fl_ovly1_failed);
+    Fl::error(Fl::txt_ovly1_failed);
   call_modify_callbacks( lineStartPos, nDeleted, nInserted, 0, deletedText );
   free( (void *) deletedText );
   if ( charsInserted != NULL )
@@ -474,6 +470,8 @@ void Fl_Text_Buffer::overlay_rectangular( int startPos, int rectStart,
   if ( charsDeleted != NULL )
     * charsDeleted = nDeleted;
 }
+
+const char *Fl::txt_repl1_failed = "Fl_Text_Buffer::replace_rectangular(): internal consistency check repl1 failed";
 
 /*
 ** Replace a rectangular area in buf, given by "start", "end", "rectStart",
@@ -528,12 +526,14 @@ void Fl_Text_Buffer::replace_rectangular( int start, int end, int rectStart,
 
   /* Figure out how many chars were inserted and call modify callbacks */
   if ( insertDeleted != deleteInserted + linesPadded )
-    Fl::error(fl_repl1_failed);
+    Fl::error(Fl::txt_repl1_failed);
   call_modify_callbacks( start, end - start, insertInserted, 0, deletedText );
   free( (void *) deletedText );
   if ( nInsertedLines < nDeletedLines )
     free( (void *) insText );
 }
+
+const char *Fl::txt_cannot_modify_cb = "Fl_Text_Buffer::remove_modify_callback(): Can't find modify CB to remove";
 
 /*
 ** Remove a rectangular swath of characters between character positions start
@@ -755,8 +755,8 @@ void Fl_Text_Buffer::add_modify_callback( Fl_Text_Modify_Cb bufModifiedCB,
   void **newCBArgs;
   int i;
 
-  newModifyProcs = new Fl_Text_Modify_Cb [ mNModifyProcs + 1 + CW_BUG];
-  newCBArgs = new void * [ mNModifyProcs + 1 + CW_BUG];
+  newModifyProcs = new Fl_Text_Modify_Cb [ mNModifyProcs + 1 ];
+  newCBArgs = new void * [ mNModifyProcs + 1 ];
   for ( i = 0; i < mNModifyProcs; i++ ) {
     newModifyProcs[ i + 1 ] = mNodifyProcs[ i ];
     newCBArgs[ i + 1 ] = mCbArgs[ i ];
@@ -772,6 +772,8 @@ void Fl_Text_Buffer::add_modify_callback( Fl_Text_Modify_Cb bufModifiedCB,
   mCbArgs = newCBArgs;
 }
 
+const char *Fl::txt_cannot_find_pre = "Fl_Text_Buffer::remove_predelete_callback(): Can't find pre-delete CB to remove";
+
 void Fl_Text_Buffer::remove_modify_callback( Fl_Text_Modify_Cb bufModifiedCB,
     void *cbArg ) {
   int i, toRemove = -1;
@@ -786,7 +788,7 @@ void Fl_Text_Buffer::remove_modify_callback( Fl_Text_Modify_Cb bufModifiedCB,
     }
   }
   if ( toRemove == -1 ) {
-    Fl::error(fl_cannot_modify_cb);
+    Fl::error(Fl::txt_cannot_modify_cb);
     return;
   }
 
@@ -860,7 +862,7 @@ void Fl_Text_Buffer::remove_predelete_callback(
     	}
     }
     if (toRemove == -1) {
-    	Fl::error(fl_cannot_find_pre);
+    	Fl::error("Fl_Text_Buffer::remove_predelete_callback(): Can't find pre-delete CB to remove");
     	return;
     }
     
@@ -947,7 +949,7 @@ int Fl_Text_Buffer::expand_character( int pos, int indent, char *outStr ) {
   int ret;
   char c = character( pos );
   ret = expand_character( c, indent, outStr,
-                           mTabDist, mNullSubsChar );
+                            mTabDist, mNullSubsChar );
   if (ret > 1 && (c & 0x80)) {
     int i;
     i = utf_len(c);
@@ -958,6 +960,7 @@ int Fl_Text_Buffer::expand_character( int pos, int indent, char *outStr ) {
       *outStr = character( pos );
     }
   }
+
   return ret;
 }
 
@@ -984,7 +987,7 @@ int Fl_Text_Buffer::expand_character( char c, int indent, char *outStr, int tabD
   /* Convert control codes to readable character sequences */
   /*... is this safe with international character sets? */
   if ( ( ( unsigned char ) c ) <= 31 ) {
-    sprintf( outStr, "<%s>", ControlCodeTable[ c ] );
+    sprintf( outStr, "<%s>", ControlCodeTable[ ( unsigned char ) c ] );
     return strlen( outStr );
   } else if ( c == 127 ) {
     sprintf( outStr, "<del>" );
@@ -1016,7 +1019,7 @@ int Fl_Text_Buffer::character_width( char c, int indent, int tabDist, char nullS
   if ( c == '\t' )
     return tabDist - ( indent % tabDist );
   else if ( ( ( unsigned char ) c ) <= 31 )
-    return strlen( ControlCodeTable[ c ] ) + 2;
+    return strlen( ControlCodeTable[ ( unsigned char ) c ] ) + 2;
   else if ( c == 127 )
     return 5;
   else if ( c == nullSubsChar )
@@ -2192,7 +2195,7 @@ void Fl_Text_Buffer::reallocate_with_gap( int newGapStart, int newGapLen ) {
             &mBuf[ mGapEnd + newGapStart - mGapStart ],
             mLength - newGapStart );
   }
-  if (mBuf) free( (void *) mBuf );
+  free( (void *) mBuf );
   mBuf = newBuf;
   mGapStart = newGapStart;
   mGapEnd = newGapEnd;
@@ -2569,5 +2572,5 @@ Fl_Text_Buffer::outputfile(const char *file, int start, int end, int buflen) {
 
 
 //
-// End of "$Id: Fl_Text_Buffer.cxx,v 1.9.2.19 2003/05/28 16:09:12 matthiaswm Exp $".
+// End of "$Id: Fl_Text_Buffer.cxx,v 1.9.2.22 2004/09/08 15:42:47 easysw Exp $".
 //

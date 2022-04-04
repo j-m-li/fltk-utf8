@@ -1,9 +1,9 @@
 //
-// "$Id: filename_absolute.cxx,v 1.5.2.4.2.8 2002/05/16 12:47:43 easysw Exp $"
+// "$Id: filename_absolute.cxx,v 1.5.2.4.2.12 2004/04/11 04:38:59 easysw Exp $"
 //
 // Filename expansion routines for the Fast Light Tool Kit (FLTK).
 //
-// Copyright 1998-2002 by Bill Spitzak and others.
+// Copyright 1998-2004 by Bill Spitzak and others.
 //
 // This library is free software; you can redistribute it and/or
 // modify it under the terms of the GNU Library General Public
@@ -109,8 +109,8 @@ int fl_filename_absolute(char *to, int tolen, const char *from) {
 
 int					// O - 0 if no change, 1 if changed
 fl_filename_relative(char       *to,	// O - Relative filename
-                  int        	tolen,	// I - Size of "to" buffer
-                  const char 	*from) {// I - Absolute filename
+                     int        tolen,	// I - Size of "to" buffer
+                     const char *from) {// I - Absolute filename
   const char	*newslash;		// Directory separator
   const char	*slash;			// Directory separator
   char		cwd[1024];		// Current directory
@@ -122,8 +122,8 @@ fl_filename_relative(char       *to,	// O - Relative filename
        !isdirsep(from[2]))) {
 #else
   if (from[0] == '\0' || !isdirsep(*from)) {
-    strlcpy(to, from, tolen);
 #endif // WIN32 || __EMX__
+    strlcpy(to, from, tolen);
     return 0;
   }
 
@@ -131,7 +131,13 @@ fl_filename_relative(char       *to,	// O - Relative filename
     strlcpy(to, from, tolen);
     return 0;
   }
+
 #if defined(WIN32) || defined(__EMX__)
+  if (!strcasecmp(from, cwd)) {
+    strlcpy(to, ".", tolen);
+    return (1);
+  }
+
   if (*from != *cwd) {
     // Not the same drive...
     strlcpy(to, from, tolen);
@@ -139,16 +145,21 @@ fl_filename_relative(char       *to,	// O - Relative filename
   }
   for (slash = from + 2, newslash = cwd + 2;
 #else
+  if (!strcmp(from, cwd)) {
+    strlcpy(to, ".", tolen);
+    return (1);
+  }
+
   for (slash = from, newslash = cwd;
 #endif // WIN32 || __EMX__
        *slash != '\0' && *newslash != '\0';
        slash ++, newslash ++)
     if (isdirsep(*slash) && isdirsep(*newslash)) continue;
-#if defined(WIN32) || defined(__EMX__) || defined(__MACOS__)
+#if defined(WIN32) || defined(__EMX__) || defined(__APPLE__)
     else if (tolower(*slash) != tolower(*newslash)) break;
 #else
     else if (*slash != *newslash) break;
-#endif // WIN32 || __EMX__ || __MACOS__
+#endif // WIN32 || __EMX__ || __APPLE__
 
   if (*newslash == '\0' && *slash != '\0' && !isdirsep(*slash))
     newslash--;
@@ -176,5 +187,5 @@ fl_filename_relative(char       *to,	// O - Relative filename
 
 
 //
-// End of "$Id: filename_absolute.cxx,v 1.5.2.4.2.8 2002/05/16 12:47:43 easysw Exp $".
+// End of "$Id: filename_absolute.cxx,v 1.5.2.4.2.12 2004/04/11 04:38:59 easysw Exp $".
 //

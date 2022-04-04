@@ -1,11 +1,11 @@
 //
-// "$Id: Fl_File_Icon.cxx,v 1.1.2.15 2003/01/30 21:41:43 easysw Exp $"
+// "$Id: Fl_File_Icon.cxx,v 1.1.2.17 2004/06/14 15:58:52 easysw Exp $"
 //
 // Fl_File_Icon routines.
 //
 // KDE icon code donated by Maarten De Boer.
 //
-// Copyright 1999-2003 by Michael Sweet.
+// Copyright 1999-2004 by Michael Sweet.
 //
 // This library is free software; you can redistribute it and/or
 // modify it under the terms of the GNU Library General Public
@@ -41,13 +41,11 @@
 
 #include <stdio.h>
 #include <stdlib.h>
+#include <FL/fl_utf8.H>
 #include "flstring.h"
 #include <errno.h>
-#if !__MACOS__
-#  include <sys/types.h>
-#endif
+#include <sys/types.h>
 #include <sys/stat.h>
-#include <FL/fl_utf8.H>
 #if (defined(WIN32) && ! defined(__CYGWIN__)) || defined(__EMX__)
 #  include <io.h>
 #  define F_OK	0
@@ -301,11 +299,11 @@ Fl_File_Icon::draw(int      x,		// I - Upper-lefthand X
 		  break;
 
 	      case POLYGON :
-		  fl_end_polygon();
+		  fl_end_complex_polygon();
 		  break;
 
 	      case OUTLINEPOLYGON :
-		  fl_end_polygon();
+		  fl_end_complex_polygon();
 
         	  oc = (Fl_Color)((((unsigned short *)prim)[1] << 16) | 
 	                	  ((unsigned short *)prim)[2]);
@@ -371,13 +369,13 @@ Fl_File_Icon::draw(int      x,		// I - Upper-lefthand X
       case POLYGON :
           prim = d;
 	  d ++;
-	  fl_begin_polygon();
+	  fl_begin_complex_polygon();
 	  break;
 
       case OUTLINEPOLYGON :
           prim = d;
 	  d += 3;
-	  fl_begin_polygon();
+	  fl_begin_complex_polygon();
 	  break;
 
       case VERTEX :
@@ -480,5 +478,5 @@ Fl_File_Icon::labeltype(const Fl_Label *o,	// I - Label data
 
 
 //
-// End of "$Id: Fl_File_Icon.cxx,v 1.1.2.15 2003/01/30 21:41:43 easysw Exp $".
+// End of "$Id: Fl_File_Icon.cxx,v 1.1.2.17 2004/06/14 15:58:52 easysw Exp $".
 //

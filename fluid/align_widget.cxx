@@ -1,9 +1,9 @@
 //
-// "$Id: align_widget.cxx,v 1.1.2.3 2003/08/02 21:17:30 easysw Exp $"
+// "$Id: align_widget.cxx,v 1.1.2.7 2004/04/11 04:38:56 easysw Exp $"
 //
 // alignment code for the Fast Light Tool Kit (FLTK).
 //
-// Copyright 1998-2003 by Bill Spitzak and others.
+// Copyright 1998-2004 by Bill Spitzak and others.
 //
 // This library is free software; you can redistribute it and/or
 // modify it under the terms of the GNU Library General Public
@@ -57,9 +57,15 @@ void align_widget_cb(Fl_Widget*, long how)
 	if (o->selected && o->is_widget())
 	{
 	  Fl_Widget *w = ((Fl_Widget_Type *)o)->o;
-	  w->resize(left, w->y(), w->w(), w->h());
+	  if (o->next && o->next->level > o->level && !o->next->selected) {
+	    // When resizing a group, make sure we also move the children...
+	    ((igroup *)w)->full_resize(left, w->y(), w->w(), w->h());
+	  } else {
+	    // Otherwise, just do the widget...
+	    w->resize(left, w->y(), w->w(), w->h());
+	  }
 	  w->redraw();
-	  w->window()->redraw();
+	  if (w->window()) w->window()->redraw();
 	}
     break;
   case 11: // align h.center
@@ -81,9 +87,15 @@ void align_widget_cb(Fl_Widget*, long how)
 	if (o->selected && o->is_widget())
 	{
 	  Fl_Widget *w = ((Fl_Widget_Type *)o)->o;
-	  w->resize((center2-w->w())/2, w->y(), w->w(), w->h());
+	  if (o->next && o->next->level > o->level && !o->next->selected) {
+	    // When resizing a group, make sure we also move the children...
+	    ((igroup *)w)->full_resize((center2-w->w())/2, w->y(), w->w(), w->h());
+	  } else {
+	    // Otherwise, just do the widget...
+	    w->resize((center2-w->w())/2, w->y(), w->w(), w->h());
+	  }
 	  w->redraw();
-	  w->window()->redraw();
+	  if (w->window()) w->window()->redraw();
 	}
     }
     break;
@@ -102,9 +114,15 @@ void align_widget_cb(Fl_Widget*, long how)
 	if (o->selected && o->is_widget())
 	{
 	  Fl_Widget *w = ((Fl_Widget_Type *)o)->o;
-	  w->resize(right-w->w(), w->y(), w->w(), w->h());
+	  if (o->next && o->next->level > o->level && !o->next->selected) {
+	    // When resizing a group, make sure we also move the children...
+	    ((igroup *)w)->full_resize(right-w->w(), w->y(), w->w(), w->h());
+	  } else {
+	    // Otherwise, just do the widget...
+	    w->resize(right-w->w(), w->y(), w->w(), w->h());
+	  }
 	  w->redraw();
-	  w->window()->redraw();
+	  if (w->window()) w->window()->redraw();
 	}
     break;
   case 13: // align top
@@ -122,9 +140,15 @@ void align_widget_cb(Fl_Widget*, long how)
 	if (o->selected && o->is_widget())
 	{
 	  Fl_Widget *w = ((Fl_Widget_Type *)o)->o;
-	  w->resize(w->x(), top, w->w(), w->h());
+	  if (o->next && o->next->level > o->level && !o->next->selected) {
+	    // When resizing a group, make sure we also move the children...
+	    ((igroup *)w)->full_resize(w->x(), top, w->w(), w->h());
+	  } else {
+	    // Otherwise, just do the widget...
+	    w->resize(w->x(), top, w->w(), w->h());
+	  }
 	  w->redraw();
-	  w->window()->redraw();
+	  if (w->window()) w->window()->redraw();
 	}
     break;
   case 14: // align v.center
@@ -146,9 +170,15 @@ void align_widget_cb(Fl_Widget*, long how)
 	if (o->selected && o->is_widget())
 	{
 	  Fl_Widget *w = ((Fl_Widget_Type *)o)->o;
-	  w->resize(w->x(), (center2-w->h())/2, w->w(), w->h());
+	  if (o->next && o->next->level > o->level && !o->next->selected) {
+	    // When resizing a group, make sure we also move the children...
+	    ((igroup *)w)->full_resize(w->x(), (center2-w->h())/2, w->w(), w->h());
+	  } else {
+	    // Otherwise, just do the widget...
+	    w->resize(w->x(), (center2-w->h())/2, w->w(), w->h());
+	  }
 	  w->redraw();
-	  w->window()->redraw();
+	  if (w->window()) w->window()->redraw();
 	}
     }
     break;
@@ -167,9 +197,15 @@ void align_widget_cb(Fl_Widget*, long how)
 	if (o->selected && o->is_widget())
 	{
 	  Fl_Widget *w = ((Fl_Widget_Type *)o)->o;
-	  w->resize( w->x(), bot-w->h(), w->w(), w->h());
+	  if (o->next && o->next->level > o->level && !o->next->selected) {
+	    // When resizing a group, make sure we also move the children...
+	    ((igroup *)w)->full_resize( w->x(), bot-w->h(), w->w(), w->h());
+	  } else {
+	    // Otherwise, just do the widget...
+	    w->resize( w->x(), bot-w->h(), w->w(), w->h());
+	  }
 	  w->redraw();
-	  w->window()->redraw();
+	  if (w->window()) w->window()->redraw();
 	}
     break;
   //---- space evently
@@ -195,9 +231,15 @@ void align_widget_cb(Fl_Widget*, long how)
 	if (o->selected && o->is_widget())
 	{
 	  Fl_Widget *w = ((Fl_Widget_Type *)o)->o;
-	  w->resize(left+wsum+wdt*cnt/n, w->y(), w->w(), w->h());
+	  if (o->next && o->next->level > o->level && !o->next->selected) {
+	    // When resizing a group, make sure we also move the children...
+	    ((igroup *)w)->full_resize(left+wsum+wdt*cnt/n, w->y(), w->w(), w->h());
+	  } else {
+	    // Otherwise, just do the widget...
+	    w->resize(left+wsum+wdt*cnt/n, w->y(), w->w(), w->h());
+	  }
 	  w->redraw();
-	  w->window()->redraw();
+	  if (w->window()) w->window()->redraw();
 	  cnt++;
 	  wsum += w->w();
 	}
@@ -225,9 +267,15 @@ void align_widget_cb(Fl_Widget*, long how)
 	if (o->selected && o->is_widget())
 	{
 	  Fl_Widget *w = ((Fl_Widget_Type *)o)->o;
-	  w->resize(w->x(), top+hsum+hgt*cnt/n, w->w(), w->h());
+	  if (o->next && o->next->level > o->level && !o->next->selected) {
+	    // When resizing a group, make sure we also move the children...
+	    ((igroup *)w)->full_resize(w->x(), top+hsum+hgt*cnt/n, w->w(), w->h());
+	  } else {
+	    // Otherwise, just do the widget...
+	    w->resize(w->x(), top+hsum+hgt*cnt/n, w->w(), w->h());
+	  }
 	  w->redraw();
-	  w->window()->redraw();
+	  if (w->window()) w->window()->redraw();
 	  cnt++;
 	  hsum += w->h();
 	}
@@ -249,9 +297,15 @@ void align_widget_cb(Fl_Widget*, long how)
 	if (o->selected && o->is_widget())
 	{
 	  Fl_Widget *w = ((Fl_Widget_Type *)o)->o;
-	  w->resize( w->x(), w->y(), wdt, w->h());
+	  if (o->next && o->next->level > o->level && !o->next->selected) {
+	    // When resizing a group, make sure we also move the children...
+	    ((igroup *)w)->full_resize(w->x(), w->y(), wdt, w->h());
+	  } else {
+	    // Otherwise, just do the widget...
+	    w->resize(w->x(), w->y(), wdt, w->h());
+	  }
 	  w->redraw();
-	  w->window()->redraw();
+	  if (w->window()) w->window()->redraw();
 	}
     break;
   case 31: // same height
@@ -269,9 +323,15 @@ void align_widget_cb(Fl_Widget*, long how)
 	if (o->selected && o->is_widget())
 	{
 	  Fl_Widget *w = ((Fl_Widget_Type *)o)->o;
-	  w->resize( w->x(), w->y(), w->w(), hgt);
+	  if (o->next && o->next->level > o->level && !o->next->selected) {
+	    // When resizing a group, make sure we also move the children...
+	    ((igroup *)w)->full_resize( w->x(), w->y(), w->w(), hgt);
+	  } else {
+	    // Otherwise, just do the widget...
+	    w->resize( w->x(), w->y(), w->w(), hgt);
+	  }
 	  w->redraw();
-	  w->window()->redraw();
+	  if (w->window()) w->window()->redraw();
 	}
     break;
   case 32: // same size
@@ -291,9 +351,15 @@ void align_widget_cb(Fl_Widget*, long how)
 	if (o->selected && o->is_widget())
 	{
 	  Fl_Widget *w = ((Fl_Widget_Type *)o)->o;
-	  w->resize( w->x(), w->y(), wdt, hgt);
+	  if (o->next && o->next->level > o->level && !o->next->selected) {
+	    // When resizing a group, make sure we also move the children...
+	    ((igroup *)w)->full_resize( w->x(), w->y(), wdt, hgt);
+	  } else {
+	    // Otherwise, just do the widget...
+	    w->resize( w->x(), w->y(), wdt, hgt);
+	  }
 	  w->redraw();
-	  w->window()->redraw();
+	  if (w->window()) w->window()->redraw();
 	}
     break;
   //---- center in group
@@ -303,10 +369,20 @@ void align_widget_cb(Fl_Widget*, long how)
       {
 	Fl_Widget *w = ((Fl_Widget_Type *)o)->o;
 	Fl_Widget *p = ((Fl_Widget_Type *)o->parent)->o;
-	int center2 = 2*p->x()+p->w();
-	w->resize((center2-w->w())/2, w->y(), w->w(), w->h());
+	int center2;
+
+	if (w->window() == p) center2 = p->w();
+	else center2 = 2*p->x()+p->w();
+
+	if (o->next && o->next->level > o->level && !o->next->selected) {
+	  // When resizing a group, make sure we also move the children...
+	  ((igroup *)w)->full_resize((center2-w->w())/2, w->y(), w->w(), w->h());
+	} else {
+	  // Otherwise, just do the widget...
+	  w->resize((center2-w->w())/2, w->y(), w->w(), w->h());
+	}
 	w->redraw();
-	w->window()->redraw();
+	if (w->window()) w->window()->redraw();
       }
     break;
   case 41: // center vert
@@ -315,10 +391,20 @@ void align_widget_cb(Fl_Widget*, long how)
       {
 	Fl_Widget *w = ((Fl_Widget_Type *)o)->o;
 	Fl_Widget *p = ((Fl_Widget_Type *)o->parent)->o;
-	int center2 = 2*p->y()+p->h();
-	w->resize(w->x(), (center2-w->h())/2, w->w(), w->h());
+	int center2;
+
+	if (w->window() == p) center2 = p->h();
+	else center2 = 2*p->y()+p->h();
+
+	if (o->next && o->next->level > o->level && !o->next->selected) {
+	  // When resizing a group, make sure we also move the children...
+	  ((igroup *)w)->full_resize(w->x(), (center2-w->h())/2, w->w(), w->h());
+	} else {
+	  // Otherwise, just do the widget...
+	  w->resize(w->x(), (center2-w->h())/2, w->w(), w->h());
+	}
 	w->redraw();
-	w->window()->redraw();
+	if (w->window()) w->window()->redraw();
       }
     break;
   }
@@ -326,6 +412,6 @@ void align_widget_cb(Fl_Widget*, long how)
 
 
 //
-// End of "$Id: align_widget.cxx,v 1.1.2.3 2003/08/02 21:17:30 easysw Exp $".
+// End of "$Id: align_widget.cxx,v 1.1.2.7 2004/04/11 04:38:56 easysw Exp $".
 //
 

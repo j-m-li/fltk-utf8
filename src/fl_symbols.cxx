@@ -1,9 +1,9 @@
 //
-// "$Id: fl_symbols.cxx,v 1.8.2.3.2.7 2003/05/21 16:58:13 easysw Exp $"
+// "$Id: fl_symbols.cxx,v 1.8.2.3.2.11 2004/09/24 16:00:11 easysw Exp $"
 //
 // Symbol drawing code for the Fast Light Tool Kit (FLTK).
 //
-// Copyright 1998-2003 by Bill Spitzak and others.
+// Copyright 1998-2004 by Bill Spitzak and others.
 //
 // This library is free software; you can redistribute it and/or
 // modify it under the terms of the GNU Library General Public
@@ -92,9 +92,8 @@ int fl_add_symbol(const char *name, void (*drawit)(Fl_Color), int scalable)
 int fl_return_arrow(int x,int y,int w,int h);
 
 // provided for back compatability:
-int fl_draw_symbol(const char *label,int x,int y,int w,int h,Fl_Color col) { 
+int fl_draw_symbol(const char *label,int x,int y,int w,int h,Fl_Color col) {  
   const char *p = label;
-  
   if (*p++ != '@') return 0;
   fl_init_symbols();
   int equalscale = 0;
@@ -130,7 +129,6 @@ int fl_draw_symbol(const char *label,int x,int y,int w,int h,Fl_Color col) {
   }
   int pos = find(p);
   if (!symbols[pos].notempty) return 0;
-
   if (symbols[pos].scalable == 3) { // kludge to detect return arrow
     fl_return_arrow(x,y,w,h);
     return 1;
@@ -153,6 +151,8 @@ int fl_draw_symbol(const char *label,int x,int y,int w,int h,Fl_Color col) {
 
 #define BP fl_begin_polygon()
 #define EP fl_end_polygon()
+#define BCP fl_begin_complex_polygon()
+#define ECP fl_end_complex_polygon()
 #define BL fl_begin_line()
 #define EL fl_end_line()
 #define BC fl_begin_loop()
@@ -173,6 +173,51 @@ static void rectangle(double x,double y,double x2,double y2,Fl_Color col) {
 
 /* The drawing routines */
 
+static void draw_fltk(Fl_Color col) 
+{
+  fl_color(col);
+  // F fill
+  BCP; vv(-2.0, -0.5); vv(-1.0, -0.5); vv(-1.0, -0.3); vv(-1.8, -0.3);
+  vv(-1.8, -0.1); vv(-1.2, -0.1); vv(-1.2, 0.1); vv(-1.8, 0.1);
+  vv(-1.8, 0.5); vv(-2.0, 0.5); ECP;
+  // L fill
+  BCP; vv(-1.0, -0.5); vv(-0.8, -0.5); vv(-0.8, 0.3); vv(0.0, 0.3);
+  vv(0.0, 0.5); vv(-1.0, 0.5); ECP;
+  // T outline
+  BCP; vv(-0.1, -0.5); vv(1.1, -0.5); vv(1.1, -0.3); vv(0.6, -0.3);
+  vv(0.6, 0.5); vv(0.4, 0.5); vv(0.4, -0.3); vv(-0.1, -0.3); ECP;
+  // K outline
+  BCP; vv(1.1, -0.5); vv(1.3, -0.5); vv(1.3, -0.15); vv(1.70, -0.5);
+  vv(2.0, -0.5); vv(1.43, 0.0); vv(2.0, 0.5); vv(1.70, 0.5);
+  vv(1.3, 0.15); vv(1.3, 0.5); vv(1.1, 0.5); ECP;
+  set_outline_color(col);
+  // F outline
+  BC; vv(-2.0, -0.5); vv(-1.0, -0.5); vv(-1.0, -0.3); vv(-1.8, -0.3);
+  vv(-1.8, -0.1); vv(-1.2, -0.1); vv(-1.2, 0.1); vv(-1.8, 0.1);
+  vv(-1.8, 0.5); vv(-2.0, 0.5); EC;
+  // L outline
+  BC; vv(-1.0, -0.5); vv(-0.8, -0.5); vv(-0.8, 0.3); vv(0.0, 0.3);
+  vv(0.0, 0.5); vv(-1.0, 0.5); EC;
+  // T outline
+  BC; vv(-0.1, -0.5); vv(1.1, -0.5); vv(1.1, -0.3); vv(0.6, -0.3);
+  vv(0.6, 0.5); vv(0.4, 0.5); vv(0.4, -0.3); vv(-0.1, -0.3); EC;
+  // K outline
+  BC; vv(1.1, -0.5); vv(1.3, -0.5); vv(1.3, -0.15); vv(1.70, -0.5);
+  vv(2.0, -0.5); vv(1.43, 0.0); vv(2.0, 0.5); vv(1.70, 0.5);
+  vv(1.3, 0.15); vv(1.3, 0.5); vv(1.1, 0.5); EC;
+}
+
+static void draw_search(Fl_Color col) 
+{
+  fl_color(col);
+  BP; vv(.4, .13); vv(1.0, .73); vv(.73, 1.0); vv(.13, .4); EP;
+  set_outline_color(col);
+  fl_line_style(FL_SOLID, 3, 0);
+  BC; fl_circle(-.2, -.2, .7); EC;
+  fl_line_style(FL_SOLID, 1, 0);
+  BC; vv(.4, .13); vv(1.0, .73); vv(.73, 1.0); vv(.13, .4); EC;
+}
+
 static void draw_arrow1(Fl_Color col)
 {
   fl_color(col);
@@ -181,7 +226,6 @@ static void draw_arrow1(Fl_Color col)
   set_outline_color(col);
   BC; vv(-0.8,-0.4); vv(-0.8,0.4); vv(0.0,0.4); vv(0.0,0.8); vv(0.8,0.0);
       vv(0.0,-0.8); vv(0.0,-0.4); EC;
-
 }
 
 static void draw_arrow1bar(Fl_Color col)
@@ -329,9 +373,8 @@ static void draw_menu(Fl_Color col)
 }
 
 static void fl_init_symbols(void) {
-  static char beenhere = 0;
+  static char beenhere;
   if (beenhere) return;
-
   beenhere = 1;
   symbnumb = 0;
 
@@ -362,8 +405,10 @@ static void fl_init_symbols(void) {
   fl_add_symbol("UpArrow",	draw_uparrow,		1);
   fl_add_symbol("DnArrow",	draw_downarrow,		1);
   fl_add_symbol("||",		draw_doublebar,		1);
+  fl_add_symbol("search",       draw_search,            1);
+  fl_add_symbol("FLTK",         draw_fltk,              1);
 }
 
 //
-// End of "$Id: fl_symbols.cxx,v 1.8.2.3.2.7 2003/05/21 16:58:13 easysw Exp $".
+// End of "$Id: fl_symbols.cxx,v 1.8.2.3.2.11 2004/09/24 16:00:11 easysw Exp $".
 //

@@ -1,9 +1,9 @@
 //
-// "$Id: Fl_File_Chooser2.cxx,v 1.1.2.32 2003/09/03 19:38:01 easysw Exp $"
+// "$Id: Fl_File_Chooser2.cxx,v 1.1.2.38 2004/09/07 20:59:16 easysw Exp $"
 //
 // More Fl_File_Chooser routines.
 //
-// Copyright 1999-2003 by Michael Sweet.
+// Copyright 1999-2004 by Michael Sweet.
 //
 // This library is free software; you can redistribute it and/or
 // modify it under the terms of the GNU Library General Public
@@ -49,15 +49,13 @@
 #include <FL/x.H>
 #include <FL/Fl_Shared_Image.H>
 
-
 #include <stdio.h>
 #include <stdlib.h>
+#include <FL/fl_utf8.H>
 #include "flstring.h"
 #include <errno.h>
-#include <sys/stat.h>
-#if !__MACOS__
 #include <sys/types.h>
-#endif
+#include <sys/stat.h>
 
 #if defined(WIN32) && ! defined (__CYGWIN__)
 #  include <direct.h>
@@ -67,25 +65,17 @@
 #  ifdef DIRECTORY
 #    undef DIRECTORY
 #  endif // DIRECTORY
-#elif __MACOS__
-#  include <unistd.h>
 #else
 #  include <unistd.h>
-#  if !MSDOS
-#    include <pwd.h>
-#  else
-#    define strcasecmp stricmp
-#  endif
-
+#  include <pwd.h>
 #endif /* WIN32 */
 
-#include <FL/fl_utf8.H>
 
 //
 // File chooser label strings and sort function...
 //
 
-Fl_Preferences	Fl_File_Chooser::prefs_(Fl_Preferences::USER, "fltk.org", "filechooser");
+Fl_Preferences	Fl_File_Chooser::prefs_(Fl_Preferences::USER, "oksid.ch", "filechooser");
 
 const char	*Fl_File_Chooser::add_favorites_label = "Add to Favorites";
 const char	*Fl_File_Chooser::all_files_label = "All Files (*)";
@@ -100,6 +90,7 @@ const char	*Fl_File_Chooser::filesystems_label = "File Systems";
 #endif // WIN32
 const char	*Fl_File_Chooser::manage_favorites_label = "Manage Favorites";
 const char	*Fl_File_Chooser::new_directory_label = "New Directory?";
+const char	*Fl_File_Chooser::new_directory_tooltip = "Create a new directory.";
 const char	*Fl_File_Chooser::preview_label = "Preview";
 const char	*Fl_File_Chooser::show_label = "Show:";
 Fl_File_Sort_F	*Fl_File_Chooser::sort = fl_numericsort;
@@ -392,11 +383,7 @@ Fl_File_Chooser::fileListCB()
     return;
 
   if (!directory_[0]) {
-#if __MACOS__
-    snprintf(pathname, sizeof(pathname), "/%s", filename);
-#else
     strlcpy(pathname, filename, sizeof(pathname));
-#endif
   } else if (strcmp(directory_, "/") == 0) {
     snprintf(pathname, sizeof(pathname), "/%s", filename);
   } else {
@@ -489,24 +476,25 @@ Fl_File_Chooser::fileNameCB()
 #if (defined(WIN32) && !defined(__CYGWIN__)) || defined(__EMX__)
   if (directory_[0] != '\0' && filename[0] != '/' &&
       filename[0] != '\\' &&
-      !(isalpha(filename[0]) && filename[1] == ':')) {
+      !(isalpha(filename[0] & 255) && (!filename[1] || filename[1] == ':'))) {
 #else
   if (directory_[0] != '\0' && filename[0] != '/') {
 #endif /* WIN32 || __EMX__ */
     fl_filename_absolute(pathname, sizeof(pathname), filename);
     value(pathname);
+    fileName->mark(fileName->position()); // no selection after expansion
   } else if (filename != pathname) {
     // Finally, make sure that we have a writable copy...
     strlcpy(pathname, filename, sizeof(pathname));
   }
 
   filename = pathname;
+
   // Now process things according to the key pressed...
-  if (Fl::event_key() == FL_Enter)
-  {
+  if (Fl::event_key() == FL_Enter || Fl::event_key() == FL_KP_Enter) {
     // Enter pressed - select or change directory...
 #if (defined(WIN32) && ! defined(__CYGWIN__)) || defined(__EMX__)
-    if ((strlen(pathname) == 2 && pathname[1] == ':') ||
+    if ((isalpha(pathname[0] & 255) && pathname[1] == ':' && !pathname[2]) ||
         fl_filename_isdir(pathname)) {
 #else
     if (fl_filename_isdir(pathname)) {
@@ -526,75 +514,68 @@ Fl_File_Chooser::fileNameCB()
 
       // Hide the window to signal things are done...
       window->hide();
-    }
-    else
-    {
+    } else {
       // File doesn't exist, so beep at and alert the user...
       fl_alert(existing_file_label);
     }
   }
   else if (Fl::event_key() != FL_Delete &&
-           Fl::event_key() != FL_BackSpace)
-  {
+           Fl::event_key() != FL_BackSpace) {
     // Check to see if the user has entered a directory...
     if ((slash = strrchr(pathname, '/')) == NULL)
       slash = strrchr(pathname, '\\');
 
-    if (slash != NULL)
-    {
-      // Yes, change directories if necessary...
-      *slash++ = '\0';
-      filename = slash;
+    if (!slash) return;
+
+    // Yes, change directories if necessary...
+    *slash++ = '\0';
+    filename = slash;
 
 #if defined(WIN32) || defined(__EMX__)
-      if (strcasecmp(pathname, directory_) &&
-          (pathname[0] || strcasecmp("/", directory_))) {
+    if (strcasecmp(pathname, directory_) &&
+        (pathname[0] || strcasecmp("/", directory_))) {
 #else
-      if (strcmp(pathname, directory_) &&
-          (pathname[0] || strcasecmp("/", directory_))) {
+    if (strcmp(pathname, directory_) &&
+        (pathname[0] || strcasecmp("/", directory_))) {
 #endif // WIN32 || __EMX__
-        int p = fileName->position();
-	int m = fileName->mark();
+      int p = fileName->position();
+      int m = fileName->mark();
 
-        directory(pathname);
+      directory(pathname);
 
-        if (filename[0]) {
-	  char tempname[1024];
+      if (filename[0]) {
+	char tempname[1024];
 
-	  snprintf(tempname, sizeof(tempname), "%s/%s", directory_, filename);
-	  fileName->value(tempname);
-	}
-
-	fileName->position(p, m);
+	snprintf(tempname, sizeof(tempname), "%s/%s", directory_, filename);
+	fileName->value(tempname);
+	strlcpy(pathname, tempname, sizeof(pathname));
       }
+
+      fileName->position(p, m);
     }
 
     // Other key pressed - do filename completion as possible...
     num_files  = fileList->size();
     min_match  = strlen(filename);
-    max_match  = 100000;
+    max_match  = min_match + 1;
     first_line = 0;
 
-    for (i = 1; i <= num_files && max_match > min_match; i ++)
-    {
+    for (i = 1; i <= num_files && max_match > min_match; i ++) {
       file = fileList->text(i);
 
 #if (defined(WIN32) && ! defined(__CYGWIN__)) || defined(__EMX__)
-      if (strnicmp(filename, file, min_match) == 0)
+      if (strnicmp(filename, file, min_match) == 0) {
 #else
-      if (strncmp(filename, file, min_match) == 0)
+      if (strncmp(filename, file, min_match) == 0) {
 #endif // WIN32 || __EMX__
-      {
         // OK, this one matches; check against the previous match
-	if (max_match == 100000)
-	{
+	if (!first_line) {
 	  // First match; copy stuff over...
 	  strlcpy(matchname, file, sizeof(matchname));
 	  max_match = strlen(matchname);
 
           // Strip trailing /, if any...
-	  if (matchname[max_match - 1] == '/')
-	  {
+	  if (matchname[max_match - 1] == '/') {
 	    max_match --;
 	    matchname[max_match] = '\0';
 	  }
@@ -602,9 +583,7 @@ Fl_File_Chooser::fileNameCB()
 	  // And then make sure that the item is visible
           fileList->topline(i);
 	  first_line = i;
-	}
-	else
-	{
+	} else {
 	  // Succeeding match; compare to find maximum string match...
 	  while (max_match > min_match)
 #if (defined(WIN32) && ! defined(__CYGWIN__)) || defined(__EMX__)
@@ -629,9 +608,7 @@ Fl_File_Chooser::fileNameCB()
       fileList->deselect(0);
       fileList->select(first_line);
       fileList->redraw();
-    }
-    else if (max_match > min_match && max_match != 100000)
-    {
+    } else if (max_match > min_match && first_line) {
       // Add the matching portion...
       fileName->replace(filename - pathname, filename - pathname + min_match,
                         matchname);
@@ -641,28 +618,28 @@ Fl_File_Chooser::fileNameCB()
       // (Tab and End also do this for both cases.)
       fileName->position(filename - pathname + max_match,
 	                 filename - pathname + min_match);
-    }
-    else if (max_match == 0) {
+    } else if (max_match == 0) {
       fileList->deselect(0);
       fileList->redraw();
     }
 
-    if (!fileName->value() || fileName->value()[0] == 0) {
-      fileName->value("/", 1);
-      fileName->position(1,1);
-    }
-
     // See if we need to enable the OK button...
-    if ((type_ & CREATE || fl_access(fileName->value(), 0) == 0) &&
-        (!fl_filename_isdir(fileName->value()) || type_ & DIRECTORY))
+    if (((type_ & CREATE) || !fl_access(fileName->value(), 0)) &&
+        (!fl_filename_isdir(fileName->value()) || (type_ & DIRECTORY))) {
       okButton->activate();
-    else
+    } else {
       okButton->deactivate();
+    }
   } else {
     // FL_Delete or FL_BackSpace
     fileList->deselect(0);
     fileList->redraw();
-    okButton->deactivate();
+    if (((type_ & CREATE) || !access(fileName->value(), 0)) &&
+        (!fl_filename_isdir(fileName->value()) || (type_ & DIRECTORY))) {
+      okButton->activate();
+    } else {
+      okButton->deactivate();
+    }
   }
 }
 
@@ -741,7 +718,11 @@ Fl_File_Chooser::newdir()
     strlcpy(pathname, dir, sizeof(pathname));
 
   // Create the directory; ignore EEXIST errors...
-    fl_mkdir(pathname, 0777);
+#if defined(WIN32) && ! defined (__CYGWIN__)
+  if (fl_mkdir(pathname, 0777))
+#else
+  if (fl_mkdir(pathname, 0777))
+#endif /* WIN32 */
     if (errno != EEXIST)
     {
       if (fl_access(pathname, 0)) {
@@ -957,7 +938,9 @@ Fl_File_Chooser::update_preview()
     Fl::check();
 
     // Scan the buffer for printable chars...
-    for (ptr = preview_text_; *ptr && (isprint(*ptr) || isspace(*ptr)); ptr ++);
+    for (ptr = preview_text_;
+         *ptr && (isprint(*ptr & 255) || isspace(*ptr & 255));
+	 ptr ++);
 
     if (*ptr || ptr == preview_text_) {
       // Non-printable file, just show a big ?...
@@ -980,14 +963,15 @@ Fl_File_Chooser::update_preview()
   } else {
     pbw = previewBox->w() - 20;
     pbh = previewBox->h() - 20;
-    if (image->w() < 1) return;
+
+    if (image->w() < 1 || image->h() < 1) return;
     if (image->w() > pbw || image->h() > pbh) {
       w   = pbw;
       h   = w * image->h() / image->w();
 
       if (h > pbh) {
-        h = pbh;
-        w = h * image->w() / image->h();
+	h = pbh;
+	w = h * image->w() / image->h();
       }
 
       oldimage = (Fl_Shared_Image *)image->copy(w, h);
@@ -1180,5 +1164,5 @@ unquote_pathname(char       *dst,	// O - Destination string
 
 
 //
-// End of "$Id: Fl_File_Chooser2.cxx,v 1.1.2.32 2003/09/03 19:38:01 easysw Exp $".
+// End of "$Id: Fl_File_Chooser2.cxx,v 1.1.2.38 2004/09/07 20:59:16 easysw Exp $".
 //

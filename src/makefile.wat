@@ -1,186 +1,226 @@
+#
+# "$Id: makefile.wat,v 1.1.2.1 2004/11/20 03:19:58 easysw Exp $"
+#
+# Library makefile for the Fast Light Tool Kit (FLTK).
+#
+# Copyright 1998-2004 by Bill Spitzak and others.
+#
+# This library is free software; you can redistribute it and/or
+# modify it under the terms of the GNU Library General Public
+# License as published by the Free Software Foundation; either
+# version 2 of the License, or (at your option) any later version.
+#
+# This library is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+# Library General Public License for more details.
+#
+# You should have received a copy of the GNU Library General Public
+# License along with this library; if not, write to the Free Software
+# Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307
+# USA.
+#
+# Please report all bugs and problems to "fltk-bugs@fltk.org".
+#
+
+CPPFILES = &
+    Fl.obj &
+    Fl_Adjuster.obj &
+    Fl_Bitmap.obj &
+    Fl_Browser.obj &
+    Fl_Browser_.obj &
+    Fl_Browser_load.obj &
+    Fl_Box.obj &
+    Fl_Button.obj &
+    Fl_Chart.obj &
+    Fl_Check_Browser.obj &
+    Fl_Check_Button.obj &
+    Fl_Choice.obj &
+    Fl_Clock.obj &
+    Fl_Color_Chooser.obj &
+    Fl_Counter.obj &
+    Fl_Dial.obj &
+    Fl_Double_Window.obj &
+    Fl_File_Browser.obj &
+    Fl_File_Chooser.obj &
+    Fl_File_Chooser2.obj &
+    Fl_File_Icon.obj &
+    Fl_File_Input.obj &
+    Fl_Group.obj &
+    Fl_Help_View.obj &
+    Fl_Image.obj &
+    Fl_Input.obj &
+    Fl_Input_.obj &
+    Fl_Light_Button.obj &
+    Fl_Menu.obj &
+    Fl_Menu_.obj &
+    Fl_Menu_Bar.obj &
+    Fl_Sys_Menu_Bar.obj &
+    Fl_Menu_Button.obj &
+    Fl_Menu_Window.obj &
+    Fl_Menu_add.obj &
+    Fl_Menu_global.obj &
+    Fl_Multi_Label.obj &
+    Fl_Overlay_Window.obj &
+    Fl_Pack.obj &
+    Fl_Pixmap.obj &
+    Fl_Positioner.obj &
+    Fl_Preferences.obj &
+    Fl_Progress.obj &
+    Fl_Repeat_Button.obj &
+    Fl_Return_Button.obj &
+    Fl_Roller.obj &
+    Fl_Round_Button.obj &
+    Fl_Scroll.obj &
+    Fl_Scrollbar.obj &
+    Fl_Shared_Image.obj &
+    Fl_Single_Window.obj &
+    Fl_Slider.obj &
+    Fl_Tabs.obj &
+    Fl_Text_Buffer.obj &
+    Fl_Text_Display.obj &
+    Fl_Text_Editor.obj &
+    Fl_Tile.obj &
+    Fl_Tiled_Image.obj &
+    Fl_Tooltip.obj &
+    Fl_Valuator.obj &
+    Fl_Value_Input.obj &
+    Fl_Value_Output.obj &
+    Fl_Value_Slider.obj &
+    Fl_Widget.obj &
+    Fl_Window.obj &
+    Fl_Window_fullscreen.obj &
+    Fl_Window_hotspot.obj &
+    Fl_Window_iconize.obj &
+    Fl_Wizard.obj &
+    Fl_XBM_Image.obj &
+    Fl_XPM_Image.obj &
+    Fl_abort.obj &
+    Fl_add_idle.obj &
+    Fl_arg.obj &
+    Fl_compose.obj &
+    Fl_display.obj &
+    Fl_get_key.obj &
+    Fl_get_system_colors.obj &
+    Fl_grab.obj &
+    Fl_lock.obj &
+    Fl_own_colormap.obj &
+    Fl_visual.obj &
+    Fl_x.obj &
+    filename_absolute.obj &
+    filename_expand.obj &
+    filename_ext.obj &
+    filename_isdir.obj &
+    filename_list.obj &
+    filename_match.obj &
+    filename_setext.obj &
+    fl_arc.obj &
+    fl_arci.obj &
+    fl_ask.obj &
+    fl_boxtype.obj &
+    fl_color.obj &
+    fl_cursor.obj &
+    fl_curve.obj &
+    fl_diamond_box.obj &
+    fl_dnd.obj &
+    fl_draw.obj &
+    fl_draw_image.obj &
+    fl_draw_pixmap.obj &
+    fl_engraved_label.obj &
+    fl_file_dir.obj &
+    fl_font.obj &
+    fl_labeltype.obj &
+    fl_line_style.obj &
+    fl_oval_box.obj &
+    fl_overlay.obj &
+    fl_overlay_visual.obj &
+    fl_plastic.obj &
+    fl_read_image.obj &
+    fl_rect.obj &
+    fl_round_box.obj &
+    fl_rounded_box.obj &
+    fl_set_font.obj &
+    fl_set_fonts.obj &
+    fl_scroll_area.obj &
+    fl_shadow_box.obj &
+    fl_shortcut.obj &
+    fl_show_colormap.obj &
+    fl_symbols.obj &
+    fl_vertex.obj
+
+FLCPPFILES = &
+    forms_compatability.obj &
+    forms_bitmap.obj &
+    forms_free.obj &
+    forms_fselect.obj &
+    forms_pixmap.obj &
+    forms_timer.obj
+
+GLCPPFILES = &
+    Fl_Gl_Choice.obj &
+    Fl_Gl_Overlay.obj &
+    Fl_Gl_Window.obj &
+    gl_draw.obj &
+    gl_start.obj &
+    glut_compatability.obj &
+    glut_font.obj
+
+IMGCPPFILES = &
+    fl_images_core.obj &
+    Fl_BMP_Image.obj &
+    Fl_File_Icon2.obj &
+    Fl_GIF_Image.obj &
+    Fl_Help_Dialog.obj &
+    Fl_JPEG_Image.obj &
+    Fl_PNG_Image.obj &
+    Fl_PNM_Image.obj
+
+CFILES = fl_call_main.obj flstring.obj scandir.obj numericsort.obj vsnprintf.obj
+
+################################################################
+
+!include ../watcom.mif
+
+OBJECTS = $(CPPFILES) $(CFILES)
+FLOBJECTS = $(FLCPPFILES)
+GLOBJECTS = $(GLCPPFILES)
+IMGOBJECTS = $(IMGCPPFILES)
+
+# The four basic fltk libraries are defined in ../watcom.mif, so that appliactions
+# can also use them.
+all: $(LIBNAME) &
+     $(LIBNAMEFL) &
+     $(LIBNAMEGL) &
+     $(LIBNAMEIMG)
+
+# $(DSONAME) &
+# $(FLDSONAME) &
+# $(GLDSONAME) &
+# $(IMGDSONAME)
 
 
-CFILES = scandir.c vsnprintf.c fl_call_main.c flstring.c numericsort.c
-CPPFILES = \
-	Fl.cxx \
-	Fl_Adjuster.cxx \
-	Fl_Bitmap.cxx \
-	Fl_Browser.cxx \
-	Fl_Browser_.cxx \
-	Fl_Browser_load.cxx \
-	Fl_Box.cxx \
-	Fl_Button.cxx \
-	Fl_Chart.cxx \
-	Fl_Check_Browser.cxx \
-	Fl_Check_Button.cxx \
-	Fl_Choice.cxx \
-	Fl_Clock.cxx \
-	Fl_Color_Chooser.cxx \
-	Fl_Counter.cxx \
-	Fl_Dial.cxx \
-	Fl_Double_Window.cxx \
-	Fl_File_Browser.cxx \
-	Fl_File_Chooser.cxx \
-	Fl_File_Chooser2.cxx \
-	Fl_File_Icon.cxx \
-	Fl_File_Input.cxx \
-	Fl_Group.cxx \
-	Fl_Help_View.cxx \
-	Fl_Image.cxx \
-	Fl_Input.cxx \
-	Fl_Input_.cxx \
-	Fl_Light_Button.cxx \
-	Fl_Menu.cxx \
-	Fl_Menu_.cxx \
-	Fl_Menu_Bar.cxx \
-	Fl_Menu_Button.cxx \
-	Fl_Menu_Window.cxx \
-	Fl_Menu_add.cxx \
-	Fl_Menu_global.cxx \
-	Fl_Multi_Label.cxx \
-	Fl_Overlay_Window.cxx \
-	Fl_Pack.cxx \
-	Fl_Pixmap.cxx \
-	Fl_Positioner.cxx \
-	Fl_Preferences.cxx \
-	Fl_Progress.cxx \
-	Fl_Ps.cxx \
-	Fl_Repeat_Button.cxx \
-	Fl_Return_Button.cxx \
-	Fl_Roller.cxx \
-	Fl_Round_Button.cxx \
-	Fl_Scroll.cxx \
-	Fl_Scrollbar.cxx \
-	Fl_Shaped_Window.cxx \
-	Fl_Shared_Image.cxx \
-	Fl_Single_Window.cxx \
-	Fl_Slider.cxx \
-	Fl_Tabs.cxx \
-	Fl_Text_Buffer.cxx \
-	Fl_Text_Display.cxx \
-	Fl_Text_Editor.cxx \
-	Fl_Tile.cxx \
-	Fl_Tiled_Image.cxx \
-	Fl_Tooltip.cxx \
-	Fl_Valuator.cxx \
-	Fl_Value_Input.cxx \
-	Fl_Value_Output.cxx \
-	Fl_Value_Slider.cxx \
-	Fl_Widget.cxx \
-	Fl_Window.cxx \
-	Fl_Window_fullscreen.cxx \
-	Fl_Window_hotspot.cxx \
-	Fl_Window_iconize.cxx \
-	Fl_Wizard.cxx \
-	Fl_XBM_Image.cxx \
-	Fl_XPM_Image.cxx \
-	Fl_abort.cxx \
-	Fl_add_idle.cxx \
-	Fl_arg.cxx \
-	Fl_compose.cxx \
-	Fl_display.cxx \
-	Fl_get_key.cxx \
-	Fl_get_system_colors.cxx \
-	Fl_grab.cxx \
-	Fl_lock.cxx \
-	Fl_own_colormap.cxx \
-	Fl_visual.cxx \
-	Fl_x.cxx \
-	filename_absolute.cxx \
-	filename_expand.cxx \
-	filename_ext.cxx \
-	filename_isdir.cxx \
-	filename_list.cxx \
-	filename_match.cxx \
-	filename_setext.cxx \
-	fl_arc.cxx \
-	fl_arci.cxx \
-	fl_ask.cxx \
-	fl_boxtype.cxx \
-	fl_color.cxx \
-	fl_cursor.cxx \
-	fl_curve.cxx \
-	fl_diamond_box.cxx \
-	fl_dnd.cxx \
-	fl_draw.cxx \
-	fl_draw_image.cxx \
-	fl_draw_pixmap.cxx \
-	fl_engraved_label.cxx \
-	fl_file_dir.cxx \
-	fl_font.cxx \
-	fl_labeltype.cxx \
-	fl_line_style.cxx \
-	fl_oval_box.cxx \
-	fl_overlay.cxx \
-	fl_overlay_visual.cxx \
-	fl_plastic.cxx \
-	fl_read_image.cxx \
-	fl_rect.cxx \
-	fl_round_box.cxx \
-	fl_rounded_box.cxx \
-	fl_set_font.cxx \
-	fl_set_fonts.cxx \
-	fl_scroll_area.cxx \
-	fl_shadow_box.cxx \
-	fl_shortcut.cxx \
-	fl_show_colormap.cxx \
-	fl_symbols.cxx \
-	fl_vertex.cxx \
-	Flv_List.cxx \
-	Flv_Table.cxx \
-	Flve_Input.cxx \
-	Flv_CStyle.cxx \
-	Flv_Style.cxx \
-	Flve_Check_Button.cxx \
-	Flv_Data_Source.cxx \
-	Flve_Combo.cxx \
-	fl_utf8.cxx \
-	fl_images_core.cxx \
-	Fl_BMP_Image.cxx \
-	Fl_File_Icon2.cxx \
-	Fl_GIF_Image.cxx \
-	Fl_Help_Dialog.cxx \
-	Fl_JPEG_Image.cxx \
-	Fl_PNG_Image.cxx \
-	Fl_PNM_Image.cxx\
-	forms_compatability.cxx \
-	forms_bitmap.cxx \
-	forms_free.cxx \
-	forms_fselect.cxx \
-	forms_pixmap.cxx \
-	forms_timer.cxx
+$(LIBNAME): $(OBJECTS)
+    $(LIB) $(LIBOPTS) $@ $<
 
+$(LIBNAMEFL): $(FLOBJECTS)
+    $(LIB) $(LIBOPTS) $@ $<
 
+$(LIBNAMEGL): $(GLOBJECTS)
+    $(LIB) $(LIBOPTS) $@ $<
 
+$(LIBNAMEIMG): $(IMGOBJECTS)
+    $(LIB) $(LIBOPTS) $@ $<
 
-
-cflags = -ml -dNANO_X -bt=DOS -dMSDOS=1 -dHAVE_XUTF8=1\
- 	-I.. -I..\..\microwin-0.89\src\include
-
-OBJECTS = $(CFILES:.c=.obj) $(CPPFILES:.cxx=.obj) Fl_compose.obj
-LOBJ = +$(CFILES:.c=.obj +) $(CPPFILES:.cxx=.obj +) Fl_compose.obj
-
-all: fltk.lib .symbolic
-
-fltk.lib:  $(OBJECTS) 
-	erase fltk.lib
-	wlib fltk.lib $(LOBJ)
-
+#
+# Clean all directories
+#
 clean : .SYMBOLIC
-	@if exist *.exe del *.exe
-	@if exist *.err del *.err
-	@if exist *.lib del *.lib
-	@if exist *.obj del *.obj
-	@if exist *.map del *.map
-	@if exist *.bak del *.bak
-
-	
-
-.cxx.obj:
-	wpp $(cflags) $[@
-	@wlib fltk.lib -+$^*.obj
-
-.c.obj:
-	wcc $(cflags) $[@
-	@wlib fltk.lib -+$^*.obj
+    @echo Cleaning up.
+CLEANEXTS = exe map sym obj lk1
+    @for %a in ($(CLEANEXTS)) do -rm -f $(ODIR)\*.%a
+    -rm -f *.err
+    -rm -f $(LIBNAME)
+    -rm -f $(LIBNAMEFL)
+    -rm -f $(LIBNAMEGL)
+    -rm -f $(LIBNAMEIMG)
 

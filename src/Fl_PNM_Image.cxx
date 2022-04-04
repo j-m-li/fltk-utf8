@@ -1,9 +1,9 @@
 //
-// "$Id: Fl_PNM_Image.cxx,v 1.1.2.9 2002/09/17 20:27:18 easysw Exp $"
+// "$Id: Fl_PNM_Image.cxx,v 1.1.2.13 2004/04/11 04:38:58 easysw Exp $"
 //
 // Fl_PNM_Image routines.
 //
-// Copyright 1997-2002 by Easy Software Products.
+// Copyright 1997-2004 by Easy Software Products.
 //
 // This library is free software; you can redistribute it and/or
 // modify it under the terms of the GNU Library General Public
@@ -35,10 +35,10 @@
 #include <FL/Fl_PNM_Image.H>
 #include <stdio.h>
 #include <stdlib.h>
-#include "flstring.h"
 #include <FL/fl_utf8.H>
+#include "flstring.h"
 
-const char* fl_pnm_early_eof = "Early end-of-file in PNM file \"%s\"!";
+const char* Fl::txt_pnm_early_eof = "Early end-of-file in PNM file \"%s\"!";
 
 //
 // 'Fl_PNM_Image::Fl_PNM_Image()' - Load a PNM image...
@@ -76,7 +76,7 @@ Fl_PNM_Image::Fl_PNM_Image(const char *name)	// I - File to read
   lineptr = fgets(line, sizeof(line), fp);
   if (!lineptr) {
     fclose(fp);
-    Fl::error(fl_pnm_early_eof, name);
+    Fl::error(Fl::txt_pnm_early_eof, name);
     return;
   }
 
@@ -178,5 +178,5 @@ Fl_PNM_Image::Fl_PNM_Image(const char *name)	// I - File to read
 
 
 //
-// End of "$Id: Fl_PNM_Image.cxx,v 1.1.2.9 2002/09/17 20:27:18 easysw Exp $".
+// End of "$Id: Fl_PNM_Image.cxx,v 1.1.2.13 2004/04/11 04:38:58 easysw Exp $".
 //

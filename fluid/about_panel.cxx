@@ -85,7 +85,7 @@ Fl_Window* make_about_panel() {
         o->labelcolor(7);
         o->align(FL_ALIGN_TOP|FL_ALIGN_INSIDE);
       }
-      { Fl_Box* o = new Fl_Box(140, 27, 160, 123, "FLTK User\nInterface\nDesigner\nVersion 1.1.4");
+      { Fl_Box* o = new Fl_Box(140, 27, 160, 123, "FLTK User\nInterface\nDesigner\nVersion 1.1.6");
         o->box(FL_OVAL_BOX);
         o->color(12);
         o->selection_color(47);
@@ -94,7 +94,7 @@ Fl_Window* make_about_panel() {
         o->labelsize(18);
         o->labelcolor(7);
       }
-      { Fl_Button* o = new Fl_Button(181, 176, 115, 30, "\251""1998-2003 by\nBill Spitzak and others");
+      { Fl_Button* o = new Fl_Button(181, 176, 115, 30, "\251""1998-2004 by\nBill Spitzak and others");
         o->box(FL_THIN_UP_BOX);
         o->labelsize(10);
         o->labelcolor(136);

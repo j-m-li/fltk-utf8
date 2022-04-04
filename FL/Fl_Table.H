@@ -2,6 +2,7 @@
 // Fl_Table -- A table widget
 //
 // Copyright 2002 by Greg Ercolano.
+// Copyright (c) 2004 O'ksi'D
 //
 // This library is free software; you can redistribute it and/or
 // modify it under the terms of the GNU Library General Public
@@ -17,12 +18,6 @@
 // License along with this library; if not, write to the Free Software
 // Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307
 // USA.
-//
-// Please report all bugs and problems to "erco at seriss dot com".
-//
-// TODO:
-//    o Auto scroll during dragged selection
-//    o Keyboard navigation (up/down/left/right arrow)
 //
 
 #ifndef _FL_TABLE_H
@@ -47,14 +42,14 @@ class Fl_Table : public Fl_Group
 public:
     enum TableContext
     {
-	CONTEXT_NONE = 0,
-	CONTEXT_STARTPAGE,	// before a page is redrawn
-	CONTEXT_ENDPAGE,	// after a page is redrawn
-	CONTEXT_ROW_HEADER,	// in the row header
-	CONTEXT_COL_HEADER,	// in the col header
-	CONTEXT_CELL,		// in one of the cells
-	CONTEXT_TABLE,		// in the table
-	CONTEXT_RC_RESIZE	// column or row being resized
+	CONTEXT_NONE       = 0,
+	CONTEXT_STARTPAGE  = 0x01,	// before a page is redrawn
+	CONTEXT_ENDPAGE    = 0x02,	// after a page is redrawn
+	CONTEXT_ROW_HEADER = 0x04,	// in the row header
+	CONTEXT_COL_HEADER = 0x08,	// in the col header
+	CONTEXT_CELL       = 0x10,	// in one of the cells
+	CONTEXT_TABLE      = 0x20,	// in the table
+	CONTEXT_RC_RESIZE  = 0x40,	// column or row being resized
     };
 
 private:
@@ -78,6 +73,9 @@ private:
 
     Fl_Color _row_header_color,
              _col_header_color;
+
+    int _auto_drag;
+    int _selecting;
 
     // An STL-ish vector without templates
     class IntVector 
@@ -130,6 +128,12 @@ private:
     // Redraw single cell
     void _redraw_cell(TableContext context, int R, int C);
 
+    void _start_auto_drag();
+    void _stop_auto_drag();
+    void _auto_drag_cb();
+    static void _auto_drag_cb2(void *d);
+
+
 protected:
     enum ResizeFlag
     {
@@ -143,6 +147,10 @@ protected:
     int table_w, table_h;			// table's virtual size (in pixels)
     int toprow, botrow, 			// four corners of viewable table
 	leftcol, rightcol;
+
+	// selection
+	int current_row, current_col;
+	int select_row, select_col;
 
     // OPTIMIZATION: Precomputed scroll positions for the toprow/leftcol
     int toprow_scrollpos,
@@ -186,6 +194,8 @@ protected:
         { return( Fl_Group::children() > 3 ); }	// (ie. more than box and 2 scrollbars?)
 
     static void scroll_cb(Fl_Widget*,void*);	// h/v scrollbar callback
+
+    void damage_zone(int r1, int c1, int r2, int c2, int r3 = 0, int c3 = 0);
 
     void redraw_range(int toprow, int botrow, int leftcol, int rightcol)
     {
@@ -313,6 +323,11 @@ public:
     inline int top_row()
         { return(row_position()); }
 
+    int is_selected(int r, int c);             // selected cell
+    void get_selection(int& s_top, int& s_left, int& s_bottom, int& s_right);
+    void set_selection(int s_top, int s_left, int s_bottom, int s_right);
+    int move_cursor(int R, int C);
+
     void resize(int X, int Y, int W, int H);	// fltk resize() override
     void draw(void);				// fltk draw() override
 
@@ -360,6 +375,5 @@ public:
     }
 };
 
-#define CONTEXT_NEWPAGE CONTEXT_STARTPAGE		// NEWPAGE deprecated
 
 #endif /*_FL_TABLE_H*/

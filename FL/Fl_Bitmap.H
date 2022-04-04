@@ -1,9 +1,9 @@
 //
-// "$Id: Fl_Bitmap.H,v 1.5.2.3.2.11 2003/01/30 21:38:38 easysw Exp $"
+// "$Id: Fl_Bitmap.H,v 1.5.2.3.2.12 2004/04/11 04:38:54 easysw Exp $"
 //
 // Bitmap header file for the Fast Light Tool Kit (FLTK).
 //
-// Copyright 1998-2003 by Bill Spitzak and others.
+// Copyright 1998-2004 by Bill Spitzak and others.
 //
 // This library is free software; you can redistribute it and/or
 // modify it under the terms of the GNU Library General Public
@@ -35,11 +35,11 @@ class FL_EXPORT Fl_Bitmap : public Fl_Image {
 
   const uchar *array;
   int alloc_array; // Non-zero if data was allocated
-#if defined(__MACOS__) || defined(WIN32)
+#if defined(__APPLE__) || defined(WIN32)
   void *id; // for internal use
 #else
   unsigned id; // for internal use
-#endif // __MACOS__ || WIN32
+#endif // __APPLE__ || WIN32
   
   Fl_Bitmap(const uchar *bits, int W, int H) :
     Fl_Image(W,H,0), array(bits), alloc_array(0), id(0) {data((const char **)&array, 1);}
@@ -58,5 +58,5 @@ class FL_EXPORT Fl_Bitmap : public Fl_Image {
 #endif
 
 //
-// End of "$Id: Fl_Bitmap.H,v 1.5.2.3.2.11 2003/01/30 21:38:38 easysw Exp $".
+// End of "$Id: Fl_Bitmap.H,v 1.5.2.3.2.12 2004/04/11 04:38:54 easysw Exp $".
 //

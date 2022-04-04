@@ -30,7 +30,6 @@
 #include <FL/Fl.H>
 #include <FL/x.H>
 #include <FL/fl_utf8.H>
-#include <FL/Fl_Fltk.H>
 #include <FL/Fl_Window.H>
 #include <FL/fl_draw.H>
 #include <shellapi.h>
@@ -143,12 +142,29 @@ static struct FD {
   void* arg;
 } *fd = 0;
 
+extern unsigned int fl_codepage;
+
 void fl_reset_spot()
 {
 }
 
 void fl_set_spot(int font, int size, int x, int y, int w, int h)
 {
+ 	HIMC himc = ImmGetContext(fl_msg.hwnd);
+ 	if (himc) {
+ 		Fl_Window* w = fl_find(fl_msg.hwnd);
+
+ 		while (w->parent()) w = w->window();
+
+ 		COMPOSITIONFORM	cfs;
+ 		cfs.dwStyle = CFS_POINT;
+ 		cfs.ptCurrentPos.x = x;
+ 		cfs.ptCurrentPos.y = y - w->labelsize();
+ 		MapWindowPoints(fl_msg.hwnd, fl_xid(w), &cfs.ptCurrentPos, 1);
+ 		ImmSetCompositionWindow(himc, &cfs);
+
+ 		ImmReleaseContext(fl_msg.hwnd, himc);
+ 	}
 }
 
 void fl_set_status(int x, int y, int w, int h)
@@ -401,50 +417,7 @@ char *fl_selection_buffer[2];
 int fl_selection_length[2];
 int fl_selection_buffer_length[2];
 char fl_i_own_selection[2];
-UINT fl_codepage = 0;
-static char *buf = NULL;
-static int buf_len = 0;
-static unsigned short *wbuf = NULL;
-char *fl_utf82locale(const char *s, UINT codepage = 0)
-{
-	if (!s) return "";
-	int len, l = 0;
-	len = strlen(s);
-	if (buf_len < len * 2 + 1) {
-		buf_len = len * 2 + 1;
-		buf = (char*) realloc(buf, buf_len);
-		wbuf = (unsigned short*) realloc(wbuf, buf_len * sizeof(short));
-	}
-	if (codepage < 1) codepage = fl_codepage;
-	l = fl_utf2unicode((const unsigned char *)s, len, (xchar*) wbuf);
-	buf[l] = 0;
-	l = WideCharToMultiByte(codepage, 0, (WCHAR*)wbuf, l, buf, 
-		buf_len, NULL, NULL);
-	if (l < 0) l = 0;
-	buf[l] = 0;
-	return buf;	
-}
 
-char *fl_locale2utf8(const char *s, UINT codepage = 0)
-{
-	if (!s) return "";
-	int len, l = 0;
-	len = strlen(s);
-	if (buf_len < len * 5 + 1) {
-		buf_len = len * 5 + 1;
-		buf = (char*) realloc(buf, buf_len);
-		wbuf = (unsigned short*) realloc(wbuf, buf_len * sizeof(short));
-	}
-	if (codepage < 1) codepage = fl_codepage;
-	buf[l] = 0;
-	
-	l = MultiByteToWideChar(codepage, 0, s, len, (WCHAR*)wbuf, buf_len);
-	if (l < 0) l = 0;
-	wbuf[l] = 0;
-	l = fl_unicode2utf((xchar*)wbuf, l, buf);
-	buf[l] = 0;
-	return buf;	
-}
 
 UINT fl_get_lcid_codepage(LCID id)
 {
@@ -514,7 +487,7 @@ void Fl::paste(Fl_Widget &receiver, int clipboard) {
 	Fl::e_text = (char*) malloc(l * 5 + 1);
 	Fl::e_text[fl_unicode2utf((xchar*)g, l, Fl::e_text)] = 0;
       } else {	  
-        Fl::e_text = fl_locale2utf8((char *)g, fl_get_lcid_codepage(id));
+        Fl::e_text = fl_locale2utf8((char *)g, fl_get_lcid_codepage(id), 0);
       }
       LPSTR a,b;
       a = b = Fl::e_text;
@@ -923,8 +896,54 @@ static LRESULT CALLBACK WndProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lPar
 		wlen = 0;
       }
     } else if (Fl::e_keysym >= FL_KP && Fl::e_keysym <= FL_KP_Last) {
-      buffer[0] = Fl::e_keysym-FL_KP;
-      Fl::e_length = 1;
+      if (state & FL_NUM_LOCK) {
+        // Convert to regular keypress...
+       buffer[0] = Fl::e_keysym-FL_KP;
+       Fl::e_length = 1;
+      } else {
+        // Convert to special keypress...
+       buffer[0] = 0;
+       Fl::e_length = 0;
+       switch (Fl::e_keysym) {
+         case FL_KP + '0' :
+           Fl::e_keysym = FL_Insert;
+           break;
+         case FL_KP + '1' :
+           Fl::e_keysym = FL_End;
+           break;
+         case FL_KP + '2' :
+           Fl::e_keysym = FL_Down;
+           break;
+         case FL_KP + '3' :
+           Fl::e_keysym = FL_Page_Down;
+           break;
+         case FL_KP + '4' :
+           Fl::e_keysym = FL_Left;
+           break;
+         case FL_KP + '6' :
+           Fl::e_keysym = FL_Right;
+           break;
+         case FL_KP + '7' :
+           Fl::e_keysym = FL_Home;
+           break;
+         case FL_KP + '8' :
+           Fl::e_keysym = FL_Up;
+           break;
+         case FL_KP + '9' :
+           Fl::e_keysym = FL_Page_Up;
+           break;
+         case FL_KP + '.' :
+           Fl::e_keysym = FL_Delete;
+           break;
+         case FL_KP + '/' :
+         case FL_KP + '*' :
+         case FL_KP + '-' :
+         case FL_KP + '+' :
+           buffer[0] = Fl::e_keysym-FL_KP;
+           Fl::e_length = 1;
+           break;
+       }
+      }
     } else {
       buffer[0] = 0;
       Fl::e_length = 0;
@@ -966,7 +985,7 @@ static LRESULT CALLBACK WndProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lPar
     break;
 
   case WM_SETCURSOR:
-    if (lParam & 0xFFFF == HTCLIENT) {
+    if (LOWORD(lParam) == HTCLIENT) {
       while (window->parent()) window = window->window();
       SetCursor(Fl_X::i(window)->cursor);
       return 0;
@@ -1021,7 +1040,7 @@ static LRESULT CALLBACK WndProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lPar
       if (h) {
         LPSTR p = (LPSTR)GlobalLock(h);
         fl_selection_buffer[1][fl_selection_length[1]] = 0;	
-        char *s = fl_utf82locale(fl_selection_buffer[1]);
+        char *s = fl_utf82locale(fl_selection_buffer[1], fl_selection_length[1], 0);
         memcpy(p, s, strlen(s));
         p[fl_selection_length[1]] = 0;
         GlobalUnlock(h);
@@ -1127,7 +1146,6 @@ void Fl_Window::resize(int X,int Y,int W,int H) {
     if (shown()) {
       redraw(); 
       i->wait_for_expose = 1; 
-      if (is_wm) wm_resize = 1;
     }
   } else {
     x(X); y(Y);
@@ -1306,7 +1324,7 @@ Fl_X* Fl_X::make(Fl_Window* w) {
       if (lab) free(lab);
   } else {
     char *lab; 
-    lab = fl_utf82locale(w->label());
+    lab = fl_utf82locale(w->label(), strlen(w->label()), 0);
     x->xid = CreateWindowEx(
       styleEx,
       class_name, lab, style,
@@ -1417,7 +1435,8 @@ void Fl_Window::label(const char *name,const char *iname) {
       SetWindowTextW(i->xid, lab);
       free(lab);
     } else {
-      SetWindowTextA(i->xid, fl_utf82locale(name));
+      char *t = fl_utf82locale(name, strlen(name), 0);
+      SetWindowTextA(i->xid, t);
       // if (!iname) iname = fl_filename_name(name);
       // should do something with iname here...
     }
@@ -1467,7 +1486,6 @@ FL_EXPORT HWND fl_window = (HWND)-1;
 // Here we ensure only one GetDC is ever in place.
 HDC fl_GetDC(HWND w) {
   if (fl_gc) {
-    if (fl->type == FL_GDI_DEVICE) return fl_gc;
     if (w == fl_window) return fl_gc;
     ReleaseDC(fl_window, fl_gc);
   }

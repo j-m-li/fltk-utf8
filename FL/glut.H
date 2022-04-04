@@ -1,9 +1,9 @@
 //
-// "$Id: glut.H,v 1.6.2.10.2.5 2003/01/30 21:40:50 easysw Exp $"
+// "$Id: glut.H,v 1.6.2.10.2.7 2004/04/11 04:38:55 easysw Exp $"
 //
 // GLUT emulation header file for the Fast Light Tool Kit (FLTK).
 //
-// Copyright 1998-2003 by Bill Spitzak and others.
+// Copyright 1998-2004 by Bill Spitzak and others.
 //
 // This library is free software; you can redistribute it and/or
 // modify it under the terms of the GNU Library General Public
@@ -199,11 +199,11 @@ inline int glutGetMenu() {return glut_menu;}
 
 inline void glutSetMenu(int m) {glut_menu = m;}
 
-FL_EXPORT void glutAddMenuEntry(char *label, void*value);
+FL_EXPORT void glutAddMenuEntry(char *label, int value);
 
 FL_EXPORT void glutAddSubMenu(char *label, int submenu);
 
-FL_EXPORT void glutChangeToMenuEntry(int item, char *label, void* value);
+FL_EXPORT void glutChangeToMenuEntry(int item, char *label, int value);
 
 FL_EXPORT void glutChangeToSubMenu(int item, char *label, int submenu);
 
@@ -242,8 +242,8 @@ enum {GLUT_NOT_VISIBLE, GLUT_VISIBLE};
 inline void glutIdleFunc(void (*f)()) {Fl::set_idle(f);}
 
 // Warning: this cast may not work on all machines:
-inline void glutTimerFunc(unsigned int msec, void (*f)(int), void* value) {
-  Fl::add_timeout(msec*.001, (void (*)(void *))f, value);
+inline void glutTimerFunc(unsigned int msec, void (*f)(int), int value) {
+  Fl::add_timeout(msec*.001, (void (*)(void *))f, (void *)value);
 }
 
 inline void glutMenuStateFunc(void (*f)(int state)) {
@@ -367,11 +367,11 @@ enum {
 //#define GLUT_NUM_DIALS		608
 //#define GLUT_NUM_TABLET_BUTTONS	609
 
-inline int glutGetModifiers() {return Fl::event_state();}
 // WARNING: these values are different than GLUT uses:
 #  define GLUT_ACTIVE_SHIFT               FL_SHIFT
 #  define GLUT_ACTIVE_CTRL                FL_CTRL
 #  define GLUT_ACTIVE_ALT                 FL_ALT
+inline int glutGetModifiers() {return Fl::event_state() & (GLUT_ACTIVE_SHIFT | GLUT_ACTIVE_CTRL | GLUT_ACTIVE_ALT);}
 
 int glutLayerGet(GLenum);
 #  define GLUT_OVERLAY_POSSIBLE		800
@@ -470,5 +470,5 @@ extern void APIENTRY glutSolidIcosahedron();
 #endif                  /* !__glut_h__ */
 
 //
-// End of "$Id: glut.H,v 1.6.2.10.2.5 2003/01/30 21:40:50 easysw Exp $".
+// End of "$Id: glut.H,v 1.6.2.10.2.7 2004/04/11 04:38:55 easysw Exp $".
 //

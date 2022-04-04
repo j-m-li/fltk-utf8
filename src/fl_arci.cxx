@@ -1,9 +1,9 @@
 //
-// "$Id: Fl_Fltk::arci.cxx,v 1.4.2.5.2.3 2002/01/01 15:11:31 easysw Exp $"
+// "$Id: fl_arci.cxx,v 1.4.2.5.2.9 2004/08/27 00:22:28 matthiaswm Exp $"
 //
 // Arc (integer) drawing functions for the Fast Light Tool Kit (FLTK).
 //
-// Copyright 1998-2002 by Bill Spitzak and others.
+// Copyright 1998-2004 by Bill Spitzak and others.
 //
 // This library is free software; you can redistribute it and/or
 // modify it under the terms of the GNU Library General Public
@@ -36,11 +36,13 @@
 #include <FL/fl_draw.H>
 #include <FL/x.H>
 #ifdef WIN32
-#include <FL/fl_math.h>
+#include <FL/math.h>
+#endif
+#ifdef __APPLE__
+#include <config.h>
 #endif
 
-
-void Fl_Fltk::arc(int x,int y,int w,int h,double a1,double a2) {
+void fl_arc(int x,int y,int w,int h,double a1,double a2) {
   if (w <= 0 || h <= 0) return;
 #ifdef WIN32
   int xa = x+w/2+int(w*cos(a1/180.0*M_PI));
@@ -48,26 +50,30 @@ void Fl_Fltk::arc(int x,int y,int w,int h,double a1,double a2) {
   int xb = x+w/2+int(w*cos(a2/180.0*M_PI));
   int yb = y+h/2-int(h*sin(a2/180.0*M_PI));
   Arc(fl_gc, x, y, x+w, y+h, xa, ya, xb, yb); 
-#elif defined(__MACOS__)
+#elif defined(__APPLE_QD__)
   Rect r; r.left=x; r.right=x+w; r.top=y; r.bottom=y+h;
   a1 = a2-a1; a2 = 450-a2;
   FrameArc(&r, (short int)a2, (short int)a1);
-#elif NANO_X
-  --w;  --h;
-
-  GrArcAngle(fl_window, fl_gc, x + w/2, y + h/2, w/2, h/2, 
-	     int(a1 * 64), int(a2 * 64), MWARC);
-
-  ++w;  ++h;
-
-#elif DJGPP
-  // FIXME_DJGPP
+#elif defined(__APPLE_QUARTZ__)
+  a1 = (-a1)/180.0f*M_PI; a2 = (-a2)/180.0f*M_PI;
+  float cx = x + 0.5f*w - 0.5f, cy = y + 0.5f*h - 0.5f;
+  if (w!=h) {
+    CGContextSaveGState(fl_gc);
+    CGContextTranslateCTM(fl_gc, cx, cy);
+    CGContextScaleCTM(fl_gc, w-1.0f, h-1.0f);
+    CGContextAddArc(fl_gc, 0, 0, 0.5, a1, a2, 1);
+    CGContextRestoreGState(fl_gc);
+  } else {
+    float r = (w+h)*0.25f-0.5f;
+    CGContextAddArc(fl_gc, cx, cy, r, a1, a2, 1);
+  }
+  CGContextStrokePath(fl_gc);
 #else
   XDrawArc(fl_display, fl_window, fl_gc, x,y,w-1,h-1, int(a1*64),int((a2-a1)*64));
 #endif
 }
 
-void Fl_Fltk::pie(int x,int y,int w,int h,double a1,double a2) {
+void fl_pie(int x,int y,int w,int h,double a1,double a2) {
   if (w <= 0 || h <= 0) return;
 #ifdef WIN32
   if (a1 == a2) return;
@@ -77,25 +83,33 @@ void Fl_Fltk::pie(int x,int y,int w,int h,double a1,double a2) {
   int yb = y+h/2-int(h*sin(a2/180.0*M_PI));
   SelectObject(fl_gc, fl_brush());
   Pie(fl_gc, x, y, x+w, y+h, xa, ya, xb, yb); 
-#elif defined(__MACOS__)
+#elif defined(__APPLE_QD__)
   Rect r; r.left=x; r.right=x+w; r.top=y; r.bottom=y+h;
   a1 = a2-a1; a2 = 450-a2;
   PaintArc(&r, (short int)a2, (short int)a1);
-#elif NANO_X
-  --w;  --h;
-
-  GrArcAngle(fl_window, fl_gc, x + w/2, y + h/2, w/2, h/2, 
-	     int(a1 * 64), int(a2 * 64), MWPIE);
-  
-  ++w;  ++h;
-
-#elif DJGPP
-  // FIXME_DJGPP
+#elif defined(__APPLE_QUARTZ__)
+  a1 = (-a1)/180.0f*M_PI; a2 = (-a2)/180.0f*M_PI;
+  float cx = x + 0.5f*w - 0.5f, cy = y + 0.5f*h - 0.5f;
+  if (w!=h) {
+    CGContextSaveGState(fl_gc);
+    CGContextTranslateCTM(fl_gc, cx, cy);
+    CGContextScaleCTM(fl_gc, w, h);
+    CGContextAddArc(fl_gc, 0, 0, 0.5, a1, a2, 1);
+    CGContextAddLineToPoint(fl_gc, 0, 0);
+    CGContextClosePath(fl_gc);
+    CGContextRestoreGState(fl_gc);
+  } else {
+    float r = (w+h)*0.25f;
+    CGContextAddArc(fl_gc, cx, cy, r, a1, a2, 1);
+    CGContextAddLineToPoint(fl_gc, cx, cy);
+    CGContextClosePath(fl_gc);
+  }
+  CGContextFillPath(fl_gc);
 #else
   XFillArc(fl_display, fl_window, fl_gc, x,y,w,h, int(a1*64),int((a2-a1)*64));
 #endif
 }
 
 //
-// End of "$Id: Fl_Fltk::arci.cxx,v 1.4.2.5.2.3 2002/01/01 15:11:31 easysw Exp $".
+// End of "$Id: fl_arci.cxx,v 1.4.2.5.2.9 2004/08/27 00:22:28 matthiaswm Exp $".
 //

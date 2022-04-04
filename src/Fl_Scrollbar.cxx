@@ -1,9 +1,9 @@
 //
-// "$Id: Fl_Scrollbar.cxx,v 1.7.2.14.2.12 2002/09/28 12:04:12 easysw Exp $"
+// "$Id: Fl_Scrollbar.cxx,v 1.7.2.14.2.17 2004/07/27 16:02:21 easysw Exp $"
 //
 // Scroll bar widget for the Fast Light Tool Kit (FLTK).
 //
-// Copyright 1998-2002 by Bill Spitzak and others.
+// Copyright 1998-2004 by Bill Spitzak and others.
 //
 // This library is free software; you can redistribute it and/or
 // modify it under the terms of the GNU Library General Public
@@ -176,6 +176,7 @@ int Fl_Scrollbar::handle(int event) {
     if (v != value()) {
       Fl_Slider::value(v);
       value_damage();
+      set_changed();
       do_callback();
     }
     return 1;}
@@ -242,5 +243,5 @@ Fl_Scrollbar::Fl_Scrollbar(int X, int Y, int W, int H, const char* L)
 }
 
 //
-// End of "$Id: Fl_Scrollbar.cxx,v 1.7.2.14.2.12 2002/09/28 12:04:12 easysw Exp $".
+// End of "$Id: Fl_Scrollbar.cxx,v 1.7.2.14.2.17 2004/07/27 16:02:21 easysw Exp $".
 //

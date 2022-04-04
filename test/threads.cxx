@@ -61,7 +61,7 @@ void* prime_func(void* p)
   // very simple prime number calculator !
   for (; ; n+= step) {
     int p;
-    int hn = (int)sqrt(n);
+    int hn = (int)sqrt((double)n);
     for (p=3; p<=hn; p+=2) if ( n%p == 0 ) break;
     if (p >= hn) {
       char s[128];

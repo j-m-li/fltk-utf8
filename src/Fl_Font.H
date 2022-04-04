@@ -1,9 +1,9 @@
 //
-// "$Id: Fl_Font.H,v 1.6.2.3.2.4 2003/01/30 21:41:46 easysw Exp $"
+// "$Id: Fl_Font.H,v 1.6.2.3.2.8 2004/09/09 00:55:41 matthiaswm Exp $"
 //
 // Font definitions for the Fast Light Tool Kit (FLTK).
 //
-// Copyright 1998-2003 by Bill Spitzak and others.
+// Copyright 1998-2004 by Bill Spitzak and others.
 //
 // This library is free software; you can redistribute it and/or
 // modify it under the terms of the GNU Library General Public
@@ -36,12 +36,12 @@
 #ifndef FL_FONT_
 #define FL_FONT_
 
-#if HAVE_XUTF8 && !NANO_X
-#include <libXutf8/Xutf8.h>
-#endif
+#include <config.h>
 
 #  if USE_XFT
 typedef struct _XftFont XftFont;
+#  elif !defined(WIN32) && !defined(__APPLE__)
+#    include <FL/Xutf8.h>
 #  endif // USE_XFT
 
 class Fl_FontSize {
@@ -52,36 +52,24 @@ public:
   int *width[64];
   TEXTMETRIC metr;
   FL_EXPORT Fl_FontSize(const char* fontname, int size);
-#  elif defined(DJGPP)
-  GrFont *fid;
+#  elif defined(__APPLE_QD__)
   FL_EXPORT Fl_FontSize(const char* fontname, int size);
-#  elif defined(__MACOS__)
-  FL_EXPORT Fl_FontSize(const char* fontname, int size);
-  Fixed size;
-  Boolean bold;
-  Boolean italic;
-  ATSUFontID font;
+  short font, face, size;
   short ascent, descent;
-  char knowMetrics;
-  short *width[64];
+  short width[256];
+  bool knowMetrics;
+#  elif defined(__APPLE_QUARTZ__)
+  FL_EXPORT Fl_FontSize(const char* fontname, int size);
+  char *q_name;
+  int size;
+  short ascent, descent, q_width;
 #  elif USE_XFT
   XftFont* font;
   const char* encoding;
   int size;
   FL_EXPORT Fl_FontSize(const char* xfontname);
-
 #  else
-#    if HAVE_XUTF8 | NANO_X
-#    if NANO_X
-   char isTTF;
-   void Resize(int size);
-   GR_FONT_ID font;	
-#    else
-  XUtf8FontStruct* font; // X UTF-8 font information
-#    endif
-#    else
-  XFontStruct* font;	// X font information
-#    endif
+  XUtf8FontStruct* font;	// X UTF-8 font information
   FL_EXPORT Fl_FontSize(const char* xfontname);
 #  endif
   int minsize;		// smallest point size that should use this
@@ -116,5 +104,5 @@ FL_EXPORT char *fl_find_fontsize(char *name);
 #endif
 
 //
-// End of "$Id: Fl_Font.H,v 1.6.2.3.2.4 2003/01/30 21:41:46 easysw Exp $".
+// End of "$Id: Fl_Font.H,v 1.6.2.3.2.8 2004/09/09 00:55:41 matthiaswm Exp $".
 //

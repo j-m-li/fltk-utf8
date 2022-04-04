@@ -1,9 +1,9 @@
 //
-// "$Id: fl_line_style.cxx,v 1.3.2.3.2.13 2003/01/30 21:43:57 easysw Exp $"
+// "$Id: fl_line_style.cxx,v 1.3.2.3.2.17 2004/08/31 22:00:48 matthiaswm Exp $"
 //
 // Line style code for the Fast Light Tool Kit (FLTK).
 //
-// Copyright 1998-2003 by Bill Spitzak and others.
+// Copyright 1998-2004 by Bill Spitzak and others.
 //
 // This library is free software; you can redistribute it and/or
 // modify it under the terms of the GNU Library General Public
@@ -29,9 +29,23 @@
 #include "flstring.h"
 #include <stdio.h>
 
-const char* fl_cannot_create_pen = "fl_line_style(): Could not create GDI pen object.";
+const char* Fl::txt_cannot_create_pen = "fl_line_style(): Could not create GDI pen object.";
 
-void Fl_Fltk::line_style(int style, int width, char* dashes) {
+#ifdef __APPLE_QUARTZ__
+float fl_quartz_line_width_ = 1.0f;
+static enum CGLineCap fl_quartz_line_cap_ = kCGLineCapButt;
+static enum CGLineJoin fl_quartz_line_join_ = kCGLineJoinMiter;
+static float *fl_quartz_line_pattern = 0;
+static int fl_quartz_line_pattern_size = 0;
+void fl_quartz_restore_line_style_() {
+  CGContextSetLineWidth(fl_gc, fl_quartz_line_width_);
+  CGContextSetLineCap(fl_gc, fl_quartz_line_cap_);
+  CGContextSetLineJoin(fl_gc, fl_quartz_line_join_);
+  CGContextSetLineDash(fl_gc, 0, fl_quartz_line_pattern, fl_quartz_line_pattern_size);
+}
+#endif
+
+void fl_line_style(int style, int width, char* dashes) {
 #ifdef WIN32
   // According to Bill, the "default" cap and join should be the
   // "fastest" mode supported for the platform.  I don't know why
@@ -50,13 +64,13 @@ void Fl_Fltk::line_style(int style, int width, char* dashes) {
   LOGBRUSH penbrush = {BS_SOLID,fl_RGB(),0}; // can this be fl_brush()?
   HPEN newpen = ExtCreatePen(s1, width, &penbrush, n, n ? a : 0);
   if (!newpen) {
-    Fl::error(fl_cannot_create_pen);
+    Fl::error(Fl::txt_cannot_create_pen);
     return;
   }
   HPEN oldpen = (HPEN)SelectObject(fl_gc, newpen);
   DeleteObject(oldpen);
   fl_current_xmap->pen = newpen;
-#elif defined(__MACOS__)
+#elif defined(__APPLE_QD__)
   // QuickDraw supports pen size and pattern, but no arbitrary line styles.
   static Pattern	styles[] = {
     { { 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff } },	// FL_SOLID
@@ -70,11 +84,46 @@ void Fl_Fltk::line_style(int style, int width, char* dashes) {
   style &= 0xff;
   if (style > 2) style = 2;
   PenPat(styles + style);
-#elif NANO_X
-// FIXME
-#elif DJGPP
-// FIXME_DJGPP
-  fl_gc->lno_width = width;
+#elif defined(__APPLE_QUARTZ__)
+  static enum CGLineCap Cap[4] = { kCGLineCapButt, kCGLineCapButt, 
+                                   kCGLineCapRound, kCGLineCapSquare };
+  static enum CGLineJoin Join[4] = { kCGLineJoinMiter, kCGLineJoinMiter, 
+                                    kCGLineJoinRound, kCGLineJoinBevel };
+  if (width<1) width = 1;
+  fl_quartz_line_width_ = (float)width; 
+  fl_quartz_line_cap_ = Cap[(style>>8)&3];
+  fl_quartz_line_join_ = Join[(style>>12)&3];
+  char *d = dashes; 
+  static float pattern[16];
+  if (d && *d) {
+    float *p = pattern;
+    while (*d) { *p++ = (float)*d++; }
+    fl_quartz_line_pattern = pattern;
+    fl_quartz_line_pattern_size = d-dashes;
+  } else if (style & 0xff) {
+    char dash, dot, gap;
+    // adjust lengths to account for cap:
+    if (style & 0x200) {
+      dash = char(2*width);
+      dot = 1; 
+      gap = char(2*width-1);
+    } else {
+      dash = char(3*width);
+      dot = gap = char(width);
+    }
+    float *p = pattern;
+    switch (style & 0xff) {
+    case FL_DASH:       *p++ = dash; *p++ = gap; break;
+    case FL_DOT:        *p++ = dot; *p++ = gap; break;
+    case FL_DASHDOT:    *p++ = dash; *p++ = gap; *p++ = dot; *p++ = gap; break;
+    case FL_DASHDOTDOT: *p++ = dash; *p++ = gap; *p++ = dot; *p++ = gap; *p++ = dot; *p++ = gap; break;
+    }
+    fl_quartz_line_pattern_size = p-pattern;
+    fl_quartz_line_pattern = pattern;
+  } else {
+    fl_quartz_line_pattern = 0; fl_quartz_line_pattern_size = 0;
+  }
+  fl_quartz_restore_line_style_();
 #else
   int ndashes = dashes ? strlen(dashes) : 0;
   // emulate the WIN32 dash patterns on X
@@ -111,5 +160,5 @@ void Fl_Fltk::line_style(int style, int width, char* dashes) {
 
 
 //
-// End of "$Id: fl_line_style.cxx,v 1.3.2.3.2.13 2003/01/30 21:43:57 easysw Exp $".
+// End of "$Id: fl_line_style.cxx,v 1.3.2.3.2.17 2004/08/31 22:00:48 matthiaswm Exp $".
 //

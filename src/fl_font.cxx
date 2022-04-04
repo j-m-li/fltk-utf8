@@ -1,9 +1,9 @@
 //
-// "$Id: fl_font.cxx,v 1.9.2.4 2000/06/05 21:21:08 mike Exp $"
+// "$Id: fl_font.cxx,v 1.9.2.5.2.8 2004/04/11 04:39:00 easysw Exp $"
 //
 // Font selection code for the Fast Light Tool Kit (FLTK).
 //
-// Copyright 1998-2002 by Bill Spitzak and others.
+// Copyright 1998-2004 by Bill Spitzak and others.
 //
 // This library is free software; you can redistribute it and/or
 // modify it under the terms of the GNU Library General Public
@@ -28,21 +28,15 @@
 #include <FL/Fl.H>
 #include <FL/fl_draw.H>
 #include <FL/x.H>
-#include <FL/fl_utf8.H>
 #include "Fl_Font.H"
-  
+
 #include <stdio.h>
 #include <stdlib.h>
 
-
 #ifdef WIN32
 #  include "fl_font_win32.cxx"
-#elif defined(__MACOS__)
+#elif defined(__APPLE__)
 #  include "fl_font_mac.cxx"
-#elif NANO_X
-#  include "fl_font_nx.cxx"
-#elif DJGPP
-#  include "fl_font_dj2.cxx"
 #elif USE_XFT
 #  include "fl_font_xft.cxx"
 #else
@@ -50,16 +44,19 @@
 #endif // WIN32
 
 
-double Fl_Fltk::width(const char* c) {
-  if (c) return Fl_Fltk::width(c, strlen(c));
+double fl_width(const char* c) {
+  if (c) return fl_width(c, strlen(c));
   else return 0.0f;
 }
 
-void Fl_Fltk::draw(const char* str, int x, int y) {
-  Fl_Fltk::draw(str, strlen(str), x, y);
+void fl_draw(const char* str, int x, int y) {
+  fl_draw(str, strlen(str), x, y);
 }
 
+void fl_draw(const char* str, int l, float x, float y) {
+  fl_draw(str, l, (int)x, (int)y);
+}
 
 //
-// End of "$Id: fl_font.cxx,v 1.9.2.4 2000/06/05 21:21:08 mike Exp $".
+// End of "$Id: fl_font.cxx,v 1.9.2.5.2.8 2004/04/11 04:39:00 easysw Exp $".
 //

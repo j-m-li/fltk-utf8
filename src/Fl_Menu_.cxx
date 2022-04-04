@@ -1,9 +1,9 @@
 //
-// "$Id: Fl_Menu_.cxx,v 1.7.2.8.2.6 2003/01/30 21:42:11 easysw Exp $"
+// "$Id: Fl_Menu_.cxx,v 1.7.2.8.2.11 2004/08/09 03:16:22 easysw Exp $"
 //
 // Common menu code for the Fast Light Tool Kit (FLTK).
 //
-// Copyright 1998-2003 by Bill Spitzak and others.
+// Copyright 1998-2004 by Bill Spitzak and others.
 //
 // This library is free software; you can redistribute it and/or
 // modify it under the terms of the GNU Library General Public
@@ -36,6 +36,82 @@
 #include <stdio.h>
 #include <stdlib.h>
 
+// Set 'pathname' of specified menuitem
+//    If finditem==NULL, mvalue() is used (the most recently picked menuitem)
+//    Returns:
+//       0 : OK
+//      -1 : item not found (name="")
+//      -2 : 'name' not large enough (name="")
+//
+#define SAFE_STRCAT(s) \
+    { len += strlen(s); if ( len >= namelen ) { *name='\0'; return(-2); } else strcat(name,(s)); }
+int Fl_Menu_::item_pathname(char *name, int namelen, const Fl_Menu_Item *finditem) const {
+    int len = 0;
+    finditem = finditem ? finditem : mvalue();    
+    name[0] = '\0';
+    for ( int t=0; t<size(); t++ ) {
+        const Fl_Menu_Item *m = &(menu()[t]);
+	if ( m->submenu() ) {				// submenu? descend
+	    if ( *name ) SAFE_STRCAT("/");
+	    SAFE_STRCAT(m->label());
+	} else {
+	    if ( m->label() ) {				// menu item?
+		if ( m == finditem ) {			// found? tack on itemname, done.
+		    SAFE_STRCAT("/");
+		    SAFE_STRCAT(m->label());
+		    return(0);
+		}
+	    } else {					// end of submenu? pop
+	        char *ss = strrchr(name, '/');
+		if ( ss ) { *ss = 0; len = strlen(name); }	// "File/Edit" -> "File"
+		else { name[0] = '\0'; len = 0; }		// "File" -> ""
+		continue;
+	    }
+	}
+    }
+    *name = '\0';
+    return(-1);						// item not found
+}
+
+// FIND MENU ITEM INDEX, GIVEN MENU PATHNAME
+//     eg. "Edit/Copy"
+//     Will also return submenus, eg. "Edit"
+//     Returns NULL if not found.
+//
+const Fl_Menu_Item *
+Fl_Menu_::find_item(const char *name)
+{
+  char menupath[1024] = "";	// File/Export
+
+  for ( int t=0; t < size(); t++ ) {
+    Fl_Menu_Item *m = menu_ + t;
+
+    if (m->submenu()) {
+      // IT'S A SUBMENU
+      if (menupath[0]) strlcat(menupath, "/", sizeof(menupath));
+      strlcat(menupath, m->label(), sizeof(menupath));
+      if (!strcmp(menupath, name)) return m;
+    } else {
+      if (!m->label()) {
+	// END OF SUBMENU? Pop back one level.
+	char *ss = strrchr(menupath, '/');
+	if ( ss ) *ss = 0;
+	else menupath[0] = '\0';
+	continue;
+      }
+
+      // IT'S A MENU ITEM
+      char itempath[1024];	// eg. Edit/Copy
+      strcpy(itempath, menupath);
+      if (itempath[0]) strlcat(itempath, "/", sizeof(itempath));
+      strlcat(itempath, m->label(), sizeof(itempath));
+      if (!strcmp(itempath, name)) return m;
+    }
+  }
+
+  return (const Fl_Menu_Item *)0;
+}
+
 int Fl_Menu_::value(const Fl_Menu_Item* m) {
   clear_changed();
   if (value_ != m) {value_ = m; return 1;}
@@ -63,7 +139,6 @@ const Fl_Menu_Item* Fl_Menu_::picked(const Fl_Menu_Item* v) {
     value_ = v;
     if (when()&(FL_WHEN_CHANGED|FL_WHEN_RELEASE)) {
       if (changed() || when()&FL_WHEN_NOT_CHANGED) {
-	clear_changed();
 	if (value_ && value_->callback_) value_->do_callback((Fl_Widget*)this);
 	else do_callback();
       }
@@ -150,5 +225,5 @@ void Fl_Menu_::clear() {
 }
 
 //
-// End of "$Id: Fl_Menu_.cxx,v 1.7.2.8.2.6 2003/01/30 21:42:11 easysw Exp $".
+// End of "$Id: Fl_Menu_.cxx,v 1.7.2.8.2.11 2004/08/09 03:16:22 easysw Exp $".
 //

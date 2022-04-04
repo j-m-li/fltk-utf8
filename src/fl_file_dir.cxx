@@ -1,9 +1,9 @@
 //
-// "$Id: fl_file_dir.cxx,v 1.1.2.14 2003/01/30 21:43:46 easysw Exp $"
+// "$Id: fl_file_dir.cxx,v 1.1.2.16 2004/07/23 21:12:24 easysw Exp $"
 //
 // File chooser widget for the Fast Light Tool Kit (FLTK).
 //
-// Copyright 1998-2003 by Bill Spitzak and others.
+// Copyright 1998-2004 by Bill Spitzak and others.
 //
 // This library is free software; you can redistribute it and/or
 // modify it under the terms of the GNU Library General Public
@@ -65,31 +65,29 @@ fl_file_chooser(const char *message,	// I - Message in titlebar
     fc->label(message);
 
     if (!fname || !*fname) {
+      if (!fc->value()) fc->value("*");
       if (fc->filter() != pat && (!pat || !fc->filter() ||
           strcmp(pat, fc->filter())) && fc->value()) {
-	if (!fc->value()) fc->value("*");
 	// if pattern is different, remove name but leave old directory:
-      strlcpy(retname, fc->value(), sizeof(retname));
+	strlcpy(retname, fc->value(), sizeof(retname));
 
-      char *p = strrchr(retname, '/');
+	char *p = strrchr(retname, '/');
 
         if (p) {
-        // If the filename is "/foo", then the directory will be "/", not
-        // ""...
-        if (p == retname)
-          retname[1] = '\0';
-        else
-          *p = '\0';
-      }
+	  // If the filename is "/foo", then the directory will be "/", not
+	  // ""...
+	  if (p == retname)
+	    retname[1] = '\0';
+	  else
+	    *p = '\0';
+	}
 
-      // Set the directory...
-      fc->directory(retname);
-
+	// Set the directory...
+	fc->directory(retname);
       }
     }
     else
       fc->value(fname);
-
   }
 
   fc->show();
@@ -117,16 +115,16 @@ fl_dir_chooser(const char *message,	// I - Message for titlebar
 {
   static char	retname[1024];		// Returned directory name
 
-  if (!fname || !*fname) fname = ".";
-
   if (!fc) {
+    if (!fname || !*fname) fname = ".";
+
     fc = new Fl_File_Chooser(fname, "*", Fl_File_Chooser::CREATE |
                                          Fl_File_Chooser::DIRECTORY, message);
     fc->callback(callback, 0);
   } else {
     fc->type(Fl_File_Chooser::CREATE | Fl_File_Chooser::DIRECTORY);
     fc->filter("*");
-    fc->value(fname);
+    if (fname && *fname) fc->value(fname);
     fc->label(message);
   }
 
@@ -145,5 +143,5 @@ fl_dir_chooser(const char *message,	// I - Message for titlebar
 
 
 //
-// End of "$Id: fl_file_dir.cxx,v 1.1.2.14 2003/01/30 21:43:46 easysw Exp $".
+// End of "$Id: fl_file_dir.cxx,v 1.1.2.16 2004/07/23 21:12:24 easysw Exp $".
 //

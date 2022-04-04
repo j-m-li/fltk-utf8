@@ -1,8 +1,11 @@
 //
-// Sample table with a single Fl_Input for editing cells
+// Test Jean-Marc's mods for keyboard nav and mouse selection, using a modified
+// version of the singleinput program.
 //
-//	1.00 04/18/03 ciudadsatan@hotmail.com -- Initial implementation
-//      1.10 05/17/03 erco at seriss dot com -- Small mods to follow changes to Fl_Table
+//	1.00 04/18/03 Mister Satan      -- Initial implementation
+//      1.10 05/17/03 Greg Ercolano     -- Small mods to follow changes to Fl_Table
+//      1.20 02/22/04 Jean-Marc Lienher -- Keyboard nav and mouse selection
+//      1.21 02/22/04 Greg Ercolano     -- Small reformatting mods, comments
 //
 #include <FL/Fl.H>
 #include <FL/Fl_Window.H>
@@ -14,7 +17,7 @@
 #include <stdlib.h>
 
 const int MAX_COLS = 26;
-const int MAX_ROWS = 50;
+const int MAX_ROWS = 500;
 
 Fl_Callback input_cb;
 
@@ -23,6 +26,7 @@ class SingleInput : public Fl_Table
     Fl_Int_Input* input;
     int values[MAX_ROWS][MAX_COLS];
     int row_edit, col_edit;
+    int s_left, s_top, s_right, s_bottom;	// kb nav + mouse selection
 
 protected:
     void draw_cell(TableContext context, int=0, int=0, int=0, int=0, int=0, int=0);
@@ -34,20 +38,26 @@ public:
 
     SingleInput(int x, int y, int w, int h, const char *l=0) : Fl_Table(x,y,w,h,l)
     {
+	int i, j;
         callback(&event_callback, (void*)this);
+	when(FL_WHEN_NOT_CHANGED|when());
 	input = new Fl_Int_Input(w/2,h/2,0,0);
 	input->hide();
 	input->callback(input_cb, (void*)this);
 	input->when(FL_WHEN_ENTER_KEY_ALWAYS);
 	input->maximum_size(5);
-
+	for (i = 0; i < MAX_ROWS; i++)
+	    for (j = 0; j < MAX_COLS; j++)
+		values[i][j] = (i + 2) * (j + 3);
 	(new Fl_Box(9999,9999,0,0))->hide();  // HACK: prevent flickering in Fl_Scroll
 	end();
     }
     ~SingleInput() { }
 
-    void rows(int val) { if (input->visible()) input->do_callback(); Fl_Table::rows(val); }
-    void cols(int val) { if (input->visible()) input->do_callback(); Fl_Table::cols(val); }
+    void rows(int val) 
+        { if (input->visible()) input->do_callback(); Fl_Table::rows(val); }
+    void cols(int val)
+        { if (input->visible()) input->do_callback(); Fl_Table::cols(val); }
     inline int rows() { return Fl_Table::rows(); }
     inline int cols() { return Fl_Table::cols(); }
 };
@@ -56,12 +66,18 @@ void input_cb(Fl_Widget*, void* v)
     { ((SingleInput*)v)->set_value(); }
 
 // Handle drawing all cells in table
-void SingleInput::draw_cell(TableContext context, int R, int C, int X, int Y, int W, int H)
+void SingleInput::draw_cell(TableContext context, 
+			    int R, int C, int X, int Y, int W, int H)
 {
     static char s[30];
 
     switch ( context )
     {
+	case CONTEXT_STARTPAGE:
+	    // Get kb nav + mouse 'selection region' for use below
+	    get_selection(s_top, s_left, s_bottom, s_right);	
+	    break;
+
 	case CONTEXT_COL_HEADER:
 	    fl_font(FL_HELVETICA | FL_BOLD, 14);
 	    fl_push_clip(X, Y, W, H);
@@ -104,7 +120,13 @@ void SingleInput::draw_cell(TableContext context, int R, int C, int X, int Y, in
 
 	    // BACKGROUND
 	    fl_push_clip(X, Y, W, H);
-	    fl_draw_box(FL_THIN_UP_BOX, X, Y, W, H, FL_WHITE);
+
+	    // Keyboard nav and mouse selection highlighting
+	    if (R >= s_top && R <= s_bottom && C >= s_left && C <= s_right)
+                { fl_draw_box(FL_THIN_UP_BOX, X, Y, W, H, FL_YELLOW); }
+            else
+	        { fl_draw_box(FL_THIN_UP_BOX, X, Y, W, H, FL_WHITE); }
+
 	    fl_pop_clip();
 
 	    // TEXT
@@ -143,10 +165,8 @@ void SingleInput::draw_cell(TableContext context, int R, int C, int X, int Y, in
 		    sprintf(s, "%d", T);
 		    fl_draw(s, X+3, Y+3, W-6, H-6, FL_ALIGN_RIGHT);
 		}
-
 	    }
 	    fl_pop_clip();
-
 	    return;
 	}
 
@@ -154,7 +174,8 @@ void SingleInput::draw_cell(TableContext context, int R, int C, int X, int Y, in
 	{
 	    if (!input->visible()) return;
 	    find_cell(CONTEXT_TABLE, row_edit, col_edit, X, Y, W, H);
-	    if (X==input->x() && Y==input->y() && W==input->w() && H==input->h()) return;
+	    if (X==input->x() && Y==input->y() && W==input->w() && H==input->h()) 
+	        { return; }
 	    input->resize(X,Y,W,H);
 	    return;
 	}
@@ -181,20 +202,56 @@ void SingleInput::event_callback2()
     {
 	case CONTEXT_CELL:
 	{
-	    if (C == cols()-1 || R == rows()-1) return;
-	    if (input->visible()) input->do_callback();
-	    row_edit = R;
-	    col_edit = C;
-	    int XX,YY,WW,HH;
-	    find_cell(CONTEXT_CELL, R, C, XX, YY, WW, HH);
-	    input->resize(XX,YY,WW,HH);
-	    char s[30];
-	    sprintf(s, "%d", values[R][C]);
-	    input->value(s);
-	    input->show();
-	    input->take_focus();
+            switch (Fl::event()) 
+	    { 
+		case FL_PUSH:
+		    if (!Fl::event_clicks()) 
+		    {
+			if (input->visible()) input->do_callback();
+			input->hide();
+			return;
+		    }
+		    Fl::event_clicks(0);
+		    //FALLTHROUGH
+
+		case FL_KEYBOARD:
+		    if (Fl::event() == FL_KEYBOARD && Fl::e_length == 0)
+		        { return; }
+			    
+		    if (C == cols()-1 || R == rows()-1) return;
+		    if (input->visible()) input->do_callback();
+		    row_edit = R;
+		    col_edit = C;
+		    set_selection(R, C, R, C);
+		    int XX,YY,WW,HH;
+		    find_cell(CONTEXT_CELL, R, C, XX, YY, WW, HH);
+		    input->resize(XX,YY,WW,HH);
+		    char s[30];
+		    sprintf(s, "%d", values[R][C]);
+		    input->value(s);
+		    input->show();
+		    input->take_focus();
+		    if (Fl::event() == FL_KEYBOARD && Fl::e_text[0] != '\r') 
+			{ input->handle(Fl::event()); }
+		    return;
+	    }
 	    return;
 	}
+
+	case CONTEXT_ROW_HEADER:
+	case CONTEXT_COL_HEADER:
+	    if (input->visible()) input->do_callback();
+            input->hide();
+	    return;
+
+	case CONTEXT_TABLE:
+	    if (R < 0 && C < 0)
+	    {
+	        if (input->visible()) input->do_callback();
+                input->hide();
+	    }
+	    return;
+	
 	default:
 	    return;
     }

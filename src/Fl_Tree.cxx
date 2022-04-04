@@ -107,7 +107,7 @@ int Fl_Tree::handle(int e) {
 
   if (e == FL_KEYDOWN) {
     if (sel >= nb_lines) sel = 0;
-    if (Fl::event_key() == FL_Enter) {
+    if (Fl::event_key() == FL_Enter || Fl::event_key() == ' ') {
       if (nb_lines && (flags[sel] & FLAG_OPEN)) {
         item_close(sel);
       } else {
@@ -152,13 +152,21 @@ int Fl_Tree::handle(int e) {
   }
   if (e == FL_PUSH) {
     was_key = 0;
+    take_focus();
   }
+
+  if (e == FL_UNFOCUS) {
+    redraw();
+  }
+
   if (e == FL_FOCUS) {
-    Fl::focus(this);
     return 1;
   }
+
   r = Fl_Group::handle(e);
   if (r) return r;
+
+  if (e == FL_MOVE || e == FL_DRAG) return 1;
 
   if (e == FL_PUSH && (Fl::event_state() & FL_BUTTON1)) {
     int n = find_below();
@@ -206,6 +214,7 @@ int Fl_Tree::handle(int e) {
           }
         } 
       }
+      return 1;
     }
   }
  // if (e == FL_DND_ENTER) return 1;
@@ -294,6 +303,8 @@ void Fl_Tree::draw_clip(int X, int Y, int W, int H) {
     all = 1;
   }
   
+  
+
   p = y() - pos; 
   while (i < nb_lines) {
     int op = p;
@@ -315,6 +326,7 @@ void Fl_Tree::draw_clip(int X, int Y, int W, int H) {
         dl = 0;
       }
       fl_clip(x(), Y, w() - d, H);
+      if (!draw) draw_begin(i);
       draw++;
       if (!all) draw_box(); 
       item_draw(i, x()-hpos+20 * levels[i], op, x(), Y, w() - d, H);
@@ -324,6 +336,8 @@ void Fl_Tree::draw_clip(int X, int Y, int W, int H) {
     if (was_key != 2) flags[i] &= ~FLAG_REDRAW;
     i++;
   }
+
+  if (draw > 0) draw_end();
 
   if (draw > 0 && (was_key != 2 || draw >= 2)) {
     fl_clip(x(), y(), w() - d, h() - d); 
@@ -722,6 +736,14 @@ void Fl_Tree::item_damage(int n) {
 void* Fl_Tree::item_data(int n) {
   if (n >= nb_lines || n < 0) return NULL;
   return datas[n];
+}
+
+void Fl_Tree::draw_begin(int n) {
+ 
+}
+
+void Fl_Tree::draw_end() {
+ 
 }
 
 //

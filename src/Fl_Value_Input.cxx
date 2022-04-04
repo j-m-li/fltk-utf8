@@ -1,9 +1,9 @@
 //
-// "$Id: Fl_Value_Input.cxx,v 1.6.2.5.2.8 2003/01/30 21:42:54 easysw Exp $"
+// "$Id: Fl_Value_Input.cxx,v 1.6.2.5.2.10 2004/07/27 16:02:21 easysw Exp $"
 //
 // Value input widget for the Fast Light Tool Kit (FLTK).
 //
-// Copyright 1998-2003 by Bill Spitzak and others.
+// Copyright 1998-2004 by Bill Spitzak and others.
 //
 // This library is free software; you can redistribute it and/or
 // modify it under the terms of the GNU Library General Public
@@ -31,7 +31,7 @@
 #include <FL/Fl_Value_Input.H>
 #include <FL/Fl_Group.H>
 #include <stdlib.h>
-#include <FL/fl_math.h>
+#include <FL/math.h>
 
 
 void Fl_Value_Input::input_cb(Fl_Widget*, void* v) {
@@ -41,12 +41,8 @@ void Fl_Value_Input::input_cb(Fl_Widget*, void* v) {
   else nv = strtol(t.input.value(), 0, 0);
   if (nv != t.value() || t.when() & FL_WHEN_NOT_CHANGED) {
     t.set_value(nv);
-    if (t.when()) {
-      t.clear_changed();
-      t.do_callback();
-    } else {
-      t.set_changed();
-    }
+    t.set_changed();
+    if (t.when()) t.do_callback();
   }
 }
 
@@ -131,5 +127,5 @@ Fl_Value_Input::Fl_Value_Input(int X, int Y, int W, int H, const char* l)
 }
 
 //
-// End of "$Id: Fl_Value_Input.cxx,v 1.6.2.5.2.8 2003/01/30 21:42:54 easysw Exp $".
+// End of "$Id: Fl_Value_Input.cxx,v 1.6.2.5.2.10 2004/07/27 16:02:21 easysw Exp $".
 //

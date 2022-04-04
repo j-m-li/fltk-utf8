@@ -1,9 +1,9 @@
 //
-// "$Id: Fl_Gl_Window.cxx,v 1.12.2.22.2.12 2002/08/09 03:17:30 easysw Exp $"
+// "$Id: Fl_Gl_Window.cxx,v 1.12.2.22.2.22 2004/09/09 21:34:46 matthiaswm Exp $"
 //
 // OpenGL window code for the Fast Light Tool Kit (FLTK).
 //
-// Copyright 1998-2002 by Bill Spitzak and others.
+// Copyright 1998-2004 by Bill Spitzak and others.
 //
 // This library is free software; you can redistribute it and/or
 // modify it under the terms of the GNU Library General Public
@@ -69,16 +69,15 @@ void Fl_Gl_Window::show() {
 
       if (!g && (mode_ & FL_DOUBLE) == FL_SINGLE) {
         g = Fl_Gl_Choice::find(mode_ | FL_DOUBLE,alist);
-       if (g) mode_ |= FL_FAKE_SINGLE;
+	if (g) mode_ |= FL_FAKE_SINGLE;
       }
 
       if (!g) {
         Fl::error("Insufficient GL support");
-       return;
+	return;
       }
-
     }
-#if !defined(WIN32) && !defined(__MACOS__)
+#if !defined(WIN32) && !defined(__APPLE__)
     Fl_X::make_xid(this, g->vis, g->colormap);
     if (overlay && overlay != this) ((Fl_Gl_Window*)overlay)->show();
 #endif
@@ -95,11 +94,9 @@ void Fl_Gl_Window::invalidate() {
 
 int Fl_Gl_Window::mode(int m, const int *a) {
   if (m == mode_ && a == alist) return 0;
-#ifndef __MACOS__
+#ifndef __APPLE__
   int oldmode = mode_;
-#ifndef WIN32
   Fl_Gl_Choice* oldg = g;
-#endif
 #endif
   context(0);
   mode_ = m; alist = a;
@@ -110,7 +107,10 @@ int Fl_Gl_Window::mode(int m, const int *a) {
       hide();
       show();
     }
-#elif defined(__MACOS__)
+#elif defined(__APPLE_QD__)
+    redraw();
+#elif defined(__APPLE_QUARTZ__)
+    // warning: the Quartz version should probably use Core GL (CGL) instead of AGL
     redraw();
 #else
     // under X, if the visual changes we must make a new X window (yuck!):
@@ -135,25 +135,24 @@ void Fl_Gl_Window::make_current() {
     context_ = fl_create_gl_context(this, g);
     valid(0);
 
-#ifdef __MACOS__
-    GLint xywh[4];
-
-    if (window()) {
-      // MRS: This isn't quite right, but the parent window won't have its W and H updated yet...
-      xywh[0] = x();
-      xywh[1] = window()->h() - y() - h();
-    } else {
-      xywh[0] = 0;
-      xywh[1] = 0;
-    }
-
-    xywh[2] = W;
-    xywh[3] = H;
-    aglSetInteger(context_, AGL_BUFFER_RECT, xywh);
-//    printf("resize: xywh=[%d %d %d %d]\n", xywh[0], xywh[1], xywh[2], xywh[3]);
-
-    aglUpdateContext(context_);
-#endif // __MACOS__
+//#ifdef __APPLE__
+//    GLint xywh[4];
+//
+//    if (parent() && parent()->window()) {
+//      xywh[0] = x();
+//      xywh[1] = parent()->window()->h() - y() - h();
+//    } else {
+//      xywh[0] = 0;
+//      xywh[1] = 0;
+//    }
+//
+//    xywh[2] = w();
+//    xywh[3] = h();
+//    aglSetInteger(context_, AGL_BUFFER_RECT, xywh);
+//    printf("make_current: xywh=[%d %d %d %d]\n", xywh[0], xywh[1], xywh[2], xywh[3]);
+//
+//    aglUpdateContext(context_);
+//#endif // __APPLE__
   }
   fl_set_gl_context(this, context_);
 #if defined(WIN32) && USE_COLORMAP
@@ -194,7 +193,10 @@ void Fl_Gl_Window::swap_buffers() {
 #  else
   SwapBuffers(Fl_X::i(this)->private_dc);
 #  endif
-#elif defined(__MACOS__)
+#elif defined(__APPLE_QD__)
+  aglSwapBuffers((AGLContext)context_);
+#elif defined(__APPLE_QUARTZ__)
+  // warning: the Quartz version should probably use Core GL (CGL) instead of AGL
   aglSwapBuffers((AGLContext)context_);
 #else
   glXSwapBuffers(fl_display, fl_xid(this));
@@ -209,7 +211,16 @@ int fl_overlay_depth = 0;
 void Fl_Gl_Window::flush() {
   uchar save_valid = valid_;
 
-#ifdef __MACOS__
+#ifdef __APPLE_QD__
+  //: clear previous clipping in this shared port
+  GrafPtr port = GetWindowPort( fl_xid(this) );
+  Rect rect; SetRect( &rect, 0, 0, 0x7fff, 0x7fff );
+  GrafPtr old; GetPort( &old );
+  SetPort( port );
+  ClipRect( &rect );
+  SetPort( old );
+#elif defined(__APPLE_QUARTZ__)
+  // warning: the Quartz version should probably use Core GL (CGL) instead of AGL
   //: clear previous clipping in this shared port
   GrafPtr port = GetWindowPort( fl_xid(this) );
   Rect rect; SetRect( &rect, 0, 0, 0x7fff, 0x7fff );
@@ -256,7 +267,10 @@ void Fl_Gl_Window::flush() {
     glDrawBuffer(GL_BACK);
 
     if (!SWAP_TYPE) {
-#ifdef __MACOS__
+#ifdef __APPLE_QD__
+      SWAP_TYPE = COPY;
+#elif defined __APPLE_QUARTZ__
+      // warning: the Quartz version should probably use Core GL (CGL) instead of AGL
       SWAP_TYPE = COPY;
 #else
       SWAP_TYPE = UNDEFINED;
@@ -340,16 +354,45 @@ void Fl_Gl_Window::flush() {
 }
 
 void Fl_Gl_Window::resize(int X,int Y,int W,int H) {
+//  printf("Fl_Gl_Window::resize(X=%d, Y=%d, W=%d, H=%d)\n", X, Y, W, H);
   if (W != w() || H != h()) {
     valid(0);
-#ifdef __MACOS__
-  GLint xywh[4];
-  xywh[0] = X;
-  xywh[1] = window()->h() - Y - H;
-  xywh[2] = W;
-  xywh[3] = H;
-  aglSetInteger(context_, AGL_BUFFER_RECT, xywh);
-  aglUpdateContext(context_);
+#ifdef __APPLE_QD__
+    GLint xywh[4];
+
+    if (window()) {
+      // MRS: This isn't quite right, but the parent window won't have its W and H updated yet...
+      xywh[0] = x();
+      xywh[1] = window()->h() - y() - h();
+    } else {
+      xywh[0] = 0;
+      xywh[1] = 0;
+    }
+
+    xywh[2] = W;
+    xywh[3] = H;
+    aglSetInteger(context_, AGL_BUFFER_RECT, xywh);
+//    printf("resize: xywh=[%d %d %d %d]\n", xywh[0], xywh[1], xywh[2], xywh[3]);
+
+    aglUpdateContext(context_);
+#elif defined(__APPLE_QUARTZ__)
+    GLint xywh[4];
+
+    if (window()) {
+      // MRS: This isn't quite right, but the parent window won't have its W and H updated yet...
+      xywh[0] = x();
+      xywh[1] = window()->h() - y() - h();
+    } else {
+      xywh[0] = 0;
+      xywh[1] = 0;
+    }
+
+    xywh[2] = W;
+    xywh[3] = H;
+    aglSetInteger(context_, AGL_BUFFER_RECT, xywh);
+//    printf("resize: xywh=[%d %d %d %d]\n", xywh[0], xywh[1], xywh[2], xywh[3]);
+
+    aglUpdateContext(context_);
 #elif !defined(WIN32)
     if (!resizable() && overlay && overlay != this)
       ((Fl_Gl_Window*)overlay)->resize(0,0,W,H);
@@ -403,5 +446,5 @@ void Fl_Gl_Window::draw_overlay() {}
 #endif
 
 //
-// End of "$Id: Fl_Gl_Window.cxx,v 1.12.2.22.2.12 2002/08/09 03:17:30 easysw Exp $".
+// End of "$Id: Fl_Gl_Window.cxx,v 1.12.2.22.2.22 2004/09/09 21:34:46 matthiaswm Exp $".
 //

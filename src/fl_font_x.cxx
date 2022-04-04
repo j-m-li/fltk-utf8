@@ -240,7 +240,7 @@ int fl_size_ = 0;
 XUtf8FontStruct* fl_xfont;
 static GC font_gc;
 
-void Fl_Fltk::font(int fnum, int size) {
+void fl_font(int fnum, int size) {
   if (fnum == fl_font_ && size == fl_size_) return;
   fl_font_ = fnum; fl_size_ = size;
   Fl_FontSize* f = find(fnum, size);
@@ -251,33 +251,33 @@ void Fl_Fltk::font(int fnum, int size) {
   }
 }
 
-int Fl_Fltk::height() {
+int fl_height() {
   return (fl_xfont->ascent + fl_xfont->descent);
 }
 
-int Fl_Fltk::descent() {
+int fl_descent() {
   return fl_xfont->descent;
 }
 
-double Fl_Fltk::width(const char* c, int n) {
+double fl_width(const char* c, int n) {
   return (double) XUtf8TextWidth(fl_xfont, c, n);
 }
 
-double Fl_Fltk::width(unsigned int c) {
+double fl_width(unsigned int c) {
   return (double) XUtf8UcsWidth(fl_xfont, c);
 }
 
-void Fl_Fltk::draw(const char* c, int n, int x, int y) {
+void fl_draw(const char* c, int n, int x, int y) {
   if (font_gc != fl_gc) {
-	  if (!fl_xfont) Fl_Fltk::font(FL_HELVETICA, 12);
+    if (!fl_xfont) fl_font(FL_HELVETICA, 12);
     font_gc = fl_gc;
   }
   XUtf8DrawString(fl_display, fl_window, fl_xfont, fl_gc, x, y, c, n);
 }
 
-void Fl_Fltk::rtl_draw(const char* c, int n, int x, int y) {
+void fl_rtl_draw(const char* c, int n, int x, int y) {
   if (font_gc != fl_gc) {
-	  if (!fl_xfont) Fl_Fltk::font(FL_HELVETICA, 12);
+    if (!fl_xfont) fl_font(FL_HELVETICA, 12);
     font_gc = fl_gc;
   }
   XUtf8DrawRtlString(fl_display, fl_window, fl_xfont, fl_gc, x, y, c, n);

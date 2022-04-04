@@ -102,7 +102,7 @@ int My_Input::handle(int event)
 #else
 		sprintf(buffer, "Copied: %s", Fl::event_text());
 #endif
-		printf("%s\n", buffer);
+		printf("FL_DROP: %s\n", buffer);
 		value(buffer);
 		return 1;
         case FL_PASTE:
@@ -143,7 +143,7 @@ int main(int argc, char ** argv) {
 #if !defined(WIN32) && !NANO_X
    inp->value("file:///tmp/dnd_test.txt");
 #else 
-   inp->value("C:\\Temp\\dnd_test.txt");
+   inp->value("C:\\Temp\\dnd_test.txt\nC:\\Temp\\dnd_test1.txt");
 #endif
    window->show(argc,argv);
    Fl::flush();

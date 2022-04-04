@@ -1,9 +1,9 @@
 //
-// "$Id: Fl_Double_Window.cxx,v 1.12.2.4.2.8 2003/05/20 19:09:32 easysw Exp $"
+// "$Id: Fl_Double_Window.cxx,v 1.12.2.4.2.13 2004/11/21 15:33:24 easysw Exp $"
 //
 // Double-buffered window code for the Fast Light Tool Kit (FLTK).
 //
-// Copyright 1998-2003 by Bill Spitzak and others.
+// Copyright 1998-2004 by Bill Spitzak and others.
 //
 // This library is free software; you can redistribute it and/or
 // modify it under the terms of the GNU Library General Public
@@ -28,8 +28,6 @@
 #include <FL/Fl_Double_Window.H>
 #include <FL/x.H>
 #include <FL/fl_draw.H>
-#include <FL/Fl_Fltk.H>
-#include <stdlib.h>
 
 // On systems that support double buffering "naturally" the base
 // Fl_Window class will probably do double-buffer and this subclass
@@ -61,7 +59,7 @@ static int can_xdbe() {
 #endif
 
 void Fl_Double_Window::show() {
-#if !defined(WIN32) && !defined(__MACOS__) && !DJGPP
+#if !defined(WIN32) && !defined(__APPLE__)
   if (!shown()) { // don't set the background pixel
     fl_open_display();
     Fl_X::make_xid(this);
@@ -96,11 +94,8 @@ void fl_copy_offscreen(int x,int y,int w,int h,HBITMAP bitmap,int srcx,int srcy)
 
 extern void fl_restore_clip();
 
-#elif defined(__MACOS__)
+#elif defined(__APPLE_QD__)
 
-/**
- * Mac:
- */
 GWorldPtr fl_create_offscreen(int w, int h) {
   GWorldPtr gw;
   Rect bounds;
@@ -113,9 +108,6 @@ GWorldPtr fl_create_offscreen(int w, int h) {
   return gw;
 }
 
-/**
- * Mac:
- */
 void fl_copy_offscreen(int x,int y,int w,int h,GWorldPtr gWorld,int srcx,int srcy) {
   Rect src;
   if ( !gWorld ) return;
@@ -131,9 +123,6 @@ void fl_copy_offscreen(int x,int y,int w,int h,GWorldPtr gWorld,int srcx,int src
   CopyBits(GetPortBitMapForCopyBits(gWorld), GetPortBitMapForCopyBits(dstPort), &src, &dst, srcCopy, 0L);
 }
 
-/**
- * Mac:
- */
 void fl_delete_offscreen(GWorldPtr gWorld) {
   DisposeGWorld(gWorld);
 }
@@ -141,9 +130,6 @@ void fl_delete_offscreen(GWorldPtr gWorld) {
 static GrafPtr prevPort;
 static GDHandle prevGD;
 
-/**
- * Mac:
- */
 void fl_begin_offscreen(GWorldPtr gWorld) {
   GetGWorld( &prevPort, &prevGD );
   if ( gWorld )
@@ -164,9 +150,6 @@ void fl_begin_offscreen(GWorldPtr gWorld) {
   fl_push_no_clip();
 }
 
-/**
- * Mac:
- */
 void fl_end_offscreen() {
   GWorldPtr currPort;
   GDHandle currGD;
@@ -176,6 +159,76 @@ void fl_end_offscreen() {
   UnlockPixels(pm);
   SetGWorld( prevPort, prevGD );
   fl_window = GetWindowFromPort( prevPort );
+}
+
+extern void fl_restore_clip();
+
+#elif defined(__APPLE_QUARTZ__)
+
+Fl_Offscreen fl_create_offscreen(int w, int h) {
+  void *data = calloc(w*h,4);
+  CGColorSpaceRef lut = CGColorSpaceCreateDeviceRGB();
+  CGContextRef ctx = CGBitmapContextCreate(
+    data, w, h, 8, w*4, lut, kCGImageAlphaNoneSkipLast);
+  CGColorSpaceRelease(lut);
+  return (Fl_Offscreen)ctx;
+}
+
+Fl_Offscreen fl_create_offscreen_with_alpha(int w, int h) {
+  void *data = calloc(w*h,4);
+  CGColorSpaceRef lut = CGColorSpaceCreateDeviceRGB();
+  CGContextRef ctx = CGBitmapContextCreate(
+    data, w, h, 8, w*4, lut, kCGImageAlphaPremultipliedLast);
+  CGColorSpaceRelease(lut);
+  return (Fl_Offscreen)ctx;
+}
+
+void fl_copy_offscreen(int x,int y,int w,int h,Fl_Offscreen osrc,int srcx,int srcy) {
+  CGContextRef src = (CGContextRef)osrc;
+  void *data = CGBitmapContextGetData(src);
+  int sw = CGBitmapContextGetWidth(src);
+  int sh = CGBitmapContextGetHeight(src);
+  CGImageAlphaInfo alpha = CGBitmapContextGetAlphaInfo(src);
+  CGColorSpaceRef lut = CGColorSpaceCreateDeviceRGB();
+  CGDataProviderRef src_bytes = CGDataProviderCreateWithData( 0L, data, sw*sh*4, 0L);
+  CGImageRef img = CGImageCreate( sw, sh, 8, 4*8, 4*sw, lut, alpha,
+    src_bytes, 0L, false, kCGRenderingIntentDefault);
+  // fl_push_clip();
+  CGRect rect = { x, y, w, h };
+  Fl_X::q_begin_image(rect, srcx, srcy, sw, sh);
+  CGContextDrawImage(fl_gc, rect, img);
+  Fl_X::q_end_image();
+  CGImageRelease(img);
+  CGColorSpaceRelease(lut);
+  CGDataProviderRelease(src_bytes);
+}
+
+void fl_delete_offscreen(Fl_Offscreen ctx) {
+  if (!ctx) return;
+  void *data = CGBitmapContextGetData((CGContextRef)ctx);
+  CGContextRelease((CGContextRef)ctx);
+  if (!data) return;
+  free(data);
+}
+
+static CGContextRef prev_gc = 0;
+static Window prev_window = 0;
+
+void fl_begin_offscreen(Fl_Offscreen ctx) {
+  prev_gc = fl_gc;
+  prev_window = fl_window;
+  fl_gc = (CGContextRef)ctx;
+  fl_window = 0;
+  //fl_push_no_clip();
+  CGContextSaveGState(fl_gc);
+  Fl_X::q_fill_context();
+}
+
+void fl_end_offscreen() {
+  Fl_X::q_release_context();
+  //fl_pop_clip();
+  fl_gc = prev_gc;
+  fl_window = prev_window;
 }
 
 extern void fl_restore_clip();
@@ -197,13 +250,11 @@ void Fl_Double_Window::flush(int eraseoverlay) {
       XdbeAllocateBackBufferName(fl_display, fl_xid(this), XdbeUndefined);
     else
 #endif
-#ifdef __MACOS__
-    // the Apple OS X window manager double buffers ALL windows
-    // anyway, so there is no need to waste memory and time.
-    //
-    // BTW: Windows2000 and later also forces doublebuffering if
-    // transparent windows are beeing used (alpha channel)
+#ifdef __APPLE_QD__
     if ( ( !QDIsPortBuffered( GetWindowPort(myi->xid) ) ) || force_doublebuffering_ )
+      myi->other_xid = fl_create_offscreen(w(), h());
+#elif defined(__APPLE_QUARTZ__)
+    if (force_doublebuffering_)
       myi->other_xid = fl_create_offscreen(w(), h());
 #else
     myi->other_xid = fl_create_offscreen(w(), h());
@@ -221,9 +272,7 @@ void Fl_Double_Window::flush(int eraseoverlay) {
     if (damage()) {
       fl_clip_region(myi->region); myi->region = 0;
       fl_window = myi->other_xid;
-
       draw();
-
       fl_window = myi->xid;
     }
     if (!copy) {
@@ -242,16 +291,12 @@ void Fl_Double_Window::flush(int eraseoverlay) {
     fl_clip_region(myi->region); myi->region = 0;
 #ifdef WIN32
     HDC _sgc = fl_gc;
-    if (fl->type != FL_GDI_DEVICE) {
-      fl_gc = fl_makeDC(myi->other_xid);
-    }
+    fl_gc = fl_makeDC(myi->other_xid);
     fl_restore_clip(); // duplicate region into new gc
     draw();
-    if (fl->type != FL_GDI_DEVICE) {
-      DeleteDC(fl_gc);
-      fl_gc = _sgc;
-    }
-#elif defined(__MACOS__)
+    DeleteDC(fl_gc);
+    fl_gc = _sgc;
+#elif defined(__APPLE__)
     if ( myi->other_xid ) {
       fl_begin_offscreen( myi->other_xid );
       fl_clip_region( 0 );   
@@ -260,12 +305,6 @@ void Fl_Double_Window::flush(int eraseoverlay) {
     } else {
       draw();
     }
-#elif DJGPP // X:
-    fl_window = myi->other_xid;
-    GrSetContext(fl_get_context(fl_window));
-    draw();
-    fl_window = myi->xid;
-    GrSetContext(fl_get_context(fl_window));
 #else // X:
     fl_window = myi->other_xid;
     draw();
@@ -276,11 +315,7 @@ void Fl_Double_Window::flush(int eraseoverlay) {
   // on Irix (at least) it is faster to reduce the area copied to
   // the current clip region:
   int X,Y,W,H; fl_clip_box(0,0,w(),h(),X,Y,W,H);
-#ifdef __MACOS__
   if (myi->other_xid) fl_copy_offscreen(X, Y, W, H, myi->other_xid, X, Y);
-#else
-  fl_copy_offscreen(X, Y, W, H, myi->other_xid, X, Y);
-#endif
 }
 
 void Fl_Double_Window::resize(int X,int Y,int W,int H) {
@@ -313,5 +348,5 @@ Fl_Double_Window::~Fl_Double_Window() {
 }
 
 //
-// End of "$Id: Fl_Double_Window.cxx,v 1.12.2.4.2.8 2003/05/20 19:09:32 easysw Exp $".
+// End of "$Id: Fl_Double_Window.cxx,v 1.12.2.4.2.13 2004/11/21 15:33:24 easysw Exp $".
 //

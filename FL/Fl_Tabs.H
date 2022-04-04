@@ -1,9 +1,9 @@
 //
-// "$Id: Fl_Tabs.H,v 1.5.2.4.2.3 2003/01/30 21:40:15 easysw Exp $"
+// "$Id: Fl_Tabs.H,v 1.5.2.4.2.4 2004/04/11 04:38:54 easysw Exp $"
 //
 // Tab header file for the Fast Light Tool Kit (FLTK).
 //
-// Copyright 1998-2003 by Bill Spitzak and others.
+// Copyright 1998-2004 by Bill Spitzak and others.
 //
 // This library is free software; you can redistribute it and/or
 // modify it under the terms of the GNU Library General Public
@@ -32,7 +32,7 @@ class FL_EXPORT Fl_Tabs : public Fl_Group {
   Fl_Widget *value_;
   Fl_Widget *push_;
   int tab_positions(int*, int*);
-  int tab_height();
+  int tab_height_;
   void draw_tab(int x1, int x2, int W, int H, Fl_Widget* o, int sel=0);
 protected:
   void draw();
@@ -45,10 +45,12 @@ public:
   int push(Fl_Widget *);
   Fl_Tabs(int,int,int,int,const char * = 0);
   Fl_Widget *which(int event_x, int event_y);
+  int tab_height();
+  void tab_height(int h);
 };
 
 #endif
 
 //
-// End of "$Id: Fl_Tabs.H,v 1.5.2.4.2.3 2003/01/30 21:40:15 easysw Exp $".
+// End of "$Id: Fl_Tabs.H,v 1.5.2.4.2.4 2004/04/11 04:38:54 easysw Exp $".
 //

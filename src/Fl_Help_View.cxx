@@ -1,9 +1,9 @@
 //
-// "$Id: Fl_Help_View.cxx,v 1.1.2.42 2002/08/18 15:19:24 easysw Exp $"
+// "$Id: Fl_Help_View.cxx,v 1.1.2.54 2004/09/24 16:00:10 easysw Exp $"
 //
 // Fl_Help_View widget routines.
 //
-// Copyright 1997-2002 by Easy Software Products.
+// Copyright 1997-2004 by Easy Software Products.
 // Image support donated by Matthias Melcher, Copyright 2000.
 //
 // This library is free software; you can redistribute it and/or
@@ -70,9 +70,7 @@
 
 #define MAX_COLUMNS	200
 
-#if MSDOS
-#define strcasecmp stricmp
-#endif
+
 //
 // Typedef the C API sort function type the only way I know how...
 //
@@ -548,11 +546,11 @@ Fl_Help_View::draw()
 
             if (strcasecmp(buf, "LI") == 0)
 	    {
-	      char buf[8];
-	      xchar b[] = {0x2022, 0x0};
-	      buf[fl_unicode2utf(b, 1, buf)] = 0;
-	      //fl_font(FL_SYMBOL, fsize);
-	      fl_draw(buf, xx - fsize + x() - leftline_, yy + y());
+	      fl_font(FL_SYMBOL, fsize);
+              char buf[8];
+              xchar b[] = {0x2022, 0x0};
+              buf[fl_unicode2utf(b, 1, buf)] = 0;
+              fl_draw(buf, xx - fsize + x() - leftline_, yy + y());
 	    }
 
 	    pushfont(font, fsize);
@@ -774,15 +772,7 @@ Fl_Help_View::draw()
   fl_pop_clip();
 }
 
-const char* fl_untitled =  "Untitled";
-const char* fl_no_uri ="<HTML><HEAD><TITLE>Error</TITLE></HEAD>"
-             "<BODY><H1>Error</H1>"
-             "<P>Unable to follow the link \"%s\" - "
-             "no handler exists for this URI scheme.</P></BODY>";
-const char* fl_unable_to_follow =  "<HTML><HEAD><TITLE>Error</TITLE></HEAD>"
-               "<BODY><H1>Error</H1>"
-               "<P>Unable to follow the link \"%s\" - "
-               "%s.</P></BODY>";
+
 //
 // 'Fl_Help_View::find()' - Find the specified string...
 //
@@ -799,8 +789,8 @@ Fl_Help_View::find(const char *s,		// I - String to find
 		*sp;				// Search string pointer
 
 
-  // Range check input...
-  if (!s) return -1;
+  // Range check input and value...
+  if (!s || !value_) return -1;
 
   if (p < 0 || p >= (int)strlen(value_)) p = 0;
   else if (p > 0) p ++;
@@ -885,7 +875,6 @@ Fl_Help_View::format()
 				// Column widths
   Fl_Color	tc, rc;		// Table/row background color
 
-  table_offset = 0;
 
   // Reset document width...
   hsize_ = w() - 24;
@@ -905,7 +894,7 @@ Fl_Help_View::format()
 
     tc = rc = bgcolor_;
 
-    strcpy(title_, fl_untitled);
+    strcpy(title_, "Untitled");
 
     if (!value_)
       return;
@@ -1143,6 +1132,10 @@ Fl_Help_View::format()
             format_table(&table_width, columns, start);
 
             if ((xx + table_width) > hsize_) {
+#ifdef DEBUG
+              printf("xx=%d, table_width=%d, hsize_=%d\n", xx, table_width,
+	             hsize_);
+#endif // DEBUG
 	      hsize_ = xx + table_width;
 	      done   = 0;
 	      break;
@@ -1386,6 +1379,7 @@ Fl_Help_View::format()
 	  needspace = 0;
 	  line      = 0;
 	  newalign  = get_align(attrs, tolower(buf[1]) == 'h' ? CENTER : LEFT);
+	  talign    = newalign;
 
           cells[column] = block - blocks_;
 
@@ -1524,7 +1518,7 @@ Fl_Help_View::format()
       }
     }
 
-    if (s > buf && !pre && !head)
+    if (s > buf && !head)
     {
       *s = '\0';
       ww = (int)fl_width(buf);
@@ -1554,15 +1548,14 @@ Fl_Help_View::format()
 	add_link(linkdest, xx, yy - fsize, ww, fsize);
 
       xx += ww;
-      if ((fsize + 2) > hh)
-	hh = fsize + 2;
-
-      needspace = 0;
     }
+
+    do_align(block, line, xx, newalign, links);
 
     block->end = ptr;
     size_      = yy + hh;
   }
+
 
   if (ntargets_ > 1)
     qsort(targets_, ntargets_, sizeof(Fl_Help_Target),
@@ -1589,8 +1582,19 @@ Fl_Help_View::format()
     }
   }
 
-  topline(topline_);
-  leftline(leftline_);
+  // Reset scrolling if it needs to be...
+  if (scrollbar_.visible()) {
+    int temph = h() - 8;
+    if (hscrollbar_.visible()) temph -= 16;
+    if ((topline_ + temph) > size_) topline(size_ - temph);
+    else topline(topline_);
+  } else topline(0);
+
+  if (hscrollbar_.visible()) {
+    int tempw = w() - 24;
+    if ((leftline_ + tempw) > hsize_) leftline(hsize_ - tempw);
+    else leftline(leftline_);
+  } else leftline(0);
 }
 
 
@@ -1966,7 +1970,7 @@ Fl_Help_View::format_table(int        *table_width,	// O - Total table width
   int scale_width = *table_width;
 
   if (scale_width == 0) {
-    if (width > hsize_) scale_width = hsize_;
+    if (width > (hsize_ - 24)) scale_width = hsize_ - 24;
     else scale_width = width;
   }
 
@@ -2133,66 +2137,57 @@ Fl_Color				// O - Color value
 Fl_Help_View::get_color(const char *n,	// I - Color name
                         Fl_Color   c)	// I - Default color value
 {
+  int	i;				// Looping var
   int	rgb, r, g, b;			// RGB values
+  static const struct {			// Color name table
+    const char *name;
+    int r, g, b;
+  }	colors[] = {
+    { "black",		0x00, 0x00, 0x00 },
+    { "red",		0xff, 0x00, 0x00 },
+    { "green",		0x00, 0x80, 0x00 },
+    { "yellow",		0xff, 0xff, 0x00 },
+    { "blue",		0x00, 0x00, 0xff },
+    { "magenta",	0xff, 0x00, 0xff },
+    { "fuchsia",	0xff, 0x00, 0xff },
+    { "cyan",		0x00, 0xff, 0xff },
+    { "aqua",		0x00, 0xff, 0xff },
+    { "white",		0xff, 0xff, 0xff },
+    { "gray",		0x80, 0x80, 0x80 },
+    { "grey",		0x80, 0x80, 0x80 },
+    { "lime",		0x00, 0xff, 0x00 },
+    { "maroon",		0x80, 0x00, 0x00 },
+    { "navy",		0x00, 0x00, 0x80 },
+    { "olive",		0x80, 0x80, 0x00 },
+    { "purple",		0x80, 0x00, 0x80 },
+    { "silver",		0xc0, 0xc0, 0xc0 },
+    { "teal",		0x00, 0x80, 0x80 }
+  };
 
 
-  if (!n || !n[0])
-    return (c);
+  if (!n || !n[0]) return c;
 
-  if (n[0] == '#')
-  {
+  if (n[0] == '#') {
     // Do hex color lookup
     rgb = strtol(n + 1, NULL, 16);
 
-    r = rgb >> 16;
-    g = (rgb >> 8) & 255;
-    b = rgb & 255;
-
+    if (strlen(n) > 4) {
+      r = rgb >> 16;
+      g = (rgb >> 8) & 255;
+      b = rgb & 255;
+    } else {
+      r = (rgb >> 8) * 17;
+      g = ((rgb >> 4) & 15) * 17;
+      b = (rgb & 15) * 17;
+    }
     return (fl_rgb_color((uchar)r, (uchar)g, (uchar)b));
+  } else {
+    for (i = 0; i < (int)(sizeof(colors) / sizeof(colors[0])); i ++)
+      if (!strcasecmp(n, colors[i].name)) {
+        return fl_rgb_color(colors[i].r, colors[i].g, colors[i].b);
+      }
+    return c;
   }
-  else if (strcasecmp(n, "black") == 0)
-    return (FL_BLACK);
-  else if (strcasecmp(n, "red") == 0)
-    return (FL_RED);
-#ifdef __BORLANDC__ // Workaround for compiler bug...
-  else if (strcasecmp(n, "green") == 0) {
-    r = 0;
-    g = 0x80;
-    b = 0;
-    return (fl_rgb_color(r, g, b));
-  }
-#else
-  else if (strcasecmp(n, "green") == 0)
-    return (fl_rgb_color(0, 0x80, 0));
-#endif // __BORLANDC__
-  else if (strcasecmp(n, "yellow") == 0)
-    return (FL_YELLOW);
-  else if (strcasecmp(n, "blue") == 0)
-    return (FL_BLUE);
-  else if (strcasecmp(n, "magenta") == 0 || strcasecmp(n, "fuchsia") == 0)
-    return (FL_MAGENTA);
-  else if (strcasecmp(n, "cyan") == 0 || strcasecmp(n, "aqua") == 0)
-    return (FL_CYAN);
-  else if (strcasecmp(n, "white") == 0)
-    return (FL_WHITE);
-  else if (strcasecmp(n, "gray") == 0 || strcasecmp(n, "grey") == 0)
-    return (fl_rgb_color(0x80, 0x80, 0x80));
-  else if (strcasecmp(n, "lime") == 0)
-    return (FL_GREEN);
-  else if (strcasecmp(n, "maroon") == 0)
-    return (fl_rgb_color(0x80, 0, 0));
-  else if (strcasecmp(n, "navy") == 0)
-    return (fl_rgb_color(0, 0, 0x80));
-  else if (strcasecmp(n, "olive") == 0)
-    return (fl_rgb_color(0x80, 0x80, 0));
-  else if (strcasecmp(n, "purple") == 0)
-    return (fl_rgb_color(0x80, 0, 0x80));
-  else if (strcasecmp(n, "silver") == 0)
-    return (fl_rgb_color(0xc0, 0xc0, 0xc0));
-  else if (strcasecmp(n, "teal") == 0)
-    return (fl_rgb_color(0, 0x80, 0x80));
-  else
-    return (c);
 }
 
 
@@ -2507,7 +2502,12 @@ Fl_Help_View::load(const char *f)// I - Filename to load (may also have target)
       strncmp(localname, "news:", 5) == 0)
   {
     // Remote link wasn't resolved...
-    snprintf(error, sizeof(error), fl_no_uri, localname);
+    snprintf(error, sizeof(error),
+             "<HTML><HEAD><TITLE>Error</TITLE></HEAD>"
+             "<BODY><H1>Error</H1>"
+	     "<P>Unable to follow the link \"%s\" - "
+	     "no handler exists for this URI scheme.</P></BODY>",
+	     localname);
     value_ = strdup(error);
   }
   else
@@ -2527,7 +2527,11 @@ Fl_Help_View::load(const char *f)// I - Filename to load (may also have target)
     }
     else
     {
-      snprintf(error, sizeof(error), fl_unable_to_follow, 
+      snprintf(error, sizeof(error),
+               "<HTML><HEAD><TITLE>Error</TITLE></HEAD>"
+               "<BODY><H1>Error</H1>"
+	       "<P>Unable to follow the link \"%s\" - "
+	       "%s.</P></BODY>",
 	       localname, strerror(errno));
       value_ = strdup(error);
     }
@@ -2606,8 +2610,8 @@ Fl_Help_View::topline(int t)	// I - Top line number
 
   scrollbar_.value(topline_, h() - 24, 0, size_);
 
+  set_changed();
   do_callback();
-  clear_changed();
 
   redraw();
 }
@@ -2776,11 +2780,8 @@ quote_char(const char *p) {	// I - Quoted string
 
   if (!strchr(p, ';')) return -1;
   if (*p == '#') {
-    if (*(p+1) == 'x' || *(p+1) == 'X') {
-      return strtol(p+2, NULL, 16);
-    } else {
-      return atoi(p+1);
-    }
+    if (*(p+1) == 'x' || *(p+1) == 'X') return strtol(p+2, NULL, 16);
+    else return atoi(p+1);
   }
   for (i = (int)(sizeof(names) / sizeof(names[0])), nameptr = names; i > 0; i --, nameptr ++)
     if (strncmp(p, nameptr->name, nameptr->namelen) == 0)
@@ -2813,5 +2814,5 @@ hscrollbar_callback(Fl_Widget *s, void *)
 
 
 //
-// End of "$Id: Fl_Help_View.cxx,v 1.1.2.42 2002/08/18 15:19:24 easysw Exp $".
+// End of "$Id: Fl_Help_View.cxx,v 1.1.2.54 2004/09/24 16:00:10 easysw Exp $".
 //

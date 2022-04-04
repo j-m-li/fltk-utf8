@@ -1,24 +1,24 @@
-# Microsoft Developer Studio Project File - Name="fltkimages" - Package Owner=<4>
+# Microsoft Developer Studio Project File - Name="fltkutf8images" - Package Owner=<4>
 # Microsoft Developer Studio Generated Build File, Format Version 6.00
 # ** DO NOT EDIT **
 
 # TARGTYPE "Win32 (x86) Static Library" 0x0104
 
-CFG=fltkimages - Win32 Debug
+CFG=fltkutf8images - Win32 Debug
 !MESSAGE This is not a valid makefile. To build this project using NMAKE,
 !MESSAGE use the Export Makefile command and run
 !MESSAGE 
-!MESSAGE NMAKE /f "fltkimages.mak".
+!MESSAGE NMAKE /f "fltkutf8images.mak".
 !MESSAGE 
 !MESSAGE You can specify a configuration when running NMAKE
 !MESSAGE by defining the macro CFG on the command line. For example:
 !MESSAGE 
-!MESSAGE NMAKE /f "fltkimages.mak" CFG="fltkimages - Win32 Debug"
+!MESSAGE NMAKE /f "fltkutf8images.mak" CFG="fltkimages - Win32 Debug"
 !MESSAGE 
 !MESSAGE Possible choices for configuration are:
 !MESSAGE 
-!MESSAGE "fltkimages - Win32 Release" (based on "Win32 (x86) Static Library")
-!MESSAGE "fltkimages - Win32 Debug" (based on "Win32 (x86) Static Library")
+!MESSAGE "fltkutf8images - Win32 Release" (based on "Win32 (x86) Static Library")
+!MESSAGE "fltkutf8images - Win32 Debug" (based on "Win32 (x86) Static Library")
 !MESSAGE 
 
 # Begin Project
@@ -28,7 +28,7 @@ CFG=fltkimages - Win32 Debug
 CPP=cl.exe
 RSC=rc.exe
 
-!IF  "$(CFG)" == "fltkimages - Win32 Release"
+!IF  "$(CFG)" == "fltkutf8images - Win32 Release"
 
 # PROP BASE Use_MFC 0
 # PROP BASE Use_Debug_Libraries 0
@@ -41,7 +41,8 @@ RSC=rc.exe
 # PROP Intermediate_Dir "Release"
 # PROP Target_Dir ""
 # ADD BASE CPP /nologo /W3 /GX /O2 /D "WIN32" /D "NDEBUG" /D "_WINDOWS" /YX /FD /c
-# ADD CPP /nologo /MT /GX /Ot /Op /Ob2 /I "." /I ".." /I "..\zlib" /I "..\png" /I "..\jpeg" /D "FL_STATIC" /D "WIN32" /D "NDEBUG" /D "_WINDOWS" /D "WIN32_LEAN_AND_MEAN" /D "VC_EXTRA_LEAN" /D "WIN32_EXTRA_LEAN" /YX /FD /c
+# ADD CPP /nologo /MD /GX /Ot /Op /Ob2 /I "." /I ".." /I "..\zlib" /I "..\png" /I "..\jpeg" /D "WIN32" /D "NDEBUG" /D "_WINDOWS" /D "WIN32_LEAN_AND_MEAN" /D "VC_EXTRA_LEAN" /D "WIN32_EXTRA_LEAN" /YX /FD /c
+# SUBTRACT CPP /Os
 # ADD BASE RSC /l 0x409
 # ADD RSC /l 0x409
 BSC32=bscmake.exe
@@ -51,7 +52,7 @@ LIB32=link.exe -lib
 # ADD BASE LIB32 /nologo
 # ADD LIB32 /nologo /out:"..\lib\fltkutf8images.lib"
 
-!ELSEIF  "$(CFG)" == "fltkimages - Win32 Debug"
+!ELSEIF  "$(CFG)" == "fltkutf8images - Win32 Debug"
 
 # PROP BASE Use_MFC 0
 # PROP BASE Use_Debug_Libraries 1
@@ -64,7 +65,7 @@ LIB32=link.exe -lib
 # PROP Intermediate_Dir "Debug"
 # PROP Target_Dir ""
 # ADD BASE CPP /nologo /W3 /GX /Z7 /Od /D "WIN32" /D "_DEBUG" /D "_WINDOWS" /YX /FD /c
-# ADD CPP /nologo /MTd /W3 /GX /Zi /Od /I "." /I ".." /I "..\zlib" /I "..\png" /I "..\jpeg" /D "FL_STATIC" /D "WIN32" /D "_DEBUG" /D "_WINDOWS" /D "WIN32_LEAN_AND_MEAN" /D "VC_EXTRA_LEAN" /D "WIN32_EXTRA_LEAN" /FR /YX /FD /c
+# ADD CPP /nologo /MDd /GX /Z7 /Od /I "." /I ".." /I "..\zlib" /I "..\png" /I "..\jpeg" /D "WIN32" /D "_DEBUG" /D "_WINDOWS" /D "WIN32_LEAN_AND_MEAN" /D "VC_EXTRA_LEAN" /D "WIN32_EXTRA_LEAN" /FR /YX /FD /c
 # ADD BASE RSC /l 0x409
 # ADD RSC /l 0x409
 BSC32=bscmake.exe
@@ -78,8 +79,8 @@ LIB32=link.exe -lib
 
 # Begin Target
 
-# Name "fltkimages - Win32 Release"
-# Name "fltkimages - Win32 Debug"
+# Name "fltkutf8images - Win32 Release"
+# Name "fltkutf8images - Win32 Debug"
 # Begin Source File
 
 SOURCE=..\src\Fl_BMP_Image.cxx

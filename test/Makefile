@@ -1,9 +1,9 @@
 #
-# "$Id: Makefile,v 1.19.2.7.2.40 2003/09/05 12:24:31 easysw Exp $"
+# "$Id: Makefile,v 1.19.2.7.2.42 2004/08/26 22:24:24 matthiaswm Exp $"
 #
 # Test/example program makefile for the Fast Light Tool Kit (FLTK).
 #
-# Copyright 1998-2003 by Bill Spitzak and others.
+# Copyright 1998-2004 by Bill Spitzak and others.
 #
 # This library is free software; you can redistribute it and/or
 # modify it under the terms of the GNU Library General Public
@@ -26,6 +26,7 @@
 include ../makeinclude
 
 CPPFILES =\
+	unittests.cxx \
 	adjuster.cxx \
 	arc.cxx \
 	ask.cxx \
@@ -44,12 +45,10 @@ CPPFILES =\
 	cursor.cxx \
 	curve.cxx \
 	demo.cxx \
-	dnd.cxx \
 	doublebuffer.cxx \
 	editor.cxx \
 	fast_slow.cxx \
 	file_chooser.cxx \
-	flv_testedit.cxx \
 	fonts.cxx \
 	forms.cxx \
 	fractals.cxx \
@@ -78,10 +77,8 @@ CPPFILES =\
 	pixmap.cxx \
 	preferences.cxx \
 	radio.cxx \
-	readimg.cxx \
 	resizebox.cxx \
 	resize.cxx \
-	scribble.cxx \
 	scroll.cxx \
 	shape.cxx \
 	subwindow.cxx \
@@ -90,11 +87,13 @@ CPPFILES =\
 	threads.cxx \
 	tile.cxx \
 	tiled_image.cxx \
+	valuators.cxx \
+	dnd.cxx \
 	tree.cxx \
-	utf8.cxx \
-	valuators.cxx
+	utf8.cxx
 
 ALL =	\
+	unittests$(EXEEXT) \
 	adjuster$(EXEEXT) \
 	arc$(EXEEXT) \
 	ask$(EXEEXT) \
@@ -110,7 +109,6 @@ ALL =	\
 	cursor$(EXEEXT) \
 	curve$(EXEEXT) \
 	demo$(EXEEXT) \
-	dnd$(EXEEXT) \
 	doublebuffer$(EXEEXT) \
 	editor$(EXEEXT) \
 	fast_slow$(EXEEXT) \
@@ -139,10 +137,8 @@ ALL =	\
 	pixmap_browser$(EXEEXT) \
 	preferences$(EXEEXT) \
 	radio$(EXEEXT) \
-	readimg$(EXEEXT) \
 	resize$(EXEEXT) \
 	resizebox$(EXEEXT) \
-	scribble$(EXEEXT) \
 	scroll$(EXEEXT) \
 	subwindow$(EXEEXT) \
 	symbols$(EXEEXT) \
@@ -150,9 +146,10 @@ ALL =	\
 	$(THREADS) \
 	tile$(EXEEXT) \
 	tiled_image$(EXEEXT) \
+	valuators$(EXEEXT) \
+	dnd$(EXEEXT) \
 	tree$(EXEEXT) \
-	utf8$(EXEEXT) \
-	valuators$(EXEEXT)
+	utf8$(EXEEXT)
 
 GLALL = \
 	cube$(EXEEXT) \
@@ -174,13 +171,7 @@ depend:	$(CPPFILES)
 include makedepend
 
 clean:
-	-@ rm -f $(ALL) $(GLALL) *.o *.obj core *~ *.exe *.ilk *.lib *.exp *.bsc
-	-@ rm -f CubeViewUI.cxx fast_slow.cxx inactive.cxx keyboard_ui.cxx \
-		mandelbrot_ui.cxx preferences.cxx radio.cxx resize.cxx \
-		tabs.cxx valuators.cxx shiny_panel.cxx
-	-@ rm -f CubeViewUI.h fast_slow.h inactive.h keyboard_ui.h \
-		mandelbrot_ui.h preferences. radio.h resize.h \
-		tabs.h valuators.h shiny_panel.h
+	-@ rm -f $(ALL) $(GLALL) *.o core *~
 
 install:
 	@echo Nothing to install in test directory.
@@ -198,6 +189,8 @@ uninstall:
 $(ALL): ../lib/$(LIBNAME)
 
 # General demos...
+unittests$(EXEEXT): unittests.o
+
 adjuster$(EXEEXT): adjuster.o
 
 arc$(EXEEXT): arc.o
@@ -330,16 +323,7 @@ resize.cxx:	resize.fl
 
 resizebox$(EXEEXT): resizebox.o
 
-scribble$(EXEEXT): scribble.o
-
 scroll$(EXEEXT): scroll.o
-	$(CXX) $(CXXFLAGS) -o $@ scroll.o \
-		$(LINKFLTKGL) $(LINKFLTK) $(GLDLIBS) 
-
-readimg$(EXEEXT): readimg.o
-	$(CXX) $(CXXFLAGS) -o $@ readimg.o \
-		$(LINKFLTKGL) $(LINKFLTK) $(GLDLIBS) 
-
 
 subwindow$(EXEEXT): subwindow.o
 
@@ -353,8 +337,6 @@ threads$(EXEEXT): threads.o
 tile$(EXEEXT): tile.o
 
 tiled_image$(EXEEXT): tiled_image.o
-
-tree$(EXEEXT): tree.o
 
 valuators$(EXEEXT): valuators.o
 valuators.cxx:	valuators.fl
@@ -400,5 +382,5 @@ shape$(EXEEXT): shape.o
 
 
 #
-# End of "$Id: Makefile,v 1.19.2.7.2.40 2003/09/05 12:24:31 easysw Exp $".
+# End of "$Id: Makefile,v 1.19.2.7.2.42 2004/08/26 22:24:24 matthiaswm Exp $".
 #

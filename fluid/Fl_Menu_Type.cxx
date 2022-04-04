@@ -1,5 +1,5 @@
 //
-// "$Id: Fl_Menu_Type.cxx,v 1.16.2.12.2.7 2003/08/02 21:17:30 easysw Exp $"
+// "$Id: Fl_Menu_Type.cxx,v 1.16.2.12.2.10 2004/11/21 14:53:48 easysw Exp $"
 //
 // Menu item code for the Fast Light Tool Kit (FLTK).
 //
@@ -9,7 +9,7 @@
 // This file also contains code to make Fl_Menu_Button, Fl_Menu_Bar,
 // etc widgets.
 //
-// Copyright 1998-2003 by Bill Spitzak and others.
+// Copyright 1998-2004 by Bill Spitzak and others.
 //
 // This library is free software; you can redistribute it and/or
 // modify it under the terms of the GNU Library General Public
@@ -185,9 +185,9 @@ void Fl_Menu_Item_Type::write_static() {
     int thislevel = q->level; if (q->is_parent()) thislevel++;
     int nextlevel =
       (q->next && q->next->is_menu_item()) ? q->next->level : t->level+1;
-    while (thislevel > nextlevel) {write_c(" {0},\n"); thislevel--;}
+    while (thislevel > nextlevel) {write_c(" {0,0,0,0,0,0,0,0,0},\n"); thislevel--;}
   }
-  write_c(" {0}\n};\n");
+  write_c(" {0,0,0,0,0,0,0,0,0}\n};\n");
 
   if (k) {
     // Write menu item variables...
@@ -339,11 +339,14 @@ void Fl_Menu_Type::build_menu() {
     int lvl = level+1;
     for (q = next; q && q->level > level; q = q->next) {
       Fl_Menu_Item_Type* i = (Fl_Menu_Item_Type*)q;
-      m->label(i->o->label());
+      if (i->o->image()) i->o->image()->label(m);
+      else {
+        m->label(i->o->label() ? i->o->label() : "(nolabel)");
+        m->labeltype(i->o->labeltype());
+      }
       m->shortcut(((Fl_Button*)(i->o))->shortcut());
       m->callback(0,(void*)i);
       m->flags = i->flags();
-      m->labeltype(i->o->labeltype());
       m->labelfont(i->o->labelfont());
       m->labelsize(i->o->labelsize());
       m->labelcolor(i->o->labelcolor());
@@ -465,5 +468,5 @@ void shortcut_in_cb(Shortcut_Button* i, void* v) {
 }
 
 //
-// End of "$Id: Fl_Menu_Type.cxx,v 1.16.2.12.2.7 2003/08/02 21:17:30 easysw Exp $".
+// End of "$Id: Fl_Menu_Type.cxx,v 1.16.2.12.2.10 2004/11/21 14:53:48 easysw Exp $".
 //

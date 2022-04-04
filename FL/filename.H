@@ -1,9 +1,9 @@
 /*
- * "$Id: filename.H,v 1.11.2.4.2.13 2003/08/02 05:54:43 matthiaswm Exp $"
+ * "$Id: filename.H,v 1.11.2.4.2.15 2004/10/18 20:29:54 easysw Exp $"
  *
  * Filename header file for the Fast Light Tool Kit (FLTK).
  *
- * Copyright 1998-2003 by Bill Spitzak and others.
+ * Copyright 1998-2004 by Bill Spitzak and others.
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Library General Public
@@ -51,12 +51,24 @@ inline int fl_filename_relative(char *to, const char *from) { return fl_filename
 #  endif /* __cplusplus */
 
 
-#  if (MSDOS || defined(WIN32)) && !defined(__CYGWIN__) 
+#  if defined(WIN32) && !defined(__CYGWIN__) && !defined(__WATCOMC__)
 
 struct dirent {char d_name[1];};
 
-#  elif __MACOS__
-struct dirent {char d_name[1];};
+#  elif defined(__APPLE__) && defined(__PROJECTBUILDER__)
+
+// Apple's ProjectBuilder has the nasty habit of including recursively
+// down the file tree. To avoid re-including <FL/dirent.h> we must 
+// directly include the systems math file. (Plus, I could not find a 
+// predefined macro for ProjectBuilder builds, so we have to define it 
+// in the project)
+#    include <sys/types.h>
+#    include "/usr/include/dirent.h"
+
+#  elif defined(__WATCOMC__)
+#    include <sys/types.h>
+#    include <direct.h>
+
 #  else
 /*
  * WARNING: on some systems (very few nowadays?) <dirent.h> may not exist.
@@ -96,14 +108,6 @@ typedef int (Fl_File_Sort_F)(struct dirent **, struct dirent **);
 
 FL_EXPORT int fl_filename_list(const char *d, struct dirent ***l,
                                Fl_File_Sort_F *s = fl_numericsort);
-
-/*
- * CARBON path to FSRef converter
- */
-#    if __MACOS__
-FL_EXPORT OSErr fl_get_fsref(const char *path, FSRef *Directory);
-#    endif /* __MACOS__*/
-
 #  endif /* __cplusplus */
 
 /*
@@ -127,5 +131,5 @@ FL_EXPORT OSErr fl_get_fsref(const char *path, FSRef *Directory);
 #endif /* FL_FILENAME_H */
 
 /*
- * End of "$Id: filename.H,v 1.11.2.4.2.13 2003/08/02 05:54:43 matthiaswm Exp $".
+ * End of "$Id: filename.H,v 1.11.2.4.2.15 2004/10/18 20:29:54 easysw Exp $".
  */

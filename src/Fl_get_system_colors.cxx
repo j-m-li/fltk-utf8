@@ -1,9 +1,9 @@
 //
-// "$Id: Fl_get_system_colors.cxx,v 1.6.2.7.2.23 2003/08/02 13:49:17 easysw Exp $"
+// "$Id: Fl_get_system_colors.cxx,v 1.6.2.7.2.26 2004/05/25 21:06:19 easysw Exp $"
 //
 // System color support for the Fast Light Tool Kit (FLTK).
 //
-// Copyright 1998-2003 by Bill Spitzak and others.
+// Copyright 1998-2004 by Bill Spitzak and others.
 //
 // This library is free software; you can redistribute it and/or
 // modify it under the terms of the GNU Library General Public
@@ -26,6 +26,7 @@
 #include <FL/Fl.H>
 #include <FL/fl_draw.H>
 #include <FL/x.H>
+#include <FL/math.h>
 #include <FL/fl_utf8.H>
 #include "flstring.h"
 #include <stdio.h>
@@ -33,16 +34,12 @@
 #include <FL/Fl_Pixmap.H>
 #include <FL/Fl_Tiled_Image.H>
 #include "tile.xpm"
-#include <FL/fl_math.h>
 
-#if defined(__MACOS__) && defined(__MWERKS__)
-static int putenv(const char*)
-{
-	return 0;
-}
-#endif // _MACOS__ && __MWERKS__
+#if defined(__APPLE__) && defined(__MWERKS__)
+extern "C" int putenv(const char*);
+#endif // __APPLE__ && __MWERKS__
 
-const char* fl_unknown_color =  "Unknown color: %s";
+const char* Fl::txt_unknown_color =  "Unknown color: %s";
 
 static char	fl_bg_set = 0;
 static char	fl_bg2_set = 0;
@@ -75,7 +72,6 @@ void Fl::foreground(uchar r, uchar g, uchar b) {
 }
 
 void Fl::background2(uchar r, uchar g, uchar b) {
-  fl_fg_set  = 1;
   fl_bg2_set = 1;
 
   Fl::set_color(FL_BACKGROUND2_COLOR,r,g,b);
@@ -92,7 +88,7 @@ static void set_selection_color(uchar r, uchar g, uchar b) {
   Fl::set_color(FL_SELECTION_COLOR,r,g,b);
 }
 
-#if defined(WIN32) || defined(__MACOS__) || NANO_X || DJGPP
+#if defined(WIN32) || defined(__APPLE__)
 
 #  include <stdio.h>
 // simulation of XParseColor:
@@ -129,7 +125,7 @@ int fl_parse_color(const char* p, uchar& r, uchar& g, uchar& b) {
     return 1;
   } else return 0;
 }
-#endif // WIN32 || __MACOS__
+#endif // WIN32 || __APPLE__
 
 #if defined(WIN32)
 static void
@@ -138,7 +134,7 @@ getsyscolor(int what, const char* arg, void (*func)(uchar,uchar,uchar))
   if (arg) {
     uchar r,g,b;
     if (!fl_parse_color(arg, r,g,b))
-      Fl::error(fl_unknown_color, arg);
+      Fl::error(Fl::txt_unknown_color, arg);
     else
       func(r,g,b);
   } else {
@@ -154,7 +150,7 @@ void Fl::get_system_colors() {
   getsyscolor(COLOR_HIGHLIGHT,	0,     set_selection_color);
 }
 
-#elif defined(__MACOS__)
+#elif defined(__APPLE__)
 // MacOS X currently supports two color schemes - Blue and Graphite.
 // Since we aren't emulating the Aqua interface (even if Apple would
 // let us), we use some defaults that are similar to both.  The
@@ -183,22 +179,15 @@ void Fl::get_system_colors()
 static void
 getsyscolor(const char *key1, const char* key2, const char *arg, const char *defarg, void (*func)(uchar,uchar,uchar))
 {
-#ifdef NANO_X //tanghao
-//	GR_COLOR x;
-//      func(x.red>>8, x.green>>8, x.blue>>8);
-#elif DJGPP
-	//FIXME_DJGPP
-#else
   if (!arg) {
     arg = XGetDefault(fl_display, key1, key2);
     if (!arg) arg = defarg;
   }
   XColor x;
   if (!XParseColor(fl_display, fl_colormap, arg, &x))
-    Fl::error(fl_unknown_color, arg);
+    Fl::error(Fl::txt_unknown_color, arg);
   else
     func(x.red>>8, x.green>>8, x.blue>>8);
-#endif
 }
 
 void Fl::get_system_colors()
@@ -238,16 +227,15 @@ Fl_Image	*Fl::scheme_bg_ = (Fl_Image *)0;
 static Fl_Pixmap	tile(tile_xpm);
 
 int Fl::scheme(const char *s) {
-#if !NANO_X
   if (!s) {
-    if ((s = fl_getenv("FLTK_SCHEME")) == NULL) {
-#if !defined(WIN32) && !defined(__MACOS__) && !DJGPP
+    if ((s = getenv("FLTK_SCHEME")) == NULL) {
+#if !defined(WIN32) && !defined(__APPLE__)
       const char* key = 0;
       if (Fl::first_window()) key = Fl::first_window()->xclass();
       if (!key) key = "fltk";
       fl_open_display();
       s = XGetDefault(fl_display, key, "scheme");
-#endif // !WIN32 && !__MACOS__
+#endif // !WIN32 && !__APPLE__
     }
   }
 
@@ -267,22 +255,19 @@ int Fl::scheme(const char *s) {
 
   // Load the scheme...
   return reload_scheme();
-#else
-  return -1;
-#endif
 }
 
 int Fl::reload_scheme() {
   Fl_Window *win;
 
-  get_system_colors();
-#if !NANO_X
   if (scheme_ && !strcasecmp(scheme_, "plastic")) {
     // Update the tile image to match the background color...
     uchar r, g, b;
     int nr, ng, nb;
     int i;
-    static uchar levels[3] = { 0xff, 0xef, 0xe8 };
+//    static uchar levels[3] = { 0xff, 0xef, 0xe8 };
+    // OSX 10.3 and higher use a background with less contrast...
+    static uchar levels[3] = { 0xff, 0xf8, 0xf4 };
 
     get_color(FL_GRAY, r, g, b);
 
@@ -345,11 +330,11 @@ int Fl::reload_scheme() {
     win->image(scheme_bg_);
     win->redraw();
   }
-#endif
+
   return 1;
 }
 
 
 //
-// End of "$Id: Fl_get_system_colors.cxx,v 1.6.2.7.2.23 2003/08/02 13:49:17 easysw Exp $".
+// End of "$Id: Fl_get_system_colors.cxx,v 1.6.2.7.2.26 2004/05/25 21:06:19 easysw Exp $".
 //

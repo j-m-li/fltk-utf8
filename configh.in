@@ -1,10 +1,10 @@
 /*
- * "$Id: configh.in,v 1.11.2.11.2.13 2002/08/05 17:50:21 easysw Exp $"
+ * "$Id: configh.in,v 1.11.2.11.2.18 2004/08/25 00:20:24 matthiaswm Exp $"
  *
  * Configuration file for the Fast Light Tool Kit (FLTK).
  * @configure_input@
  *
- * Copyright 1998-2002 by Bill Spitzak and others.
+ * Copyright 1998-2004 by Bill Spitzak and others.
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Library General Public
@@ -97,6 +97,20 @@
  */
 
 #define USE_XDBE HAVE_XDBE
+
+/*
+ * USE_QUARTZ:
+ *
+ * Use Quartz instead of Quickdraw on Apple Mac OS X machines.
+ * FLTK was originally ported to Quickdraw which is no longer 
+ * supported by Apple. If USE_QUARTZ is defined, FLTK will be
+ * compiled using Quartz instead. This flag has no meaning on
+ * other operating systems.
+ */
+
+#define USE_QUARTZ 0
+#undef __APPLE_QUARTZ__
+#undef __APPLE_QD__
 
 /*
  * HAVE_OVERLAY:
@@ -219,21 +233,11 @@
 #undef HAVE_PTHREAD_H
 
 /*
- * HAVE_XUTF8:
- *
- * Do we have the X11 UTF-8 library ?
+ * Do we have iconv?
  */
 
-#define HAVE_XUTF8 0
+#undef HAVE_LIBC_ICONV
 
 /*
- * HAVE_XUTF8:
- *
- * Do we have the X11 UTF-8 library ?
- */
-
-#define HAVE_XTEST 0
-
-/*
- * End of "$Id: configh.in,v 1.11.2.11.2.13 2002/08/05 17:50:21 easysw Exp $".
+ * End of "$Id: configh.in,v 1.11.2.11.2.18 2004/08/25 00:20:24 matthiaswm Exp $".
  */

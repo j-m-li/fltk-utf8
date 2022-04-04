@@ -1,9 +1,9 @@
 //
-// "$Id: Enumerations.H,v 1.18.2.14.2.25 2002/06/24 15:22:57 easysw Exp $"
+// "$Id: Enumerations.H,v 1.18.2.14.2.38 2004/11/20 03:19:57 easysw Exp $"
 //
 // Enumerations for the Fast Light Tool Kit (FLTK).
 //
-// Copyright 1998-2003 by Bill Spitzak and others.
+// Copyright 1998-2004 by Bill Spitzak and others.
 //
 // This library is free software; you can redistribute it and/or
 // modify it under the terms of the GNU Library General Public
@@ -45,7 +45,7 @@
 
 #define FL_MAJOR_VERSION	1
 #define FL_MINOR_VERSION	1
-#define FL_PATCH_VERSION	4
+#define FL_PATCH_VERSION	6
 #define FL_VERSION		((double)FL_MAJOR_VERSION + \
 				 (double)FL_MINOR_VERSION * 0.01 + \
 				 (double)FL_PATCH_VERSION * 0.0001)
@@ -78,7 +78,7 @@ enum Fl_Event {	// events
   FL_DND_DRAG		= 21,
   FL_DND_LEAVE		= 22,
   FL_DND_RELEASE	= 23,
-  FL_DROP		= 24,
+  FL_DROP		= 24
 };
 #define FL_KEYBOARD FL_KEYDOWN
 
@@ -149,11 +149,11 @@ enum Fl_When { // Fl_Widget::when():
 #define FL_BUTTONS	0x7f000000 // All possible buttons
 #define FL_BUTTON(n)	(0x00800000<<(n))
 
-#ifdef __MACOS__
+#ifdef __APPLE__
 #  define FL_COMMAND	FL_META
 #else
 #  define FL_COMMAND	FL_CTRL
-#endif // __MACOS__
+#endif // __APPLE__
 
 enum Fl_Boxtype { // boxtypes (if you change these you must fix fl_boxtype.C):
   FL_NO_BOX = 0,	FL_FLAT_BOX,
@@ -279,8 +279,7 @@ enum Fl_Font {	// standard fonts
 
   FL_FREE_FONT		= 16,	// first one to allocate
   FL_BOLD		= 1,	// add this to helvetica, courier, or times
-  FL_ITALIC		= 2,	// add this to helvetica, courier, or times
-  FL_FONT_NO_VALID	= 0xffffffff
+  FL_ITALIC		= 2	// add this to helvetica, courier, or times
 };
 
 extern FL_EXPORT int FL_NORMAL_SIZE;
@@ -395,7 +394,7 @@ enum Fl_Mode { // visual types and Fl_Gl_Window::mode() (values match Glut)
   FL_RGB8	= 64,
   FL_MULTISAMPLE= 128,
   FL_STEREO     = 256,
-  FL_FAKE_SINGLE = 512 // Fake single buffered windows using double-buffer
+  FL_FAKE_SINGLE = 512	// Fake single buffered windows using double-buffer
 };
 
 // damage masks
@@ -410,23 +409,6 @@ enum Fl_Damage {
   FL_DAMAGE_ALL      = 0x80
 };
 
-// postscript format
-
-enum PS_FORMAT{PS_A0=0, PS_A1=1, PS_A2=2, PS_A3=3, PS_A4=4, PS_A5=5, PS_A6=6, PS_A7=7, PS_A8=8, PS_A9=9,
-	PS_B0=10, PS_B1=11, PS_B2=12, PS_B3=13, PS_B4=14, PS_B5=15, PS_B6=16, PS_B7=17, PS_B8=18, PS_B9=19, PS_B10=20,
-	PS_C5E=21, PS_DLE=22, PS_EXECUTIVE=23, PS_FOLIO=24, PS_LEDGER=25, PS_LEGAL=26,
-	PS_LETTER=27,	PS_TABLOID=28, PS_US_COMMON_ENVELOPE=29
-};
-
-enum PS_LAYOUT{PS_PORTRAIT=0, PS_LANDSCAPE=1, PS_UNCHANGED=-1, PS_ASK=-2};
-
-enum FL_DEVICE {
-	FL_FLTK_DEVICE	= 0x01,
-	FL_PS_DEVICE	= 0x02,
-	FL_GDI_DEVICE	= 0x04,
-        FL_CPM_DEVICE	= 0x08
-};
-
 // FLTK 1.0.x compatibility definitions...
 #  ifdef FLTK_1_0_COMPAT
 #    define contrast	fl_contrast
@@ -438,5 +420,5 @@ enum FL_DEVICE {
 #endif
 
 //
-// End of "$Id: Enumerations.H,v 1.18.2.14.2.25 2002/06/24 15:22:57 easysw Exp $".
+// End of "$Id: Enumerations.H,v 1.18.2.14.2.38 2004/11/20 03:19:57 easysw Exp $".
 //

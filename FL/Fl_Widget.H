@@ -1,9 +1,9 @@
 //
-// "$Id: Fl_Widget.H,v 1.6.2.4.2.21 2003/09/04 19:07:58 easysw Exp $"
+// "$Id: Fl_Widget.H,v 1.6.2.4.2.26 2004/11/23 19:47:50 easysw Exp $"
 //
 // Widget header file for the Fast Light Tool Kit (FLTK).
 //
-// Copyright 1998-2003 by Bill Spitzak and others.
+// Copyright 1998-2004 by Bill Spitzak and others.
 //
 // This library is free software; you can redistribute it and/or
 // modify it under the terms of the GNU Library General Public
@@ -69,13 +69,13 @@ class FL_EXPORT Fl_Widget {
 
   const char *tooltip_;
 
-#  if defined(WIN32) && !defined(FL_DLL)
-  // "de-implement" the copy constructors, EXCEPT for when we are using the WIN32 DLL
-  // interface, in which case we can't hide them because Microsoft requires the copy
-  // constructors to implement subclassing...
+#  if !defined(WIN32) || !defined(FL_DLL)
+  // "de-implement" the copy constructors, EXCEPT for when we are using the
+  // WIN32 DLL interface, in which case we can't hide them because Microsoft
+  // requires the copy constructors to implement subclassing...
   Fl_Widget & operator=(const Fl_Widget &) { return *this; }
   Fl_Widget(const Fl_Widget &) {}
-#  endif // WIN32 && !FL_DLL
+#  endif // !WIN32 || !FL_DLL
 
 protected:
 
@@ -90,7 +90,7 @@ protected:
   void set_flag(int c) {flags_ |= c;}
   void clear_flag(int c) {flags_ &= ~c;}
   enum {INACTIVE=1, INVISIBLE=2, OUTPUT=4, SHORTCUT_LABEL=64,
-        CHANGED=128, VISIBLE_FOCUS=512};
+        CHANGED=128, VISIBLE_FOCUS=512, COPIED_LABEL = 1024};
 
   void draw_box() const;
   void draw_box(Fl_Boxtype, Fl_Color) const;
@@ -131,7 +131,8 @@ public:
   void selection_color(unsigned a) {color2_ = a;}
   void color(unsigned a, unsigned b) {color_=a; color2_=b;}
   const char* label() const {return label_.value;}
-  void label(const char* a) {label_.value=a; redraw_label();}
+  void label(const char* a);
+  void copy_label(const char* a);
   void label(Fl_Labeltype a,const char* b) {label_.type = a; label_.value = b;}
   Fl_Labeltype labeltype() const {return (Fl_Labeltype)label_.type;}
   void labeltype(Fl_Labeltype a) {label_.type = a;}
@@ -185,9 +186,9 @@ public:
   int  visible_focus() { return flags_ & VISIBLE_FOCUS; }
 
   static void default_callback(Fl_Widget*, void*);
-  void do_callback() {callback_(this,user_data_);}
-  void do_callback(Fl_Widget* o,void* arg=0) {callback_(o,arg);}
-  void do_callback(Fl_Widget* o,long arg) {callback_(o,(void*)arg);}
+  void do_callback() {callback_(this,user_data_); if (callback_ != default_callback) clear_changed();}
+  void do_callback(Fl_Widget* o,void* arg=0) {callback_(o,arg); if (callback_ != default_callback) clear_changed();}
+  void do_callback(Fl_Widget* o,long arg) {callback_(o,(void*)arg); if (callback_ != default_callback) clear_changed();}
   int test_shortcut();
   static int test_shortcut(const char*);
   int contains(const Fl_Widget*) const ;
@@ -217,5 +218,5 @@ public:
 #endif
 
 //
-// End of "$Id: Fl_Widget.H,v 1.6.2.4.2.21 2003/09/04 19:07:58 easysw Exp $".
+// End of "$Id: Fl_Widget.H,v 1.6.2.4.2.26 2004/11/23 19:47:50 easysw Exp $".
 //

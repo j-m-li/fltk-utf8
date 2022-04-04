@@ -1,9 +1,9 @@
 //
-// "$Id: Fl_Image.H,v 1.5.2.3.2.15 2002/08/14 16:19:48 easysw Exp $"
+// "$Id: Fl_Image.H,v 1.5.2.3.2.22 2004/04/11 04:38:54 easysw Exp $"
 //
 // Image header file for the Fast Light Tool Kit (FLTK).
 //
-// Copyright 1998-2002 by Bill Spitzak and others.
+// Copyright 1998-2004 by Bill Spitzak and others.
 //
 // This library is free software; you can redistribute it and/or
 // modify it under the terms of the GNU Library General Public
@@ -73,6 +73,7 @@ class FL_EXPORT Fl_Image {
   virtual void draw(int X, int Y, int W, int H, int cx=0, int cy=0);
   void draw(int X, int Y) {draw(X, Y, w(), h(), 0, 0);}
   virtual void uncache();
+  virtual void to_rgba(uchar *buf) {; }
 };
 
 class FL_EXPORT Fl_RGB_Image : public Fl_Image {
@@ -81,13 +82,13 @@ class FL_EXPORT Fl_RGB_Image : public Fl_Image {
   const uchar *array;
   int alloc_array; // Non-zero if array was allocated
 
-#if defined(__MACOS__) || defined(WIN32)
+#if defined(__APPLE__) || defined(WIN32)
   void *id; // for internal use
   void *mask; // for internal use (mask bitmap)
 #else
   unsigned id; // for internal use
   unsigned mask; // for internal use (mask bitmap)
-#endif // __MACOS__ || WIN32
+#endif // __APPLE__ || WIN32
 
   Fl_RGB_Image(const uchar *bits, int W, int H, int D=3, int LD=0) :
     Fl_Image(W,H,D), array(bits), alloc_array(0), id(0), mask(0) {data((const char **)&array, 1); ld(LD);}
@@ -101,10 +102,11 @@ class FL_EXPORT Fl_RGB_Image : public Fl_Image {
   virtual void label(Fl_Widget*w);
   virtual void label(Fl_Menu_Item*m);
   virtual void uncache();
+  virtual void to_rgba(uchar *buf);
 };
 
 #endif // !Fl_Image_H
 
 //
-// End of "$Id: Fl_Image.H,v 1.5.2.3.2.15 2002/08/14 16:19:48 easysw Exp $".
+// End of "$Id: Fl_Image.H,v 1.5.2.3.2.22 2004/04/11 04:38:54 easysw Exp $".
 //

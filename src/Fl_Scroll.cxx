@@ -1,9 +1,9 @@
 //
-// "$Id: Fl_Scroll.cxx,v 1.7.2.6.2.5 2003/06/15 04:41:16 easysw Exp $"
+// "$Id: Fl_Scroll.cxx,v 1.7.2.6.2.12 2004/05/15 22:58:18 easysw Exp $"
 //
 // Scroll widget for the Fast Light Tool Kit (FLTK).
 //
-// Copyright 1998-2003 by Bill Spitzak and others.
+// Copyright 1998-2004 by Bill Spitzak and others.
 //
 // This library is free software; you can redistribute it and/or
 // modify it under the terms of the GNU Library General Public
@@ -24,6 +24,7 @@
 //
 
 #include <FL/Fl.H>
+#include <FL/Fl_Tiled_Image.H>
 #include <FL/Fl_Scroll.H>
 #include <FL/fl_draw.H>
 
@@ -31,7 +32,10 @@
 void Fl_Scroll::clear() {
   for (int i=children() - 1; i >= 0; i --) {
     Fl_Widget* o = child(i);
-    if (o != &hscrollbar && o != &scrollbar) delete o;
+    if (o != &hscrollbar && o != &scrollbar) {
+      remove(o);
+      delete o;
+    }
   }
 }
 
@@ -46,43 +50,42 @@ void Fl_Scroll::fix_scrollbar_order() {
   }
 }
 
-
 void Fl_Scroll::draw_clip(void* v,int X, int Y, int W, int H) {
   fl_clip(X,Y,W,H);
-
   Fl_Scroll* s = (Fl_Scroll*)v;
-  // erase background if there is a boxtype:
-  if (s->box()) {
-    fl_color(s->color());
-    fl_rectf(X,Y,W,H);
+  // erase background as needed...
+  switch (s->box()) {
+    case FL_NO_BOX :
+    case FL_UP_FRAME :
+    case FL_DOWN_FRAME :
+    case FL_THIN_UP_FRAME :
+    case FL_THIN_DOWN_FRAME :
+    case FL_ENGRAVED_FRAME :
+    case FL_EMBOSSED_FRAME :
+    case FL_BORDER_FRAME :
+    case _FL_SHADOW_FRAME :
+    case _FL_ROUNDED_FRAME :
+    case _FL_OVAL_FRAME :
+    case _FL_PLASTIC_UP_FRAME :
+    case _FL_PLASTIC_DOWN_FRAME :
+        if (s->parent() == (Fl_Group *)s->window() && Fl::scheme_bg_) {
+	  Fl::scheme_bg_->draw(X-(X%((Fl_Tiled_Image *)Fl::scheme_bg_)->image()->w()),
+	                       Y-(Y%((Fl_Tiled_Image *)Fl::scheme_bg_)->image()->h()),
+	                       W+((Fl_Tiled_Image *)Fl::scheme_bg_)->image()->w(),
+			       H+((Fl_Tiled_Image *)Fl::scheme_bg_)->image()->h());
+	  break;
+        }
+
+    default :
+	fl_color(s->color());
+	fl_rectf(X,Y,W,H);
+	break;
   }
   Fl_Widget*const* a = s->array();
-  int R = X; int B = Y; // track bottom & right edge of all children
   for (int i=s->children()-2; i--;) {
     Fl_Widget& o = **a++;
-    int NR, NB;
     s->draw_child(o);
     s->draw_outside_label(o);
-    NR = o.x()+o.w();
-    NB = o.y()+o.h();
-    if ((o.align() & (FL_ALIGN_BOTTOM | FL_ALIGN_RIGHT)) &&
-        !(o.align() & FL_ALIGN_INSIDE)) {
-      int LW = 0, LH = 0;
-      o.measure_label(LW, LH);
-      if (o.align() & FL_ALIGN_BOTTOM) NB += LH;
-      else NR += LW;
-    }
-    if (NR > R) R = NR;
-    if (NB > B) B = NB;
-  }
-  // fill any area to right & bottom of widgets:
-  if (R < X+W && B > Y) {
-    fl_color(s->color());
-    fl_rectf(R,Y,X+W-R,B-Y);
-  }
-  if (B < Y+H) {
-    fl_color(s->color());
-    fl_rectf(X,B,W,Y+H-B);
   }
   fl_pop_clip();
 }
@@ -105,20 +108,34 @@ void Fl_Scroll::bbox(int& X, int& Y, int& W, int& H) {
 void Fl_Scroll::draw() {
   fix_scrollbar_order();
   int X,Y,W,H; bbox(X,Y,W,H);
+
   uchar d = damage();
 
   if (d & FL_DAMAGE_ALL) { // full redraw
     draw_box(box(),x(),y(),w(),h(),color());
     draw_clip(this, X, Y, W, H);
   } else {
-    if (d & FL_DAMAGE_SCROLL) { // scroll the contents:
-#if 0 &&  NANO_X
-      d = d | FL_DAMAGE_ALL;
-      draw_box(box(),x(),y(),w(),h(),color());
-      draw_clip(this, X, Y, W, H);
-#else
+    if (d & FL_DAMAGE_SCROLL) {
+      // scroll the contents:
       fl_scroll(X, Y, W, H, oldx-xposition_, oldy-yposition_, draw_clip, this);
-#endif
+
+      // Erase the background as needed...
+      Fl_Widget*const* a = array();
+      int L, R, T, B;
+      L = 999999;
+      R = 0;
+      T = 999999;
+      B = 0;
+      for (int i=children()-2; i--; a++) {
+        if ((*a)->x() < L) L = (*a)->x();
+	if (((*a)->x() + (*a)->w()) > R) R = (*a)->x() + (*a)->w();
+        if ((*a)->y() < T) T = (*a)->y();
+	if (((*a)->y() + (*a)->h()) > B) B = (*a)->y() + (*a)->h();
+      }
+      if (L > X) draw_clip(this, X, Y, L - X, H);
+      if (R < (X + W)) draw_clip(this, R, Y, X + W - R, H);
+      if (T > Y) draw_clip(this, X, Y, W, T - Y);
+      if (B < (Y + H)) draw_clip(this, X, B, W, Y + H - B);
     }
     if (d & FL_DAMAGE_CHILD) { // draw damaged children
       fl_clip(X, Y, W, H);
@@ -240,7 +257,8 @@ void Fl_Scroll::position(int X, int Y) {
     if (o == &hscrollbar || o == &scrollbar) continue;
     o->position(o->x()+dx, o->y()+dy);
   }
-  damage(FL_DAMAGE_SCROLL);
+  if (parent() == (Fl_Group *)window() && Fl::scheme_bg_) damage(FL_DAMAGE_ALL);
+  else damage(FL_DAMAGE_SCROLL);
 }
 
 void Fl_Scroll::hscrollbar_cb(Fl_Widget* o, void*) {
@@ -273,5 +291,5 @@ int Fl_Scroll::handle(int event) {
 }
 
 //
-// End of "$Id: Fl_Scroll.cxx,v 1.7.2.6.2.5 2003/06/15 04:41:16 easysw Exp $".
+// End of "$Id: Fl_Scroll.cxx,v 1.7.2.6.2.12 2004/05/15 22:58:18 easysw Exp $".
 //

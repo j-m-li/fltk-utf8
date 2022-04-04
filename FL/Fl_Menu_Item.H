@@ -1,9 +1,9 @@
 //
-// "$Id: Fl_Menu_Item.H,v 1.5.2.4.2.7 2003/01/30 21:39:37 easysw Exp $"
+// "$Id: Fl_Menu_Item.H,v 1.5.2.4.2.9 2004/06/07 19:22:45 matthiaswm Exp $"
 //
 // Menu item header file for the Fast Light Tool Kit (FLTK).
 //
-// Copyright 1998-2003 by Bill Spitzak and others.
+// Copyright 1998-2004 by Bill Spitzak and others.
 //
 // This library is free software; you can redistribute it and/or
 // modify it under the terms of the GNU Library General Public
@@ -29,7 +29,7 @@
 #  include "Fl_Widget.H"
 #  include "Fl_Image.H"
 
-#  if defined(__MACOS__) && defined(__MWERKS__) && defined(check)
+#  if defined(__APPLE__) && defined(__MWERKS__) && defined(check)
 #    undef check
 #  endif
 
@@ -64,6 +64,8 @@ struct FL_EXPORT Fl_Menu_Item {
   const Fl_Menu_Item *next(int=1) const;
   Fl_Menu_Item *next(int i=1) {
     return (Fl_Menu_Item*)(((const Fl_Menu_Item*)this)->next(i));}
+  const Fl_Menu_Item *first() const { return next(0); }
+  Fl_Menu_Item *first() { return next(0); }
 
   // methods on menu items:
   const char* label() const {return text;}
@@ -159,5 +161,5 @@ enum {	// back-compatability enum:
 #endif
 
 //
-// End of "$Id: Fl_Menu_Item.H,v 1.5.2.4.2.7 2003/01/30 21:39:37 easysw Exp $".
+// End of "$Id: Fl_Menu_Item.H,v 1.5.2.4.2.9 2004/06/07 19:22:45 matthiaswm Exp $".
 //
